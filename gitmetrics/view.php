@@ -16,11 +16,11 @@ $PAGE->set_title(get_string('pluginname', 'block_gitmetrics'));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_pagelayout('report');
 
-// Obtener configuración de la instancia del bloque
-$repourl = '';
-$branch  = 'main';
+// Obtener configuración de la instancia del bloque o del curso
+$repourl = optional_param('repo_url', '', PARAM_RAW);
+$branch  = optional_param('branch', 'main', PARAM_TEXT);
 
-if ($blockid > 0 && ($instance = $DB->get_record('block_instances', ['id' => $blockid]))) {
+if (empty($repourl) && $blockid > 0 && ($instance = $DB->get_record('block_instances', ['id' => $blockid]))) {
     if (!empty($instance->configdata)) {
         $config = unserialize(base64_decode($instance->configdata));
         if (!empty($config->github_url)) {
@@ -32,13 +32,31 @@ if ($blockid > 0 && ($instance = $DB->get_record('block_instances', ['id' => $bl
     }
 }
 
-echo $OUTPUT->header();
-
+// Si se ha abierto desde la pestaña de la asignatura (blockid = 0), buscar un bloque en este curso
 if (empty($repourl)) {
-    echo $OUTPUT->notification(get_string('no_repo_configured', 'block_gitmetrics'), 'warning');
-    echo $OUTPUT->footer();
-    exit;
+    $context = context_course::instance($courseid);
+    $instances = $DB->get_records('block_instances', ['blockname' => 'gitmetrics', 'parentcontextid' => $context->id]);
+    foreach ($instances as $inst) {
+        if (!empty($inst->configdata)) {
+            $config = unserialize(base64_decode($inst->configdata));
+            if (!empty($config->github_url)) {
+                $repourl = trim($config->github_url);
+                if (!empty($config->branch)) {
+                    $branch = trim($config->branch);
+                }
+                break;
+            }
+        }
+    }
 }
+
+// Repositorio por defecto si no se ha configurado ninguno
+if (empty($repourl)) {
+    $repourl = 'https://github.com/julia8873/bdc-prueba';
+    $branch  = 'main';
+}
+
+echo $OUTPUT->header();
 
 $cache   = new \block_gitmetrics\metrics_cache($DB);
 $metrics = $cache->get($repourl, $blockid);

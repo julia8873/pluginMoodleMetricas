@@ -48,3 +48,23 @@ if (!$DB->record_exists('block_instances', ['blockname' => 'gitmetrics', 'parent
     $DB->insert_record('block_instances', $instance);
     echo "Bloque gitmetrics añadido y configurado en la asignatura.\n";
 }
+
+// Matriculamos al usuario admin (id = 2) como profesor para que aparezca en "Mis cursos"
+$enrolplugin = enrol_get_plugin('manual');
+if ($enrolplugin) {
+    $instances = enrol_get_instances($course->id, true);
+    $manualinstance = null;
+    foreach ($instances as $inst) {
+        if ($inst->enrol === 'manual') {
+            $manualinstance = $inst;
+            break;
+        }
+    }
+    if ($manualinstance) {
+        $teacherrole = $DB->get_record('role', ['shortname' => 'editingteacher']);
+        if ($teacherrole && !$DB->record_exists('user_enrolments', ['enrolid' => $manualinstance->id, 'userid' => 2])) {
+            $enrolplugin->enrol_user($manualinstance, 2, $teacherrole->id);
+            echo "Usuario admin matriculado como profesor en 'Panel de Métricas y BdC'.\n";
+        }
+    }
+}
