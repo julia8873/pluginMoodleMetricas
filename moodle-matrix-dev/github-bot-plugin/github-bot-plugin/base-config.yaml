@@ -1,0 +1,30 @@
+github_token: ""
+default_owner: ""
+default_repo: ""
+default_branch: "main"
+raw_folder: "raw"
+llm_base_url: "https://generativelanguage.googleapis.com/v1beta/openai"
+llm_api_key: ""
+llm_model: "gemini-3.1-flash-lite"
+# Modelo usado SOLO para transcribir imágenes/PDFs escaneados (debe admitir
+# entrada multimodal). Si se deja vacío, se usa llm_model para todo, como antes
+# (y volverá a fallar si ese modelo no soporta imágenes).
+llm_vision_model: ""
+# URL base y API key opcionales específicas para el modelo de visión.
+# Si se dejan vacías, se usarán llm_base_url y llm_api_key por defecto.
+# Muy útil si quieres usar Ollama en local para texto y un proveedor externo
+# (como OpenRouter o Google Gemini) para el OCR multimodal de imágenes y PDFs.
+llm_vision_base_url: ""
+llm_vision_api_key: ""
+# TTL de la caché de contenido de la BdC, en minutos. Evita redescargar el árbol
+# de GitHub en cada comando de estudio dentro de la misma sesión. Se invalida
+# automáticamente tras cualquier subida, movido o borrado de documento mediante
+# el bot. Aumentar este valor reduce las peticiones a la API de GitHub, pero
+# retrasa la visibilidad de cambios hechos directamente en el repo (vía web o git).
+bdc_cache_ttl_minutos: 30
+# Si es true, cada fuente subida a raw/ se estructura automáticamente en okf/
+# (conceptos, entidades, fuentes) llamando al LLM con la operación INGEST de
+# AGENTS.md, y se hace commit directo de los ficheros resultantes. Si es
+# false, el bot solo guarda la fuente en bruto y la estructuración en okf/
+# sigue haciéndose aparte (p.ej. vía Obsidian + LLM Wiki Assistant).
+ingest_automatico: true

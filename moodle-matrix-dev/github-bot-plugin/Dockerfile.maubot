@@ -1,0 +1,28 @@
+FROM dock.mau.dev/maubot/maubot:latest
+
+# Añadir repositorio community de Alpine para dependencias adicionales
+RUN echo "http://dl-cdn.alpinelinux.org/alpine/v$(cut -d'.' -f1,2 /etc/alpine-release)/community" \
+        >> /etc/apk/repositories \
+    && apk update
+
+# Dependencias del sistema:
+#   olm-dev + build-base: cifrado (libolm para maubot[encryption])
+#   zip: necesario para el entrypoint.sh (construye el .mbp en cada inicio)
+RUN apk add --no-cache olm-dev build-base zip
+
+# Dependencias Python del plugin:
+#   pypdf / pymupdf: extracción de texto de PDFs
+#   maubot[encryption]: soporte de cifrado extremo a extremo
+RUN pip install --no-cache-dir --break-system-packages pypdf pymupdf "maubot[encryption]"
+
+# Copiar el código fuente del plugin al contenedor
+# El contexto de build es ./github-bot-plugin/, así que github-bot-plugin/
+# hace referencia a ./github-bot-plugin/github-bot-plugin/
+COPY github-bot-plugin/ /plugin-src/
+
+# Copiar y activar el script de arranque
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# El entrypoint construye el .mbp desde /plugin-src y luego arranca maubot
+ENTRYPOINT ["/entrypoint.sh"]

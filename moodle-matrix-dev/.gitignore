@@ -1,0 +1,63 @@
+# ============================================================
+# Python bytecode
+# ============================================================
+__pycache__/
+*.py[cod]
+*.pyo
+
+# ============================================================
+# Maubot – artefactos compilados y datos de runtime
+# ============================================================
+
+# Plugin bundles compilados (se construyen automáticamente en Docker)
+*.mbp
+
+# Bases de datos de maubot (runtime)
+github-bot-plugin/maubot-data/maubot.db
+github-bot-plugin/maubot-data/maubot.db-shm
+github-bot-plugin/maubot-data/maubot.db-wal
+
+# Bases de datos de instancias de plugin (runtime)
+github-bot-plugin/maubot-data/dbs/
+
+# Versiones antiguas de plugins gestionadas internamente por maubot
+github-bot-plugin/maubot-data/trash/
+
+# Token de sesión de la CLI de maubot (personal, no compartir)
+github-bot-plugin/maubot-data/maubot-cli.json
+
+# Configuración con secretos – copiar de config.yaml.example y rellenar
+github-bot-plugin/maubot-data/config.yaml
+
+# ============================================================
+# Synapse – datos de runtime
+# ============================================================
+
+# Bases de datos SQLite de Synapse
+synapse-data/*.db
+synapse-data/*.db-shm
+synapse-data/*.db-wal
+
+# Clave de firma privada del servidor Matrix (¡no versionar!)
+synapse-data/*.signing.key
+
+# Configuración de logging generada automáticamente
+synapse-data/*.log.config
+
+# PID del proceso
+synapse-data/*.pid
+
+# Archivos multimedia subidos por usuarios
+synapse-data/media_store/
+
+# ============================================================
+# Ollama – modelos de IA (pueden ser varios GB)
+# ============================================================
+ollama-data/
+
+# ============================================================
+# Ficheros residuales
+# ============================================================
+
+# homeserver.db en la raíz (residuo; la BD real está en synapse-data/)
+homeserver.db

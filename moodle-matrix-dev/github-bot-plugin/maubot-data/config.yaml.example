@@ -1,0 +1,97 @@
+# config.yaml.example – Plantilla de configuración para maubot.
+#
+# INSTRUCCIONES:
+#   1. Copia este fichero: cp config.yaml.example config.yaml
+#   2. Rellena los campos marcados con <COMPLETAR>
+#   3. NUNCA versiones config.yaml (está en .gitignore)
+#
+# El campo unshared_secret puede dejarse como "generate" para que maubot
+# genere y guarde automáticamente un secreto seguro en el primer arranque.
+
+# The full URI to the database. SQLite and Postgres are fully supported.
+database: sqlite:/data/maubot.db
+crypto_db_pickle_key: mau.crypto
+
+# Separate database URL for the crypto database.
+crypto_database: default
+
+database_opts:
+    min_size: 1
+    max_size: 10
+
+plugin_directories:
+    upload: /data/plugins
+    load:
+    - /data/plugins
+    trash: /data/trash
+
+plugin_databases:
+    sqlite: /data/dbs
+    postgres:
+    postgres_max_conns_per_plugin: 3
+    postgres_opts: {}
+
+server:
+    hostname: 0.0.0.0
+    port: 29316
+    public_url: https://example.com
+    ui_base_path: /_matrix/maubot
+    plugin_base_path: /_matrix/maubot/plugin/
+    override_resource_path: /opt/maubot/frontend
+    # Dejar como "generate" para que maubot genere el secreto automáticamente.
+    unshared_secret: generate
+
+homeservers:
+    matrix.org:
+        url: https://matrix-client.matrix.org
+        secret:
+    local:
+        url: http://synapse:8008
+        secret:
+
+# Usuarios administradores de maubot.
+# Genera el hash con: python3 -c "import bcrypt; print(bcrypt.hashpw(b'TU_CONTRASEÑA', bcrypt.gensalt()).decode())"
+admins:
+    # <COMPLETAR>: reemplaza "tu_usuario" por tu nombre de usuario y pon el hash bcrypt de tu contraseña
+    # tu_usuario: <HASH_BCRYPT>
+
+api_features:
+    login: true
+    plugin: true
+    plugin_upload: true
+    instance: true
+    instance_database: true
+    client: true
+    client_proxy: true
+    client_auth: true
+    dev_open: true
+    log: true
+
+logging:
+    version: 1
+    formatters:
+        colored:
+            (): maubot.lib.color_log.ColorFormatter
+            format: '[%(asctime)s] [%(levelname)s@%(name)s] %(message)s'
+        normal:
+            format: '[%(asctime)s] [%(levelname)s@%(name)s] %(message)s'
+    handlers:
+        file:
+            class: logging.handlers.RotatingFileHandler
+            formatter: normal
+            filename: /var/log/maubot.log
+            maxBytes: 10485760
+            backupCount: 10
+        console:
+            class: logging.StreamHandler
+            formatter: colored
+    loggers:
+        maubot:
+            level: DEBUG
+        mau:
+            level: DEBUG
+        aiohttp:
+            level: INFO
+    root:
+        level: DEBUG
+        handlers: [file, console]

@@ -1,0 +1,31 @@
+# .gitattributes
+# Gestión de finales de línea multiplataforma.
+# Garantiza que los scripts de shell siempre usen LF en el checkout,
+# independientemente del SO del desarrollador. Fundamental para que
+# los scripts funcionen dentro de los contenedores Linux.
+
+# Por defecto: conversión automática (CRLF en Windows, LF en Linux/Mac)
+* text=auto
+
+# Scripts de shell → siempre LF (los contenedores Linux los requieren)
+*.sh text eol=lf
+
+# Dockerfiles → LF
+Dockerfile* text eol=lf
+
+# Ficheros de configuración y código → conversión automática
+*.py  text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.conf text eol=lf
+*.template text eol=lf
+*.php text eol=lf
+
+# Binarios → sin conversión
+*.db binary
+*.db-shm binary
+*.db-wal binary
+*.mbp binary
+*.pyc binary

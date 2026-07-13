@@ -1,0 +1,15 @@
+maubot: 0.1.0
+id: dev.julia.githubbot
+version: 2.9.1
+license: MIT
+modules:
+  - github_bot
+main_class: GithubBot
+extra_files:
+  - base-config.yaml
+database: true
+database_type: asyncpg
+dependencies:
+  - pypdf
+  - pymupdf
+  - matplotlib
