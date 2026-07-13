@@ -17,9 +17,22 @@ Plugin de bloque para Moodle que analiza un repositorio GitHub con estructura OK
 
 ---
 
-## Pasos para poner todo en marcha
+## Puesta en marcha
 
-### PASO 1 — Levantar el entorno Docker
+### Opción A — Ejecutar todo automáticamente (Recomendado)
+
+Dispones del guion automatizado `instalar.sh` que levanta Docker, espera a Moodle, copia el plugin, asigna permisos y actualiza la base de datos de un solo golpe:
+
+```bash
+cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas
+./instalar.sh
+```
+
+---
+
+### Opción B — Paso a paso manual
+
+#### PASO 1 — Levantar el entorno Docker
 
 ```bash
 cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
