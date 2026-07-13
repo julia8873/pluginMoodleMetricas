@@ -119,19 +119,18 @@ Debes ver al final:
 
 ---
 
-## Visualización a página completa (100% del ancho)
+## Visualización en Asignaturas y Página Completa (100% del ancho)
 
-Existen dos opciones para mostrar las métricas en una página completa de Moodle en lugar de limitarse a la columna lateral:
+Hemos integrado el plugin para que actúe como elemento central en las asignaturas del profesor:
 
-### Opción 1 — Página completa integrada en el Bloque (`view.php`) [Implementada en este proyecto]
-Los bloques de Moodle pueden incluir páginas de informe adicionales que se cargan en la zona central de Moodle ocupando todo el ancho de pantalla (`report layout`).
-- **Cómo usarla**: Al añadir el bloque en un curso, verás en la parte superior del bloque un botón azul **"Ver en página completa ->"**.
-- **Qué muestra**: Abre la ruta `/blocks/gitmetrics/view.php?courseid=...&blockid=...` donde las 4 categorías de métricas (Volumen, Red, Etiquetas y Formato) se muestran en una cuadrícula amplia a pantalla completa.
+### 1. Asignatura dedicada: 'Panel de Métricas y BdC' (Creada automáticamente)
+Al ejecutar `./instalar.sh`, se crea automáticamente una asignatura dedicada llamada **Panel de Métricas y BdC** (ID 4) con el bloque preconfigurado para evaluar repositorios de GitHub.
+- **Cómo acceder**: Entra en `http://localhost:8000` -> abre la asignatura **Panel de Métricas y BdC**.
+- Puedes ver el resumen o pulsar en **Ver en página completa ->** para abrir el panel central a pantalla completa.
 
-### Opción 2 — Arquitectura alternativa como Módulo de Actividad (`mod_gitmetrics`)
-Si se prefiere que el plugin no sea un bloque lateral sino un elemento independiente del curso (como una Tarea, un Foro o un Cuestionario):
-- **Cómo funcionaría**: Se desarrollaría como un plugin de tipo módulo de actividad (`mod_gitmetrics`) en el directorio `/mod/gitmetrics/`.
-- **Experiencia de usuario**: El profesor haría clic en *"Añadir una actividad o recurso" -> "Métricas de Base de Conocimiento Git"*. Al pulsar en la actividad dentro del curso, se abriría directamente a página completa.
+### 2. Pestaña superior en cualquier Asignatura (`extend_navigation_course`)
+Gracias al gancho de navegación en `gitmetrics/lib.php`, el plugin inyecta una pestaña en la barra superior de navegación secundaria de cualquier curso de Moodle.
+- **Cómo acceder**: Entra en cualquier asignatura -> en el menú superior de pestañas (*Curso | Configuración | Participantes | ...*) verás la pestaña **Métricas de Base de Conocimiento Git**. Al pulsarla, se abrirá el informe completo a pantalla completa para ese curso.
 
 ---
 

@@ -52,8 +52,13 @@ docker exec --user root moodle-app chmod -R 755 /bitnami/moodle/blocks/gitmetric
 
 # 5. Ejecutar la actualización de la base de datos de Moodle
 echo ""
-echo "[5/5] Instalando/Actualizando el plugin en la base de datos de Moodle..."
+echo "[5/6] Instalando/Actualizando el plugin en la base de datos de Moodle..."
 docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/upgrade.php --non-interactive
+
+# 6. Crear asignatura dedicada y configurar pestaña de curso
+echo ""
+echo "[6/6] Creando asignatura dedicada 'Panel de Métricas y BdC' en Moodle..."
+docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_course.php
 
 echo ""
 echo "------------------------------------------------------------------------------"
@@ -64,11 +69,11 @@ echo " Moodle URL  : http://localhost:8000"
 echo " Usuario     : admin"
 echo " Contraseña  : adminpass123"
 echo ""
-echo " Pasos para probar el bloque en Moodle:"
-echo "    1. Abre http://localhost:8000 e inicia sesión."
-echo "    2. Entra a un curso -> haz clic en 'Activar edición' (Turn editing on)."
-echo "    3. Haz clic en 'Añadir un bloque' (Add a block) -> selecciona:"
-echo "       - En inglés (idioma por defecto de Moodle): 'Git Knowledge Base Metrics'"
-echo "       - En español: 'Métricas de Base de Conocimiento Git'"
-echo "    4. Configura el bloque con el repo: https://github.com/julia8873/bdc-prueba"
+echo " Opciones para probar y ver las métricas en Moodle:"
+echo "    OPCIÓN 1 - Asignatura Dedicada creada automáticamente:"
+echo "       Entrar a http://localhost:8000 -> Entrar al curso 'Panel de Métricas y BdC'."
+echo "    OPCIÓN 2 - Pestaña Superior en cualquier asignatura:"
+echo "       1. Abre cualquier asignatura (curso)."
+echo "       2. En la barra de pestañas superior verás 'Métricas de Base de Conocimiento Git'."
+echo "       3. Haz clic para acceder a pantalla completa."
 echo "------------------------------------------------------------------------------"
