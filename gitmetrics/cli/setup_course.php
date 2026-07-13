@@ -21,6 +21,7 @@ if (!$course) {
     $data->summary   = 'Asignatura y panel central dedicado a evaluar Bases de Conocimiento Git.';
     $data->format    = 'topics';
     $data->visible   = 1;
+    $data->newsitems = 0;
 
     $course = create_course($data);
     echo "Asignatura 'Panel de Métricas y BdC' creada con éxito (ID: {$course->id}).\n";
@@ -141,5 +142,19 @@ foreach ($topics as $num => $data) {
     }
 }
 
+// Eliminar foro de Avisos/Announcements si se creó por defecto para que no salga en la barra izquierda
+$course->newsitems = 0;
+$DB->update_record('course', $course);
+$cms = get_coursemodules_in_course('forum', $course->id);
+foreach ($cms as $cm) {
+    course_delete_module($cm->id);
+}
+
+// Eliminar secciones sobrantes o vacías mayores que 4 (ej. New section al final)
+$extra_sections = $DB->get_records_select('course_sections', "course = ? AND section > 4", [$course->id]);
+foreach ($extra_sections as $es) {
+    course_delete_section($course, $es, true);
+}
+
 rebuild_course_cache($course->id, true);
-echo "Los temas de la asignatura se han poblado y la caché del curso se ha reconstruido con éxito.\n";
+echo "Los temas de la asignatura se han poblado, se han limpiado avisos/secciones sobrantes y la caché del curso se ha reconstruido con éxito.\n";
