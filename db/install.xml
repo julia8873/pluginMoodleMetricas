@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--
+    Definición de tablas de la BD para block_gitmetrics.
+    Tabla principal: block_gitmetrics_cache
+    Almacena los resultados del análisis de métricas para evitar
+    llamadas repetidas a la API de GitHub (respetando el TTL configurado).
+-->
+
+<XMLDB PATH="blocks/gitmetrics/db" VERSION="20260713" COMMENT="XMLDB para block_gitmetrics">
+  <TABLES>
+
+    <TABLE NAME="block_gitmetrics_cache" COMMENT="Caché de métricas calculadas por instancia de bloque y repositorio">
+      <FIELDS>
+        <!-- Clave primaria autoincremental -->
+        <FIELD NAME="id"              TYPE="int"  LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <!-- Referencia a la instancia del bloque (mdl_block_instances.id) -->
+        <FIELD NAME="blockinstanceid" TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+        <!-- URL completa del repositorio GitHub -->
+        <FIELD NAME="repo_url"        TYPE="char" LENGTH="500" NOTNULL="true"/>
+        <!-- MD5 de la URL para búsquedas rápidas sin escanear texto largo -->
+        <FIELD NAME="repo_url_hash"   TYPE="char" LENGTH="32"  NOTNULL="true"/>
+        <!-- JSON con todas las métricas calculadas -->
+        <FIELD NAME="metrics_json"    TYPE="text"              NOTNULL="true"/>
+        <!-- Marca de tiempo de creación del registro (Unix timestamp) -->
+        <FIELD NAME="timecreated"     TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+        <!-- Última actualización del registro (Unix timestamp) -->
+        <FIELD NAME="timemodified"    TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <!-- Índice compuesto para la búsqueda habitual: instancia + hash de URL -->
+        <INDEX NAME="blockinstance_hash" UNIQUE="false" FIELDS="blockinstanceid, repo_url_hash"/>
+      </INDEXES>
+    </TABLE>
+
+  </TABLES>
+</XMLDB>
