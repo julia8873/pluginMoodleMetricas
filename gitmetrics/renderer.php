@@ -45,27 +45,27 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
 
         $html .= '<div class="gm-topics-container" style="display: flex; flex-direction: column; gap: 15px; margin-top: 18px;">';
 
-        // Tema 1: Volumen
+        // Volumen
         $html .= '<details class="gm-topic-toggle" open>'
-               . '<summary class="gm-topic-header">TEMA 1 — Volumen y Tamaño de la Base de Conocimiento</summary>'
+               . '<summary class="gm-topic-header">Volumen y Tamaño de la Base de Conocimiento</summary>'
                . '<div class="gm-topic-body">' . $this->render_volume($m['volume']) . '</div>'
                . '</details>';
 
-        // Tema 2: Red
+        // Red
         $html .= '<details class="gm-topic-toggle" open>'
-               . '<summary class="gm-topic-header">TEMA 2 — Red de Enlaces e Interconectividad Markdown</summary>'
+               . '<summary class="gm-topic-header">Red de Enlaces e Interconectividad Markdown</summary>'
                . '<div class="gm-topic-body">' . $this->render_network($m['network']) . '</div>'
                . '</details>';
 
-        // Tema 3: Etiquetas
+        // Etiquetas
         $html .= '<details class="gm-topic-toggle" open>'
-               . '<summary class="gm-topic-header">TEMA 3 — Taxonomía, Metadatos y Etiquetas YAML</summary>'
+               . '<summary class="gm-topic-header">Taxonomía, Metadatos y Etiquetas YAML</summary>'
                . '<div class="gm-topic-body">' . $this->render_tags($m['tags']) . '</div>'
                . '</details>';
 
-        // Tema 4: Formato
+        // Formato
         $html .= '<details class="gm-topic-toggle" open>'
-               . '<summary class="gm-topic-header">TEMA 4 — Calidad Markdown y Elementos Estructurales</summary>'
+               . '<summary class="gm-topic-header">Calidad Markdown y Elementos Estructurales</summary>'
                . '<div class="gm-topic-body">' . $this->render_format($m['format']) . '</div>'
                . '</details>';
 

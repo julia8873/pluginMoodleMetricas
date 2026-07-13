@@ -96,19 +96,19 @@ $styles = '<style>
 
 $topics = [
     1 => [
-        'name' => 'TEMA 1 - Volumen y Tamaño de la Base de Conocimiento',
+        'name' => 'Volumen y Tamaño de la Base de Conocimiento',
         'summary' => $styles . $renderer->render_volume($metrics['volume'])
     ],
     2 => [
-        'name' => 'TEMA 2 - Red de Enlaces e Interconectividad Markdown',
+        'name' => 'Red de Enlaces e Interconectividad Markdown',
         'summary' => $renderer->render_network($metrics['network'])
     ],
     3 => [
-        'name' => 'TEMA 3 - Taxonomía, Metadatos y Etiquetas YAML',
+        'name' => 'Taxonomía, Metadatos y Etiquetas YAML',
         'summary' => $renderer->render_tags($metrics['tags'])
     ],
     4 => [
-        'name' => 'TEMA 4 - Calidad Markdown y Elementos Estructurales',
+        'name' => 'Calidad Markdown y Elementos Estructurales',
         'summary' => $renderer->render_format($metrics['format'])
     ]
 ];
