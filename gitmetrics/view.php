@@ -40,7 +40,7 @@ if (empty($repourl)) {
     exit;
 }
 
-$cache   = new \block_gitmetrics\metrics_cache();
+$cache   = new \block_gitmetrics\metrics_cache($DB);
 $metrics = $cache->get($repourl, $blockid);
 
 if ($metrics === null) {

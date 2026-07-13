@@ -17,11 +17,12 @@ class metrics_cache {
 
     private \moodle_database $db;
 
-    public function __construct(\moodle_database $db) {
-        $this->db = $db;
+    public function __construct(?\moodle_database $db = null) {
+        global $DB;
+        $this->db = $db ?: $DB;
     }
 
-    // ─────────────────────────────────────────────────────────────────────
+    // -------------------------------------------------------------------------
     // API pública
     // ─────────────────────────────────────────────────────────────────────
 
