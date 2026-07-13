@@ -42,12 +42,35 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
         $html  = $this->styles();
         $html .= '<div class="gm-wrap gm-fullpage" style="font-size: 1.05em;">';
         $html .= $this->render_repo_header($m);
-        $html .= '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-top: 15px;">';
-        $html .= '<div>' . $this->render_volume($m['volume']) . '</div>';
-        $html .= '<div>' . $this->render_network($m['network']) . '</div>';
-        $html .= '<div>' . $this->render_tags($m['tags']) . '</div>';
-        $html .= '<div>' . $this->render_format($m['format']) . '</div>';
+
+        $html .= '<div class="gm-topics-container" style="display: flex; flex-direction: column; gap: 15px; margin-top: 18px;">';
+
+        // Tema 1: Volumen
+        $html .= '<details class="gm-topic-toggle" open>'
+               . '<summary class="gm-topic-header">TEMA 1 — Volumen y Tamaño de la Base de Conocimiento</summary>'
+               . '<div class="gm-topic-body">' . $this->render_volume($m['volume']) . '</div>'
+               . '</details>';
+
+        // Tema 2: Red
+        $html .= '<details class="gm-topic-toggle" open>'
+               . '<summary class="gm-topic-header">TEMA 2 — Red de Enlaces e Interconectividad Markdown</summary>'
+               . '<div class="gm-topic-body">' . $this->render_network($m['network']) . '</div>'
+               . '</details>';
+
+        // Tema 3: Etiquetas
+        $html .= '<details class="gm-topic-toggle" open>'
+               . '<summary class="gm-topic-header">TEMA 3 — Taxonomía, Metadatos y Etiquetas YAML</summary>'
+               . '<div class="gm-topic-body">' . $this->render_tags($m['tags']) . '</div>'
+               . '</details>';
+
+        // Tema 4: Formato
+        $html .= '<details class="gm-topic-toggle" open>'
+               . '<summary class="gm-topic-header">TEMA 4 — Calidad Markdown y Elementos Estructurales</summary>'
+               . '<div class="gm-topic-body">' . $this->render_format($m['format']) . '</div>'
+               . '</details>';
+
         $html .= '</div>';
+
         $html .= '<div class="gm-footer" style="margin-top: 25px; text-align: right;">'
                . get_string('last_updated', 'block_gitmetrics') . ': '
                . userdate($m['timestamp'])
@@ -96,7 +119,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     // 1. Volumen y estructura
     // ═════════════════════════════════════════════════════════════════════
 
-    private function render_volume(array $v): string {
+    public function render_volume(array $v): string {
         $html  = $this->section_open('📁', 'section_volume', 'gm-section-vol');
 
         // Fila de tarjetas principales
@@ -144,7 +167,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     // 2. Red y conectividad
     // ═════════════════════════════════════════════════════════════════════
 
-    private function render_network(array $net): string {
+    public function render_network(array $net): string {
         $html  = $this->section_open('🔗', 'section_network', 'gm-section-net');
 
         $html .= '<div class="gm-cards">';
@@ -192,7 +215,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     // 3. Etiquetas (tags)
     // ═════════════════════════════════════════════════════════════════════
 
-    private function render_tags(array $tags): string {
+    public function render_tags(array $tags): string {
         $html  = $this->section_open('🏷️', 'section_tags', 'gm-section-tags');
 
         $html .= '<div class="gm-cards">';
@@ -232,7 +255,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     // 4. Validación de formato
     // ═════════════════════════════════════════════════════════════════════
 
-    private function render_format(array $fmt): string {
+    public function render_format(array $fmt): string {
         $html  = $this->section_open('✅', 'section_format', 'gm-section-fmt');
 
         $html .= '<div class="gm-cards">';
@@ -381,7 +404,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     // CSS inline (se inyecta una sola vez en el bloque)
     // ═════════════════════════════════════════════════════════════════════
 
-    private function styles(): string {
+    public function styles(): string {
         return <<<CSS
 <style>
 /* ── block_gitmetrics: estilos del bloque ──────────────────────── */
@@ -469,6 +492,34 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
 .gm-summary::before { content: '▶ '; font-size: 9px; }
 details[open] .gm-summary::before { content: '▼ '; }
 .gm-details-content { margin-top: 6px; overflow-x: auto; }
+
+/* Temas en toggle / acordeón a página completa */
+.gm-topic-toggle {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.gm-topic-header {
+  background: #f8fafc;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  padding: 14px 18px;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  display: block;
+  list-style: none;
+}
+details[open].gm-topic-toggle .gm-topic-header {
+  border-bottom: 1px solid #e2e8f0;
+  background: #f1f5f9;
+}
+.gm-topic-header::before { content: '▶ '; font-size: 11px; margin-right: 6px; }
+details[open] .gm-topic-header::before { content: '▼ '; }
+.gm-topic-body { padding: 18px; }
 
 /* Tablas */
 .gm-table { width: 100%; border-collapse: collapse; font-size: 11px; }
