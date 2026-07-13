@@ -31,22 +31,22 @@ cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas
 Al terminar, verás en la terminal el siguiente resumen con los datos exactos para entrar y añadir el bloque:
 
 ```text
-==============================================================================
- 🎉 ¡TODO LISTO! EL ENTORNO Y EL PLUGIN ESTÁN OPERATIVOS
-==============================================================================
+------------------------------------------------------------------------------
+ ¡TODO LISTO! EL ENTORNO Y EL PLUGIN ESTÁN OPERATIVOS
+------------------------------------------------------------------------------
 
- 🌐 Moodle URL  : http://localhost:8000
- 👤 Usuario     : admin
- 🔑 Contraseña  : adminpass123
+ Moodle URL  : http://localhost:8000
+ Usuario     : admin
+ Contraseña  : adminpass123
 
- 👉 Pasos para probar el bloque en Moodle:
+ Pasos para probar el bloque en Moodle:
     1. Abre http://localhost:8000 e inicia sesión.
     2. Entra a un curso -> haz clic en 'Activar edición' (Turn editing on).
     3. Haz clic en 'Añadir un bloque' (Add a block) -> selecciona:
        - En inglés (idioma por defecto de Moodle): 'Git Knowledge Base Metrics'
        - En español: 'Métricas de Base de Conocimiento Git'
     4. Configura el bloque con el repo: https://github.com/julia8873/bdc-prueba
-==============================================================================
+------------------------------------------------------------------------------
 ```
 
 ---
