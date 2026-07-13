@@ -13,34 +13,73 @@ Plugin de bloque para Moodle que analiza un repositorio GitHub con estructura OK
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y corriendo
 - WSL (Windows Subsystem for Linux) con Ubuntu
-- Acceso a `http://localhost:8000` (Moodle), `http://localhost:8008` (Synapse), `http://localhost:8081` (Element)
+- Git clonado en: `/mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas`
 
 ---
 
-## Inicio rápido
+## Pasos para poner todo en marcha
+
+### PASO 1 — Levantar el entorno Docker
 
 ```bash
-# 1. Situarse en el directorio del proyecto
-cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas
-
-# 2. Levantar el entorno Docker
-cd moodle-matrix-dev
+cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
 docker compose up -d
+```
 
-# Esperar hasta ver: "** Moodle setup finished! **"
+### PASO 2 — Esperar a que Moodle arranque
+
+```bash
 docker compose logs -f moodle
+```
 
-# 3. Instalar el plugin de Moodle
+Espera hasta ver esta línea y pulsa **Ctrl+C**:
+
+```
+** Moodle setup finished! **
+```
+
+> La primera vez puede tardar 2-3 minutos.
+
+### PASO 3 — Copiar el plugin dentro del contenedor
+
+```bash
 docker cp \
   /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/gitmetrics \
   moodle-app:/bitnami/moodle/blocks/gitmetrics
+```
 
+### PASO 4 — Ajustar permisos
+
+```bash
 docker exec --user root moodle-app \
   chown -R daemon:daemon /bitnami/moodle/blocks/gitmetrics
 
-# 4. Activar el plugin en Moodle
-# Abre http://localhost:8000/admin/index.php → "Actualizar base de datos de Moodle ahora"
+docker exec --user root moodle-app \
+  chmod -R 755 /bitnami/moodle/blocks/gitmetrics
 ```
+
+### PASO 5 — Instalar el plugin en Moodle
+
+```bash
+docker exec --user daemon moodle-app \
+  php /bitnami/moodle/admin/cli/upgrade.php --non-interactive
+```
+
+Debes ver al final:
+
+```
+-->block_gitmetrics
+++ Success ...
+```
+
+### PASO 6 — Abrir Moodle y añadir el bloque
+
+1. Abre `http://localhost:8000`
+2. Inicia sesión: usuario `adminmoodle`, contraseña `test1234`
+3. Entra en un curso → **Activar edición** → **Añadir un bloque** → **Métricas de Base de Conocimiento Git**
+4. Haz clic en el engranaje del bloque → **Configurar**
+5. Pega la URL del repositorio: `https://github.com/julia8873/bdc-prueba`
+6. Guarda → las métricas aparecen automáticamente
 
 ---
 
@@ -57,6 +96,6 @@ docker exec --user root moodle-app \
 ## Documentación detallada
 
 - **Plugin `gitmetrics`** → [`gitmetrics/README.md`](./gitmetrics/README.md)
-  - Estructura del plugin, instalación paso a paso, comandos de diagnóstico y métricas calculadas
+  - Estructura del plugin, comandos de diagnóstico, métricas calculadas y opciones avanzadas
 - **Entorno Docker** → [`moodle-matrix-dev/README.md`](./moodle-matrix-dev/README.md)
-  - Configuración de Moodle + Matrix, Ollama y servicios adicionales
+  - Configuración de Matrix, Ollama y servicios adicionales
