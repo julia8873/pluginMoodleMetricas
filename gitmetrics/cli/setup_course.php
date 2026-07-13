@@ -95,6 +95,10 @@ $styles = '<style>
 </style>';
 
 $topics = [
+    0 => [
+        'name' => 'Panel General de Métricas de Base de Conocimiento',
+        'summary' => $renderer->render_fullpage_metrics($metrics)
+    ],
     1 => [
         'name' => 'Volumen y Tamaño de la Base de Conocimiento',
         'summary' => $styles . $renderer->render_volume($metrics['volume'])
