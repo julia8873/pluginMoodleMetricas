@@ -117,6 +117,9 @@ $topics = [
     ]
 ];
 
+require_once($CFG->dirroot . '/course/lib.php');
+course_create_sections_if_missing($course, [0, 1, 2, 3, 4]);
+
 foreach ($topics as $num => $data) {
     $sec = $DB->get_record('course_sections', ['course' => $course->id, 'section' => $num]);
     if ($sec) {
@@ -137,4 +140,6 @@ foreach ($topics as $num => $data) {
         $DB->insert_record('course_sections', $sec);
     }
 }
-echo "Los 4 temas de la asignatura se han poblado exitosamente con las métricas por categoría.\n";
+
+rebuild_course_cache($course->id, true);
+echo "Los temas de la asignatura se han poblado y la caché del curso se ha reconstruido con éxito.\n";
