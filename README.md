@@ -75,7 +75,7 @@ Debes ver al final:
 ### PASO 6 — Abrir Moodle y añadir el bloque
 
 1. Abre `http://localhost:8000`
-2. Inicia sesión: usuario `adminmoodle`, contraseña `test1234`
+2. Inicia sesión: usuario `admin`, contraseña `adminpass123`
 3. Entra en un curso → **Activar edición** → **Añadir un bloque** → **Métricas de Base de Conocimiento Git**
 4. Haz clic en el engranaje del bloque → **Configurar**
 5. Pega la URL del repositorio: `https://github.com/julia8873/bdc-prueba`
@@ -87,7 +87,7 @@ Debes ver al final:
 
 | Servicio | URL | Usuario | Contraseña |
 |---|---|---|---|
-| Moodle | `http://localhost:8000` | `adminmoodle` | `test1234` |
+| Moodle | `http://localhost:8000` | `admin` | `adminpass123` |
 | Element Web | `http://localhost:8081` | `admin` | `adminpass123` |
 | MariaDB | `localhost:3306` (solo interno) | `bn_moodle` | `moodle_db_pass` |
 

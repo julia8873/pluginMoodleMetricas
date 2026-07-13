@@ -42,7 +42,7 @@ gitmetrics/
 
 > Todos los comandos se ejecutan desde WSL.
 > Directorio de trabajo: `/mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev`
-> Moodle disponible en: `http://localhost:8000` — usuario: `adminmoodle` / contraseña: `test1234`
+> Moodle disponible en: `http://localhost:8000` — usuario: `admin` / contraseña: `adminpass123`
 
 ### PASO 1 — Arrancar el entorno Docker
 
@@ -81,7 +81,7 @@ docker exec --user root moodle-app \
 
 **Por navegador (recomendado):**
 
-Abre `http://localhost:8000/admin/index.php`, inicia sesión como `adminmoodle` y haz clic en **"Actualizar base de datos de Moodle ahora"**.
+Abre `http://localhost:8000/admin/index.php`, inicia sesión como `admin` y haz clic en **"Actualizar base de datos de Moodle ahora"**.
 
 **Por CLI:**
 
