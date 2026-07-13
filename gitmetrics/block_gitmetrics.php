@@ -79,8 +79,12 @@ class block_gitmetrics extends block_base {
                 $cache->set($repourl, $this->instance->id, $metrics);
             }
 
-            // ── 5. Renderizar ─────────────────────────────────────────────
-            $this->content->text = $renderer->render_metrics($metrics);
+            // ------------------------------------------------------------------
+            // 5. Renderizar
+            // ------------------------------------------------------------------
+            $courseid = isset($this->page->course->id) ? (int)$this->page->course->id : 1;
+            $blockid  = isset($this->instance->id) ? (int)$this->instance->id : 0;
+            $this->content->text = $renderer->render_metrics($metrics, $courseid, $blockid);
 
         } catch (\Exception $e) {
             $this->content->text = $renderer->render_error($e->getMessage());

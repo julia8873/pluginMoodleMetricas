@@ -42,7 +42,7 @@ echo "Moodle contenedor activo."
 # 3. Copiar el plugin gitmetrics dentro del contenedor
 echo ""
 echo "[3/5] Copiando el plugin 'gitmetrics' en Moodle..."
-docker cp "$PLUGIN_DIR" moodle-app:/bitnami/moodle/blocks/gitmetrics
+docker cp "$PLUGIN_DIR/." moodle-app:/bitnami/moodle/blocks/gitmetrics/
 
 # 4. Ajustar permisos del plugin
 echo ""

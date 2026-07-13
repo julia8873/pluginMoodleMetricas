@@ -13,6 +13,7 @@ gitmetrics/
 ├── settings.php                  Configuración global (admin): token, TTL caché, rama
 ├── edit_form.php                 Configuración por instancia: URL repo, rama, refresco
 ├── renderer.php                  Renderizador HTML con CSS inline
+├── view.php                      Página de informe en página completa (100% del ancho)
 ├── classes/
 │   ├── github_client.php         Cliente HTTP para GitHub API y raw.githubusercontent.com
 │   ├── markdown_parser.php       Parser de frontmatter YAML, enlaces y validación Markdown

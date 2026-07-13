@@ -10,19 +10,45 @@ defined('MOODLE_INTERNAL') || die();
  */
 class block_gitmetrics_renderer extends plugin_renderer_base {
 
-    // ═════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
     // Punto de entrada principal
-    // ═════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
 
-    public function render_metrics(array $m): string {
+    public function render_metrics(array $m, int $courseid = 1, int $blockid = 0): string {
         $html  = $this->styles();
         $html .= '<div class="gm-wrap">';
         $html .= $this->render_repo_header($m);
+
+        if ($blockid > 0) {
+            $fullpageurl = new moodle_url('/blocks/gitmetrics/view.php', ['courseid' => $courseid, 'blockid' => $blockid]);
+            $html .= '<div style="margin: 10px 0; text-align: center;">';
+            $html .= '<a href="' . $fullpageurl->out() . '" class="btn btn-primary btn-sm" style="width: 100%; font-weight: bold;">Ver en página completa &rarr;</a>';
+            $html .= '</div>';
+        }
+
         $html .= $this->render_volume($m['volume']);
         $html .= $this->render_network($m['network']);
         $html .= $this->render_tags($m['tags']);
         $html .= $this->render_format($m['format']);
         $html .= '<div class="gm-footer">'
+               . get_string('last_updated', 'block_gitmetrics') . ': '
+               . userdate($m['timestamp'])
+               . '</div>';
+        $html .= '</div>';
+        return $html;
+    }
+
+    public function render_fullpage_metrics(array $m): string {
+        $html  = $this->styles();
+        $html .= '<div class="gm-wrap gm-fullpage" style="font-size: 1.05em;">';
+        $html .= $this->render_repo_header($m);
+        $html .= '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-top: 15px;">';
+        $html .= '<div>' . $this->render_volume($m['volume']) . '</div>';
+        $html .= '<div>' . $this->render_network($m['network']) . '</div>';
+        $html .= '<div>' . $this->render_tags($m['tags']) . '</div>';
+        $html .= '<div>' . $this->render_format($m['format']) . '</div>';
+        $html .= '</div>';
+        $html .= '<div class="gm-footer" style="margin-top: 25px; text-align: right;">'
                . get_string('last_updated', 'block_gitmetrics') . ': '
                . userdate($m['timestamp'])
                . '</div>';
