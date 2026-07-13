@@ -41,13 +41,13 @@ gitmetrics/
 ## Instalación paso a paso
 
 > Todos los comandos se ejecutan desde WSL.
-> Directorio de trabajo: `/mnt/c/Users/julia/Desktop/PracticasCEPRUD/TutorialPluginMatrix/moodle-matrix-dev`
+> Directorio de trabajo: `/mnt/c/Users/julia/Desktop/PracticasCEPRUD/moodle-matrix-dev`
 > Moodle disponible en: `http://localhost:8000` — usuario: `admin` / contraseña: `adminpass123`
 
 ### PASO 1 — Arrancar el entorno Docker
 
 ```bash
-cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/TutorialPluginMatrix/moodle-matrix-dev
+cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/moodle-matrix-dev
 
 docker compose up -d
 
@@ -216,7 +216,7 @@ docker exec --user daemon moodle-app \
 ### Parar / reiniciar el entorno
 
 ```bash
-cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/TutorialPluginMatrix/moodle-matrix-dev
+cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/moodle-matrix-dev
 
 # Parar sin borrar datos
 docker compose down
