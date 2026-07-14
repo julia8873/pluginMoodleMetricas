@@ -4,8 +4,8 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Bloque principal: block_gitmetrics
  *
- * Analiza un repositorio GitHub público (o privado con token) con
- * estructura OKF y muestra las métricas cuantitativas de la Base
+ * Analiza un repositorio GitHub o GitLab (OSL / local / cloud) con
+ * estructura OKF y muestra las metricas cuantitativas de la Base
  * de Conocimiento en el bloque de Moodle.
  */
 class block_gitmetrics extends block_base {
@@ -39,10 +39,16 @@ class block_gitmetrics extends block_base {
 
         $renderer = $this->page->get_renderer('block_gitmetrics');
 
-        // ── 1. Obtener URL del repo desde la configuración de instancia ──
-        $repourl = !empty($this->config->github_url)
-            ? trim($this->config->github_url)
-            : '';
+        // ── 1. Obtener URL del repo y proveedor desde la config de instancia ──
+        // Nuevo campo unificado: config_repo_url
+        // Retrocompatibilidad con el antiguo campo config_github_url
+        $repourl  = !empty($this->config->repo_url)
+            ? trim($this->config->repo_url)
+            : (!empty($this->config->github_url) ? trim($this->config->github_url) : '');
+
+        $provider = !empty($this->config->provider)
+            ? trim($this->config->provider)
+            : (get_config('block_gitmetrics', 'default_provider') ?: 'github');
 
         if (empty($repourl)) {
             $this->content->text = $renderer->render_no_repo();
@@ -70,12 +76,17 @@ class block_gitmetrics extends block_base {
             $metrics = $cache->get($repourl, $this->instance->id);
 
             if ($metrics === null) {
-                // ── 4. Calcular métricas ──────────────────────────────────
-                $token      = get_config('block_gitmetrics', 'github_token') ?: '';
-                $calculator = new \block_gitmetrics\metrics_calculator($token);
+                // ── 4. Calcular metricas ──────────────────────────────────
+                if ($provider === 'gitlab') {
+                    $token      = get_config('block_gitmetrics', 'gitlab_token') ?: '';
+                    $gitlab_url = get_config('block_gitmetrics', 'gitlab_url') ?: 'https://gitlab.com';
+                } else {
+                    $token      = get_config('block_gitmetrics', 'github_token') ?: '';
+                    $gitlab_url = 'https://gitlab.com';
+                }
+                $calculator = new \block_gitmetrics\metrics_calculator($token, $provider, $gitlab_url);
                 $metrics    = $calculator->calculate($repourl, $branch);
 
-                $ttl = (int)(get_config('block_gitmetrics', 'cache_ttl') ?: 3600);
                 $cache->set($repourl, $this->instance->id, $metrics);
             }
 

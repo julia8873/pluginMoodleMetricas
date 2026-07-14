@@ -15,7 +15,7 @@ defined('MOODLE_INTERNAL') || die();
  *   - GET https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}
  *     → contenido raw de cada fichero Markdown.
  */
-class github_client {
+class github_client implements git_provider_interface {
 
     const API_BASE = 'https://api.github.com';
     const RAW_BASE = 'https://raw.githubusercontent.com';

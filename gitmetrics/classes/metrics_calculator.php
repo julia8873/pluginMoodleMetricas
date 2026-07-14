@@ -16,12 +16,57 @@ defined('MOODLE_INTERNAL') || die();
  */
 class metrics_calculator {
 
-    private github_client  $client;
+    /** @var git_provider_interface Cliente activo (GitHub o GitLab) */
+    private git_provider_interface $client;
     private markdown_parser $parser;
 
-    public function __construct(string $token = '') {
-        $this->client = new github_client($token);
+    /**
+     * @param string $token    Token del proveedor (GitHub PAT o GitLab PRIVATE-TOKEN).
+     * @param string $provider 'github' | 'gitlab'
+     * @param string $gitlab_url URL base del servidor GitLab (solo para proveedor gitlab).
+     *                           Ej: 'https://gitlab.osl.ugr.es' o 'http://localhost:8929'
+     */
+    public function __construct(string $token = '', string $provider = 'github', string $gitlab_url = 'https://gitlab.com') {
+        $this->client = self::make_client($provider, $token, $gitlab_url);
         $this->parser = new markdown_parser();
+    }
+
+    /**
+     * Factoria de clientes: devuelve el cliente correcto segun el proveedor.
+     * Tambien acepta una URL de repositorio para auto-detectar el proveedor.
+     *
+     * @param string $provider   'github', 'gitlab', o 'auto' (detecta por URL)
+     * @param string $token      Token de autenticacion
+     * @param string $gitlab_url URL base del servidor GitLab
+     * @param string $repo_url   URL del repositorio (necesario solo para 'auto')
+     */
+    public static function make_client(
+        string $provider,
+        string $token,
+        string $gitlab_url = 'https://gitlab.com',
+        string $repo_url = ''
+    ): git_provider_interface {
+        // Auto-deteccion por URL si el proveedor es 'auto'
+        if ($provider === 'auto' && !empty($repo_url)) {
+            if (strpos($repo_url, 'github.com') !== false) {
+                $provider = 'github';
+            } else {
+                $provider = 'gitlab';
+                // Extraer la URL base del servidor desde la URL del repo
+                $parts = parse_url($repo_url);
+                if (!empty($parts['host'])) {
+                    $gitlab_url = ($parts['scheme'] ?? 'https') . '://' . $parts['host'];
+                    if (!empty($parts['port'])) {
+                        $gitlab_url .= ':' . $parts['port'];
+                    }
+                }
+            }
+        }
+
+        if ($provider === 'gitlab') {
+            return new gitlab_client($gitlab_url, $token);
+        }
+        return new github_client($token);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -36,7 +81,7 @@ class metrics_calculator {
      * @return array  Todas las métricas agrupadas por categoría
      */
     public function calculate(string $repo_url, string $branch = 'main'): array {
-        [$owner, $repo] = $this->parse_github_url($repo_url);
+        [$owner, $repo] = $this->parse_repo_url($repo_url);
 
         // Intentar con la rama solicitada; si no existe, probar la alternativa
         $actual_branch = $branch;
@@ -405,11 +450,28 @@ class metrics_calculator {
      *         https://github.com/owner/repo.git
      *         https://github.com/owner/repo/
      */
-    private function parse_github_url(string $url): array {
+    /**
+     * Extrae owner y nombre del repo de cualquier URL Git (GitHub o GitLab).
+     *
+     * Formatos soportados:
+     *   - https://github.com/owner/repo
+     *   - https://github.com/owner/repo.git
+     *   - https://gitlab.com/owner/repo
+     *   - https://gitlab.osl.ugr.es/grupo/subgrupo/repo  (namespaces anidados de GitLab)
+     *   - http://localhost:8929/owner/repo
+     */
+    private function parse_repo_url(string $url): array {
         $url = rtrim(trim($url), '/');
         $url = preg_replace('/\.git$/i', '', $url);
 
+        // GitHub: host fijo
         if (preg_match('#^https?://github\.com/([^/]+)/([^/]+)$#i', $url, $m)) {
+            return [$m[1], $m[2]];
+        }
+
+        // GitLab: cualquier host, owner puede tener namespaces (grupo/subgrupo)
+        // Capturamos todo lo anterior al ultimo segmento como owner y el ultimo como repo
+        if (preg_match('#^https?://[^/]+/(.+)/([^/]+)$#i', $url, $m)) {
             return [$m[1], $m[2]];
         }
 

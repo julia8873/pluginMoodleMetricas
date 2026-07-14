@@ -1,6 +1,12 @@
 # block_gitmetrics
 
-Plugin de bloque para Moodle que analiza un repositorio GitHub con estructura OKF y muestra métricas cuantitativas de la Base de Conocimiento.
+Plugin de bloque para Moodle que analiza un repositorio Git (GitHub o GitLab) con estructura OKF y muestra metricas cuantitativas de la Base de Conocimiento.
+
+Compatible con:
+- **GitHub** (github.com)
+- **GitLab OSL** (servidor GitLab de la Oficina de Software Libre de tu universidad)
+- **GitLab local** (instancia GitLab corriendo en tu red o maquina)
+- **GitLab cloud** (gitlab.com)
 
 ---
 
@@ -8,25 +14,29 @@ Plugin de bloque para Moodle que analiza un repositorio GitHub con estructura OK
 
 ```
 gitmetrics/
-├── block_gitmetrics.php          Clase principal del bloque
-├── version.php                   Versión y compatibilidad
-├── settings.php                  Configuración global (admin): token, TTL caché, rama
-├── edit_form.php                 Configuración por instancia: URL repo, rama, refresco
-├── renderer.php                  Renderizador HTML con CSS inline
-├── view.php                      Página de informe en página completa (100% del ancho)
-├── classes/
-│   ├── github_client.php         Cliente HTTP para GitHub API y raw.githubusercontent.com
-│   ├── markdown_parser.php       Parser de frontmatter YAML, enlaces y validación Markdown
-│   ├── metrics_calculator.php    Cálculo de las 4 categorías de métricas
-│   └── metrics_cache.php         Caché de resultados en BD Moodle con TTL
-├── db/
-│   ├── access.php                Permisos/capabilities
-│   ├── install.xml               Esquema de base de datos (tabla de caché)
-│   ├── upgrade.php               Migraciones de versión
-│   └── events.php                Suscripción a eventos (vacío)
-└── lang/
-    ├── en/block_gitmetrics.php   Cadenas en inglés
-    └── es/block_gitmetrics.php   Cadenas en español
+- block_gitmetrics.php          Clase principal del bloque
+- version.php                   Version y compatibilidad
+- settings.php                  Configuracion global (admin): proveedor, tokens, URL GitLab, TTL cache, rama
+- edit_form.php                 Configuracion por instancia: proveedor, URL repo, rama, refresco
+- renderer.php                  Renderizador HTML con CSS inline
+- view.php                      Pagina de informe en pagina completa
+- lib.php                       Hook de navegacion de cursos
+- classes/
+-   git_provider_interface.php  Interfaz comun para proveedores Git
+-   github_client.php           Cliente HTTP para GitHub API (REST v3)
+-   gitlab_client.php           Cliente HTTP para GitLab API (REST v4)
+-   markdown_parser.php         Parser de frontmatter YAML, enlaces y validacion Markdown
+-   metrics_calculator.php      Calculo de las 4 categorias de metricas
+-   metrics_cache.php           Cache de resultados en BD Moodle con TTL
+- cli/
+-   setup_course.php            Script CLI para crear la asignatura Panel de Metricas
+- db/
+-   access.php                  Permisos/capabilities
+-   install.xml                 Esquema de base de datos (tabla de cache)
+-   upgrade.php                 Migraciones de version
+- lang/
+-   en/block_gitmetrics.php     Cadenas en ingles
+-   es/block_gitmetrics.php     Cadenas en espanol (si existe)
 ```
 
 ---
@@ -39,204 +49,156 @@ gitmetrics/
 
 ---
 
-## Instalación paso a paso
-
-> Todos los comandos se ejecutan desde WSL.
-> Directorio de trabajo: `/mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev`
-> Moodle disponible en: `http://localhost:8000` — usuario: `admin` / contraseña: `adminpass123`
-
-### PASO 1 — Arrancar el entorno Docker
+## Instalacion rapida (un solo comando)
 
 ```bash
-cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
-
-docker compose up -d
-
-# Seguir el arranque (tarda 2-3 min la primera vez)
-docker compose logs -f moodle
-# Espera hasta ver: "** Moodle setup finished! **" → Ctrl+C
+# Desde la carpeta del proyecto en WSL:
+./instalar.sh
 ```
 
-### PASO 2 — Copiar el plugin dentro del contenedor
-
-```bash
-docker cp \
-  /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/gitmetrics \
-  moodle-app:/bitnami/moodle/blocks/gitmetrics
-
-# Verificar
-docker exec moodle-app ls /bitnami/moodle/blocks/gitmetrics
+Al finalizar aparece:
 ```
-
-### PASO 3 — Ajustar permisos
-
-```bash
-docker exec --user root moodle-app \
-  chown -R daemon:daemon /bitnami/moodle/blocks/gitmetrics
-
-docker exec --user root moodle-app \
-  chmod -R 755 /bitnami/moodle/blocks/gitmetrics
-```
-
-### PASO 4 — Instalar el plugin en Moodle
-
-**Por navegador (recomendado):**
-
-Abre `http://localhost:8000/admin/index.php`, inicia sesión como `admin` y haz clic en **"Actualizar base de datos de Moodle ahora"**.
-
-**Por CLI:**
-
-```bash
-docker exec --user daemon moodle-app \
-  php /bitnami/moodle/admin/cli/upgrade.php --non-interactive
-```
-
-### PASO 5 — Verificar la tabla en la base de datos
-
-```bash
-docker exec moodle-mariadb \
-  mysql -u bn_moodle -pmoodle_db_pass bitnami_moodle \
-  -e "SHOW TABLES LIKE '%gitmetrics%';"
-```
-
-Resultado esperado: `mdl_block_gitmetrics_cache`
-
-### PASO 6 — Verificar en el panel de administración
-
-Abre `http://localhost:8000/admin/blocks.php` y comprueba que **"Métricas de Base de Conocimiento Git"** aparece como Activado.
-
-### PASO 7 — Añadir el bloque a un curso
-
-1. Abre un curso en `http://localhost:8000`
-2. Activa la edición → **"Activar edición"**
-3. Clic en **"Añadir un bloque"** → selecciona **"Métricas de Base de Conocimiento Git"**
-4. Haz clic en el **engranaje del bloque** → **"Configurar"**
-5. Pega la URL del repositorio, p. ej. `https://github.com/julia8873/bdc-prueba`
-6. Guarda → el bloque calculará y mostrará las métricas automáticamente
-
----
-
-## Comandos Extra
-
-### Configurar el token de GitHub API (aumentar rate-limit)
-
-Sin token la API permite 60 peticiones/hora por IP. Con un Personal Access Token sube a 5 000/hora.
-
-```bash
-# Por URL:
-# http://localhost:8000/admin/settings.php?section=blocksettinggitmetrics
-
-# Por CLI:
-docker exec moodle-mariadb \
-  mysql -u bn_moodle -pmoodle_db_pass bitnami_moodle \
-  -e "UPDATE mdl_config_plugins SET value='ghp_TuTokenAqui' \
-      WHERE plugin='block_gitmetrics' AND name='github_token';"
-
-docker exec --user daemon moodle-app \
-  php /bitnami/moodle/admin/cli/purge_caches.php
-```
-
-### Configurar el repositorio por instancia
-
-Desde el navegador: engranaje del bloque → **"Configurar bloque Métricas de Base de Conocimiento Git"** → campo **"URL del Repositorio GitHub"**.
-
-> **Nota:** Moodle elimina el prefijo `config_` al serializar los campos del formulario.
-> El campo `config_github_url` del formulario se guarda y lee como `$this->config->github_url`.
-
-Ver qué está guardado en la BD:
-
-```bash
-docker exec moodle-mariadb \
-  mysql -u bn_moodle -pmoodle_db_pass bitnami_moodle \
-  -e "SELECT id, blockname, configdata FROM mdl_block_instances WHERE blockname='gitmetrics';"
-```
-
-### Consultar la caché de métricas
-
-```bash
-docker exec moodle-mariadb \
-  mysql -u bn_moodle -pmoodle_db_pass bitnami_moodle \
-  -e "SELECT blockinstanceid, repo_url, FROM_UNIXTIME(timemodified) AS ultima_actualizacion
-      FROM mdl_block_gitmetrics_cache;"
-```
-
-### Forzar el recálculo de métricas
-
-**Opción 1 — Desde el formulario del bloque:**
-Engranaje → Configurar → marcar **"Forzar refresco de caché"** → Guardar.
-
-**Opción 2 — Desde la BD:**
-```bash
-# Sustituye ID por el id de la instancia del bloque
-docker exec moodle-mariadb \
-  mysql -u bn_moodle -pmoodle_db_pass bitnami_moodle \
-  -e "DELETE FROM mdl_block_gitmetrics_cache WHERE blockinstanceid=ID;"
-```
-
-### Ver como estudiante
-
-En el curso: avatar (arriba derecha) → **"Cambiar rol a..."** → **"Estudiante"**.
-Para volver: mismo menú → **"Volver a mi rol normal"**.
-
-### Limpiar caché
-
-```bash
-docker exec --user daemon moodle-app \
-  php /bitnami/moodle/admin/cli/purge_caches.php
-```
-
-### Ver logs de errores
-
-```bash
-docker compose logs -f moodle
-docker compose logs --tail=50 moodle
-```
-
-### Actualizar el plugin tras cambios en el código
-
-```bash
-# Copiar solo el archivo modificado (ejemplo: classes/metrics_calculator.php)
-docker cp \
-  /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/gitmetrics/classes/metrics_calculator.php \
-  moodle-app:/bitnami/moodle/blocks/gitmetrics/classes/metrics_calculator.php
-
-docker exec --user root moodle-app \
-  chown daemon:daemon /bitnami/moodle/blocks/gitmetrics/classes/metrics_calculator.php
-
-docker exec --user daemon moodle-app \
-  php /bitnami/moodle/admin/cli/purge_caches.php
-```
-
-### Desinstalar el plugin
-
-```bash
-docker exec --user daemon moodle-app \
-  php /bitnami/moodle/admin/cli/uninstall_plugins.php --plugins=block_gitmetrics --run
-```
-
-### Parar / reiniciar el entorno
-
-```bash
-cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
-
-# Parar sin borrar datos
-docker compose down
-
-# Reiniciar desde cero (borra todos los datos)
-docker compose down -v && docker compose up -d
+ Moodle URL  : http://localhost:8000
+ Usuario     : admin
+ Contrasena  : adminpass123
 ```
 
 ---
 
-## Visualización en Asignaturas y Página Completa (100% del ancho)
+## Eleccion del proveedor Git
 
-Hemos integrado el plugin para que actúe como elemento central en las asignaturas del profesor:
+El plugin soporta dos proveedores. Elige el que mejor se adapte a tu situacion:
 
-### 1. Asignatura dedicada: 'Panel de Métricas y BdC' (Creada automáticamente)
-Al ejecutar `./instalar.sh`, se crea automáticamente una asignatura dedicada llamada **Panel de Métricas y BdC** (ID 4) con el bloque preconfigurado para evaluar repositorios de GitHub.
-- **Cómo acceder**: Entra en `http://localhost:8000` -> abre la asignatura **Panel de Métricas y BdC**.
-- Puedes ver el resumen o pulsar en **Ver en página completa ->** para abrir el panel central a pantalla completa.
+| Proveedor | Cuando usarlo | URL de ejemplo |
+| :--- | :--- | :--- |
+| **GitHub** | Repositorio publico o privado en github.com | `https://github.com/owner/repo` |
+| **GitLab OSL** | Servidor GitLab de tu universidad (OSL) | `https://gitlab.osl.ugr.es/grupo/repo` |
+| **GitLab local** | GitLab en red interna o tu maquina | `http://localhost:8929/owner/repo` |
+| **GitLab cloud** | Proyecto en gitlab.com | `https://gitlab.com/owner/repo` |
 
-### 2. Pestaña superior en cualquier Asignatura (`extend_navigation_course`)
-Gracias al gancho de navegación en `gitmetrics/lib.php`, el plugin inyecta una pestaña en la barra superior de navegación secundaria de cualquier curso de Moodle.
-- **Cómo acceder**: Entra en cualquier asignatura -> en el menú superior de pestañas (*Curso | Configuración | Participantes | ...*) verás la pestaña **Métricas de Base de Conocimiento Git**. Al pulsarla, se abrirá el informe completo a pantalla completa para ese curso.
+---
+
+## Configuracion global (Administrador del sitio)
+
+Accede a **Administracion del sitio > Plugins > Bloques > Git Knowledge Base Metrics**
+
+### Paso 1 - Elegir proveedor por defecto
+
+En el campo **"Default Git provider"** elige:
+- `GitHub (github.com)` - para repositorios en GitHub
+- `GitLab (OSL / local / gitlab.com)` - para cualquier instancia GitLab
+
+### Paso 2 - Configurar GitHub (si usas GitHub)
+
+1. Ve a tu perfil en GitHub > **Settings > Developer settings > Personal access tokens**.
+2. Genera un token clasico con scope `repo` (o `public_repo` para repos publicos).
+3. Pega el token en el campo **"GitHub API Token"**.
+
+> Sin token: limite de 60 peticiones/hora por IP.
+> Con token: limite de 5000 peticiones/hora.
+
+### Paso 3 - Configurar GitLab (si usas GitLab OSL o local)
+
+1. En el campo **"GitLab server URL"** escribe la URL base de tu servidor:
+   - OSL universitaria: `https://gitlab.osl.ugr.es`
+   - Local: `http://localhost:8929`
+   - Cloud: `https://gitlab.com`
+2. En **"GitLab Access Token (PRIVATE-TOKEN)"**:
+   - Ve a tu instancia GitLab > **User Settings > Access Tokens**.
+   - Crea un token con scope `read_api`.
+   - Pega el token en el campo.
+
+> Para repositorios publicos en GitLab el token es opcional.
+
+---
+
+## Configuracion por bloque (Profesor)
+
+Cada instancia del bloque se puede configurar de forma independiente:
+
+1. Activa la edicion en el curso (**Activar edicion** arriba a la derecha).
+2. Haz clic en el engranaje/menu del bloque > **Configurar bloque**.
+3. Rellena:
+   - **Git provider** - elige GitHub o GitLab
+   - **Repository URL** - la URL completa del repositorio:
+     - GitHub: `https://github.com/usuario/repositorio`
+     - GitLab OSL: `https://gitlab.osl.ugr.es/grupo/repositorio`
+     - GitLab local: `http://localhost:8929/usuario/repositorio`
+   - **Branch** - rama a analizar (por defecto: `main`)
+4. Guarda.
+
+---
+
+## Opcion 1 - Asignatura dedicada "Panel de Metricas y BdC"
+
+Al ejecutar `./instalar.sh` se crea automaticamente una asignatura **"Panel de Metricas y BdC"** con 4 secciones:
+
+- **Volumen y Tamaño de la Base de Conocimiento**
+- **Red de Enlaces e Interconectividad Markdown**
+- **Taxonomia, Metadatos y Etiquetas YAML**
+- **Calidad Markdown y Elementos Estructurales**
+
+Para acceder:
+1. Entra a `http://localhost:8000`
+2. Inicia sesion con `admin` / `adminpass123`
+3. En **"Mis cursos"** haz clic en **"Panel de Metricas y BdC"**
+
+---
+
+## Opcion 2 - Pestana superior en cualquier asignatura
+
+Desde cualquier asignatura de Moodle:
+1. En la barra de navegacion superior veras la pestana **"Metricas de Base de Conocimiento Git"**.
+2. Haz clic para abrir la vista en pagina completa con los 4 acordeones de metricas.
+
+---
+
+## Diferencia entre Git, GitHub y GitLab
+
+| Concepto | Que es | Donde corre |
+| :--- | :--- | :--- |
+| **Git** | Motor de control de versiones (hace los commits, ramas, historial) | En tu maquina local (consola) |
+| **GitHub** | Plataforma en la nube para alojar repos Git. De Microsoft. | `github.com` (servidores externos) |
+| **GitLab** | Plataforma DevOps completa para alojar repos Git. Puede auto-alojarse. | `gitlab.com` o en servidores propios |
+| **GitLab OSL** | Instancia GitLab gestionada por la Oficina de Software Libre de la universidad. | Servidor interno de la universidad |
+
+### Ventajas de usar el GitLab de la OSL
+
+- **Soberania de datos**: el codigo y los contenidos no salen de los servidores de la universidad.
+- **Sin limites de rate**: la API local no tiene limites de peticiones por hora.
+- **Privacidad**: los proyectos academicos pueden ser privados sin depender de proveedores externos.
+- **Integracion con el entorno universitario**: autenticacion con SSO/LDAP institucional.
+
+---
+
+## Arquitectura interna del cliente Git
+
+```
+metrics_calculator
+       |
+       +-- make_client(provider, token, gitlab_url)
+              |
+              +-- github_client   (implements git_provider_interface)
+              |      API REST v3: api.github.com
+              |      Raw: raw.githubusercontent.com
+              |
+              +-- gitlab_client   (implements git_provider_interface)
+                     API REST v4: {gitlab_url}/api/v4/projects/{id}/repository/...
+                     Paginacion automatica (100 items/pagina)
+```
+
+---
+
+## Preguntas frecuentes
+
+**¿Funciona con repositorios privados?**
+Si. Configura el token correspondiente (GitHub PAT o GitLab PRIVATE-TOKEN) en los ajustes globales del plugin.
+
+**¿Puedo cambiar de GitHub a GitLab sin reinstalar el plugin?**
+Si. Simplemente cambia el proveedor en la configuracion global o por instancia de bloque.
+
+**¿Que pasa si el servidor GitLab local no tiene certificado SSL valido?**
+El plugin usa la clase `curl` de Moodle con `ignoresecurity => true` para permitir conexiones a servidores locales con certificados autofirmados.
+
+**¿Funciona con namespaces anidados de GitLab (grupo/subgrupo/repo)?**
+Si. El cliente GitLab extrae correctamente el namespace completo y el nombre del repositorio.

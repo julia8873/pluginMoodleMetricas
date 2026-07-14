@@ -2,26 +2,41 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Formulario de configuración por instancia del bloque.
- * El profesor puede introducir la URL del repositorio GitHub
- * que desea analizar, específicamente para su asignatura/curso.
+ * Formulario de configuracion por instancia del bloque.
+ * El profesor elige el proveedor (GitHub o GitLab) y pega la URL
+ * del repositorio que desea analizar en su asignatura o curso.
  */
 class block_gitmetrics_edit_form extends block_edit_form {
 
     protected function specific_definition($mform) {
 
-        // ── Sección principal ──────────────────────────────────────────────
+        // ── Seccion principal ──────────────────────────────────────────────
         $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
 
-        // URL del repositorio GitHub
+        // Proveedor Git
+        $mform->addElement(
+            'select',
+            'config_provider',
+            get_string('provider', 'block_gitmetrics'),
+            [
+                'github' => get_string('provider_github', 'block_gitmetrics'),
+                'gitlab' => get_string('provider_gitlab', 'block_gitmetrics'),
+            ]
+        );
+        $mform->setType('config_provider', PARAM_ALPHA);
+        $default_provider = get_config('block_gitmetrics', 'default_provider') ?: 'github';
+        $mform->setDefault('config_provider', $default_provider);
+        $mform->addHelpButton('config_provider', 'provider', 'block_gitmetrics');
+
+        // URL del repositorio (GitHub o GitLab)
         $mform->addElement(
             'text',
-            'config_github_url',
-            get_string('github_url', 'block_gitmetrics'),
-            ['size' => 60, 'placeholder' => 'https://github.com/usuario/repositorio']
+            'config_repo_url',
+            get_string('repo_url', 'block_gitmetrics'),
+            ['size' => 65, 'placeholder' => 'https://github.com/usuario/repositorio  o  https://gitlab.osl.ugr.es/grupo/repositorio']
         );
-        $mform->setType('config_github_url', PARAM_URL);
-        $mform->addHelpButton('config_github_url', 'github_url', 'block_gitmetrics');
+        $mform->setType('config_repo_url', PARAM_URL);
+        $mform->addHelpButton('config_repo_url', 'repo_url', 'block_gitmetrics');
 
         // Rama del repositorio (opcional, por defecto 'main')
         $mform->addElement(
@@ -33,7 +48,7 @@ class block_gitmetrics_edit_form extends block_edit_form {
         $mform->setType('config_branch', PARAM_ALPHANUMEXT);
         $mform->setDefault('config_branch', 'main');
 
-        // Forzar refresco de caché
+        // Forzar refresco de cache
         $mform->addElement(
             'advcheckbox',
             'config_force_refresh',
