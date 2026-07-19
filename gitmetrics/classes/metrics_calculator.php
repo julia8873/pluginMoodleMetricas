@@ -19,16 +19,22 @@ class metrics_calculator {
     /** @var git_provider_interface Cliente activo (GitHub o GitLab) */
     private git_provider_interface $client;
     private markdown_parser $parser;
+    private string $token;
+    private string $provider;
+    private string $gitlab_url;
 
     /**
      * @param string $token    Token del proveedor (GitHub PAT o GitLab PRIVATE-TOKEN).
-     * @param string $provider 'github' | 'gitlab'
+     * @param string $provider 'github' | 'gitlab' | 'auto'
      * @param string $gitlab_url URL base del servidor GitLab (solo para proveedor gitlab).
      *                           Ej: 'https://gitlab.osl.ugr.es' o 'http://localhost:8929'
      */
-    public function __construct(string $token = '', string $provider = 'github', string $gitlab_url = 'https://gitlab.com') {
-        $this->client = self::make_client($provider, $token, $gitlab_url);
-        $this->parser = new markdown_parser();
+    public function __construct(string $token = '', string $provider = 'auto', string $gitlab_url = 'https://gitlab.com') {
+        $this->token      = $token;
+        $this->provider   = $provider;
+        $this->gitlab_url = $gitlab_url;
+        $this->client     = self::make_client($provider, $token, $gitlab_url);
+        $this->parser     = new markdown_parser();
     }
 
     /**
@@ -81,6 +87,11 @@ class metrics_calculator {
      * @return array  Todas las métricas agrupadas por categoría
      */
     public function calculate(string $repo_url, string $branch = 'main'): array {
+        // Asegurar detección del proveedor según la URL al ejecutar el cálculo
+        if ($this->provider === 'auto' || str_contains($repo_url, 'gitlab') || str_contains($repo_url, 'github.com')) {
+            $this->client = self::make_client('auto', $this->token, $this->gitlab_url, $repo_url);
+        }
+
         [$owner, $repo] = $this->parse_repo_url($repo_url);
 
         // Intentar con la rama solicitada; si no existe, probar la alternativa

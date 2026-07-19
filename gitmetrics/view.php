@@ -77,7 +77,7 @@ if (empty($provider)) {
 }
 
 // Token y URL de GitLab segun el proveedor
-if ($provider === 'gitlab') {
+if ($provider === 'gitlab' || str_contains($repourl, 'gitlab')) {
     $token      = get_config('block_gitmetrics', 'gitlab_token') ?: '';
     $gitlab_url = get_config('block_gitmetrics', 'gitlab_url') ?: 'https://gitlab.com';
 } else {
