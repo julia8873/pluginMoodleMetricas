@@ -44,10 +44,10 @@ echo ""
 echo "[3/5] Copiando el plugin 'gitmetrics' en Moodle..."
 docker cp "$PLUGIN_DIR/." moodle-app:/bitnami/moodle/blocks/gitmetrics/
 
-# 4. Ajustar permisos del plugin
+# 4. Ajustar permisos del plugin y carpeta de datos
 echo ""
-echo "[4/5] Ajustando permisos del directorio en el contenedor..."
-docker exec --user root moodle-app chown -R daemon:daemon /bitnami/moodle/blocks/gitmetrics
+echo "[4/5] Ajustando permisos en el contenedor..."
+docker exec --user root moodle-app chown -R daemon:daemon /bitnami/moodle/blocks/gitmetrics /bitnami/moodledata
 docker exec --user root moodle-app chmod -R 755 /bitnami/moodle/blocks/gitmetrics
 
 # 5. Ejecutar la actualización de la base de datos de Moodle

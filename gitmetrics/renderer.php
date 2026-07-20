@@ -10,11 +10,54 @@ defined('MOODLE_INTERNAL') || die();
  */
 class block_gitmetrics_renderer extends plugin_renderer_base {
 
+    // Contexto del repositorio (se establece en render_metrics / render_fullpage_metrics)
+    private string $ctx_repo_url = '';
+    private string $ctx_branch   = 'main';
+    private string $ctx_provider = 'gitlab';
+    private int    $ctx_courseid = 1;
+    private int    $ctx_blockid  = 0;
+
+    private function set_repo_context(array $m, int $courseid, int $blockid): void {
+        $this->ctx_repo_url = $m['repo_url']  ?? '';
+        $this->ctx_branch   = $m['branch']    ?? 'main';
+        $this->ctx_provider = $m['provider']  ?? 'gitlab';
+        $this->ctx_courseid = $courseid;
+        $this->ctx_blockid  = $blockid;
+    }
+
+    /**
+     * Genera la URL del visor de archivo en vivo (view_file.php) para una ruta dada.
+     * Usa out() (ya devuelve &amp; HTML-safe). NO aplicar s() sobre este resultado:
+     * moodle_url::out() ya está preparado para usarse directamente en atributos HTML.
+     */
+    private function file_viewer_url(string $filepath): string {
+        return (new moodle_url('/blocks/gitmetrics/view_file.php', [
+            'courseid' => $this->ctx_courseid,
+            'blockid'  => $this->ctx_blockid,
+            'path'     => $filepath,
+            'repo_url' => $this->ctx_repo_url,
+            'branch'   => $this->ctx_branch,
+        ]))->out(); // out() ya devuelve &amp; — NO envolver con s()
+    }
+
+    /**
+     * Genera la URL directa al archivo en el servidor Git externo (GitLab / GitHub).
+     */
+    private function file_external_url(string $filepath): string {
+        $encoded = str_replace('%2F', '/', rawurlencode($filepath));
+        if (str_contains($this->ctx_repo_url, 'github.com')) {
+            return rtrim($this->ctx_repo_url, '/') . '/blob/' . rawurlencode($this->ctx_branch) . '/' . $encoded;
+        }
+        // GitLab
+        return rtrim($this->ctx_repo_url, '/') . '/-/blob/' . rawurlencode($this->ctx_branch) . '/' . $encoded;
+    }
+
     // -------------------------------------------------------------------------
     // Punto de entrada principal
     // -------------------------------------------------------------------------
 
     public function render_metrics(array $m, int $courseid = 1, int $blockid = 0): string {
+        $this->set_repo_context($m, $courseid, $blockid);
         $html  = $this->styles();
         $html .= '<div class="gm-wrap">';
         $html .= $this->render_repo_header($m);
@@ -38,7 +81,8 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
         return $html;
     }
 
-    public function render_fullpage_metrics(array $m): string {
+    public function render_fullpage_metrics(array $m, int $courseid = 1, int $blockid = 0): string {
+        $this->set_repo_context($m, $courseid, $blockid);
         $html  = $this->styles();
         $html .= '<div class="gm-wrap gm-fullpage" style="font-size: 1.05em;">';
         $html .= $this->render_repo_header($m);
@@ -358,13 +402,22 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
 
     private function files_table(array $files): string {
         $html  = '<table class="gm-table"><thead><tr>'
-               . '<th>Archivo</th><th>Tamaño</th><th>Palabras</th>'
+               . '<th>Archivo</th><th>Tamaño</th><th>Palabras</th><th></th>'
                . '</tr></thead><tbody>';
         foreach ($files as $f) {
+            $viewer_url   = $this->file_viewer_url($f['path']); // ya HTML-safe, NO usar s()
+            $external_url = $this->file_external_url($f['path']);
             $html .= '<tr>'
-                   . '<td><code>' . s($f['path']) . '</code></td>'
+                   . '<td>'
+                   .   '<a href="' . $viewer_url . '" class="gm-file-link" title="Ver archivo en Moodle">'
+                   .     '<code>' . s($f['path']) . '</code>'
+                   .   '</a>'
+                   . '</td>'
                    . '<td>' . $this->fmt_bytes($f['size_bytes']) . '</td>'
                    . '<td>' . number_format($f['word_count']) . '</td>'
+                   . '<td style="white-space:nowrap">'
+                   .   '<a href="' . s($external_url) . '" target="_blank" rel="noopener" class="gm-ext-link" title="Ver en repositorio externo">↗</a>'
+                   . '</td>'
                    . '</tr>';
         }
         $html .= '</tbody></table>';
@@ -373,17 +426,26 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
 
     private function connectivity_table(array $detail): string {
         $html  = '<table class="gm-table"><thead><tr>'
-               . '<th>Archivo</th><th>Salientes</th><th>Entrantes</th><th>Estado</th>'
+               . '<th>Archivo</th><th>Salientes</th><th>Entrantes</th><th>Estado</th><th></th>'
                . '</tr></thead><tbody>';
         foreach ($detail as $d) {
             $status = $d['is_orphan']
                 ? '<span class="gm-badge gm-badge-missing">Huérfano</span>'
                 : '<span class="gm-badge gm-badge-ok">Conectado</span>';
+            $viewer_url   = $this->file_viewer_url($d['path']); // ya HTML-safe, NO usar s()
+            $external_url = $this->file_external_url($d['path']);
             $html .= '<tr>'
-                   . '<td><code>' . s($d['path']) . '</code></td>'
+                   . '<td>'
+                   .   '<a href="' . $viewer_url . '" class="gm-file-link" title="Ver archivo en Moodle">'
+                   .     '<code>' . s($d['path']) . '</code>'
+                   .   '</a>'
+                   . '</td>'
                    . '<td>' . $d['outgoing'] . '</td>'
                    . '<td>' . ($d['has_incoming'] ? '✓' : '—') . '</td>'
                    . '<td>' . $status . '</td>'
+                   . '<td style="white-space:nowrap">'
+                   .   '<a href="' . s($external_url) . '" target="_blank" rel="noopener" class="gm-ext-link" title="Ver en repositorio externo">↗</a>'
+                   . '</td>'
                    . '</tr>';
         }
         $html .= '</tbody></table>';
@@ -527,6 +589,24 @@ details[open] .gm-topic-header::before { content: '▼ '; }
 .gm-table td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
 .gm-table tr:hover td { background: #f8fafc; }
 .gm-table code { font-size: 10px; background: #f1f5f9; border-radius: 3px; padding: 1px 4px; word-break: break-all; }
+
+/* Enlace de archivo en tabla (visor integrado) */
+.gm-file-link { text-decoration: none; color: inherit; }
+.gm-file-link:hover code { background: #dbeafe; color: #1e40af; }
+
+/* Icono de enlace externo ↗ */
+.gm-ext-link {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background .15s;
+}
+.gm-ext-link:hover { background: #2563eb; color: #fff; text-decoration: none; }
 
 /* Lista de errores */
 .gm-error-list { margin: 4px 0; padding-left: 18px; font-size: 11px; color: #7c3aed; }

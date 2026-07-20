@@ -1,204 +1,132 @@
-# block_gitmetrics
+# block_gitmetrics — Plugin de Moodle para Evaluación de Bases de Conocimiento Git y OKF
 
-Plugin de bloque para Moodle que analiza un repositorio Git (GitHub o GitLab) con estructura OKF y muestra metricas cuantitativas de la Base de Conocimiento.
+`block_gitmetrics` es un plugin oficial de bloque para Moodle 4.2+ que conecta cualquier asignatura o el entorno escolar completo con repositorios externos de **GitHub** o **GitLab** organizados bajo el **Open Knowledge Framework (OKF)**.
 
-Compatible con:
-- **GitHub** (github.com)
-- **GitLab OSL** (servidor GitLab de la Oficina de Software Libre de tu universidad)
-- **GitLab local** (instancia GitLab corriendo en tu red o maquina)
-- **GitLab cloud** (gitlab.com)
+Proporciona un cuadro de mando estadístico de la base de conocimiento y un explorador de documentos interactivo con visor en memoria RAM (sin almacenamiento local en disco) que transforma apuntes Markdown y fichas YAML en recursos educativos navegables dentro de Moodle.
 
 ---
 
-## Estructura del plugin
+## 🏗️ Estructura del Plugin y Explicación de Ficheros
 
-```
+Cada fichero del plugin tiene una función específica orientada al rendimiento, modularidad y compatibilidad con las APIs de Moodle:
+
+```text
 gitmetrics/
-- block_gitmetrics.php          Clase principal del bloque
-- version.php                   Version y compatibilidad
-- settings.php                  Configuracion global (admin): proveedor, tokens, URL GitLab, TTL cache, rama
-- edit_form.php                 Configuracion por instancia: proveedor, URL repo, rama, refresco
-- renderer.php                  Renderizador HTML con CSS inline
-- view.php                      Pagina de informe en pagina completa
-- lib.php                       Hook de navegacion de cursos
-- classes/
--   git_provider_interface.php  Interfaz comun para proveedores Git
--   github_client.php           Cliente HTTP para GitHub API (REST v3)
--   gitlab_client.php           Cliente HTTP para GitLab API (REST v4)
--   markdown_parser.php         Parser de frontmatter YAML, enlaces y validacion Markdown
--   metrics_calculator.php      Calculo de las 4 categorias de metricas
--   metrics_cache.php           Cache de resultados en BD Moodle con TTL
-- cli/
--   setup_course.php            Script CLI para crear la asignatura Panel de Metricas
-- db/
--   access.php                  Permisos/capabilities
--   install.xml                 Esquema de base de datos (tabla de cache)
--   upgrade.php                 Migraciones de version
-- lang/
--   en/block_gitmetrics.php     Cadenas en ingles
--   es/block_gitmetrics.php     Cadenas en espanol (si existe)
+├── block_gitmetrics.php          Clase principal del bloque Moodle (`block_base`). Gestiona la instancia, la lectura del proveedor de configuración, invocación del caché/calculador y el renderizado final en bloque o pantalla.
+├── version.php                   Declaración de versión (`$plugin->version`), requisitos de Moodle (`requires = 2022041900`) y madurez (`MATURITY_STABLE`).
+├── settings.php                  Ajustes globales del administrador (Administración > Plugins > Bloques > Git Knowledge Base Metrics): proveedor por defecto, tokens API (GitHub/GitLab), URL servidor GitLab, TTL del caché y rama por defecto.
+├── edit_form.php                 Formulario de configuración por instancia (`block_edit_form`). Permite al profesor sobrescribir en una asignatura concreta la URL del repo, proveedor y rama, o forzar la actualización del caché.
+├── renderer.php                  Motor de visualización Moodle (`plugin_renderer_base`). Genera el HTML/CSS para las 4 secciones cuantitativas (Volumen, Red de Enlaces, Taxonomía, Calidad Markdown) y tarjetas estadísticas.
+├── view.php                      Página central de informe a pantalla completa (`/blocks/gitmetrics/view.php`). Accesible vía pestaña superior o enlace principal, muestra los acordeones de métricas aprovechando el 100% del ancho del curso.
+├── view_file.php                 Visor en vivo de ficheros Markdown (`/blocks/gitmetrics/view_file.php`). Descarga en memoria RAM el contenido raw vía API, parsea frontmatter YAML mostrando una ficha estructurada de metadatos, resuelve enlaces `[[wiki-links]]` hacia URLs internas de Moodle y renderiza el cuerpo con `format_text()`.
+├── lib.php                       Biblioteca auxiliar del plugin. Implementa el gancho `block_gitmetrics_extend_navigation_course` que añade la pestaña de métricas en la barra superior de las asignaturas.
+├── classes/                      Lógica de negocio orientada a objetos (Autocargable por Moodle):
+│   ├── git_provider_interface.php  Interfaz `git_provider_interface` que estandariza los métodos (`get_repo_info`, `get_tree`, `get_file_content`) para cualquier proveedor Git.
+│   ├── github_client.php           Implementación de cliente HTTP para la API REST v3 de GitHub utilizando `curl` nativo de Moodle.
+│   ├── gitlab_client.php           Implementación de cliente HTTP para la API REST v4 de GitLab con paginación automática (100 ítems/página) y soporte de SSL autofirmado (`ignoresecurity`).
+│   ├── markdown_parser.php         Analizador sintáctico que extrae frontmatter YAML, detecta enlaces `[[wiki-links]]`, calcula densidades de grafo, identifica notas huérfanas y mide elementos estructurales (LaTeX, tablas, headers, code blocks).
+│   ├── metrics_calculator.php      Orquestador que descarga el árbol completo del repositorio y ejecuta los análisis cuantitativos divididos en las 4 categorías clave.
+│   └── metrics_cache.php           Gestor de persistencia temporal en base de datos (`mdl_block_gitmetrics_cache`) que almacena los resultados serializados para evitar llamadas repetidas a las APIs externas según el TTL configurado.
+├── cli/                          Herramientas de automatización por línea de comandos:
+│   └── setup_course.php            Script CLI que crea/actualiza la asignatura dedicada "Panel de Métricas y BdC" (ID: 4), matricula al usuario `admin` como docente y puebla las 5 secciones (`Acceso a Documentos` + 4 categorías de métricas).
+├── db/                           Esquemas y permisos de Moodle:
+│   ├── access.php                  Definición de capacidades (`block/gitmetrics:addinstance`, `block/gitmetrics:myaddinstance`, `block/gitmetrics:viewmetrics`).
+│   ├── install.xml                 Esquema XMLDB que define la tabla `mdl_block_gitmetrics_cache` para persistencia de cálculos.
+│   └── upgrade.php                 Controlador de migraciones de base de datos entre versiones del plugin.
+└── lang/                         Paquetes de internacionalización (i18n):
+    ├── en/block_gitmetrics.php     Cadenas en idioma inglés (idioma por defecto del core).
+    └── es/block_gitmetrics.php     Cadenas traducidas al español.
 ```
 
 ---
 
-## Requisitos
+## 🚀 Instalación y Puesta en Marcha
 
-- Moodle 4.2 o superior (`requires = 2022041900`)
-- Entorno Docker con `moodle-matrix-dev` levantado
-- WSL con Docker instalado
-
----
-
-## Instalacion rapida (un solo comando)
+Para una instalación limpia en tu entorno de desarrollo local con Docker, ejecuta el guion automatizado desde la raíz del proyecto en WSL:
 
 ```bash
-# Desde la carpeta del proyecto en WSL:
+cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas
 ./instalar.sh
 ```
 
-Al finalizar aparece:
-```
- Moodle URL  : http://localhost:8000
- Usuario     : admin
- Contrasena  : adminpass123
-```
+### Proceso Interno de Instalación (`instalar.sh`)
+1. **Inicio de Contenedores**: Llama a `docker compose up -d` en `moodle-matrix-dev/` para arrancar Moodle, MariaDB, Synapse y Element.
+2. **Sondeo de Disponibilidad**: Realiza comprobaciones periódicas contra PHP (`docker exec moodle-app php -r "echo 'OK';"`) hasta que la base de datos y el servidor web están inicializados.
+3. **Inyección del Plugin**: Copia el directorio `gitmetrics/` en la ruta `/bitnami/moodle/blocks/gitmetrics/` del contenedor principal.
+4. **Permisos Daemon**: Asigna la propiedad recursiva a `daemon:daemon` (usuario de Apache/PHP en Bitnami) para que Moodle pueda procesar el código sin errores de lectura.
+5. **Registro SQL (`upgrade.php`)**: Ejecuta el actualizador de Moodle en modo no interactivo para crear la tabla de caché (`mdl_block_gitmetrics_cache`) y registrar el bloque en el sistema.
+6. **Creación del Curso Dedicado (`setup_course.php`)**: Ejecuta el script CLI que construye el curso centralizado, inyecta el árbol de carpetas con buscador instantáneo en el Tema 0 y calcula las métricas para los Temas 1-4.
 
 ---
 
-## Eleccion del proveedor Git
+## 🛠️ Guía Paso a Paso de Uso en Moodle
 
-El plugin soporta dos proveedores. Elige el que mejor se adapte a tu situacion:
+### 1. Acceder al Panel General
+Al finalizar `./instalar.sh`, accede a Moodle desde tu navegador:
+- **URL**: `http://localhost:8000`
+- **Usuario**: `admin`
+- **Contraseña**: `adminpass123`
 
-| Proveedor | Cuando usarlo | URL de ejemplo |
-| :--- | :--- | :--- |
-| **GitHub** | Repositorio publico o privado en github.com | `https://github.com/owner/repo` |
-| **GitLab OSL** | Servidor GitLab de tu universidad (OSL) | `https://gitlab.osl.ugr.es/grupo/repo` |
-| **GitLab local** | GitLab en red interna o tu maquina | `http://localhost:8929/owner/repo` |
-| **GitLab cloud** | Proyecto en gitlab.com | `https://gitlab.com/owner/repo` |
-
----
-
-## Configuracion global (Administrador del sitio)
-
-Accede a **Administracion del sitio > Plugins > Bloques > Git Knowledge Base Metrics**
-
-### Paso 1 - Elegir proveedor por defecto
-
-En el campo **"Default Git provider"** elige:
-- `GitHub (github.com)` - para repositorios en GitHub
-- `GitLab (OSL / local / gitlab.com)` - para cualquier instancia GitLab
-
-### Paso 2 - Configurar GitHub (si usas GitHub)
-
-1. Ve a tu perfil en GitHub > **Settings > Developer settings > Personal access tokens**.
-2. Genera un token clasico con scope `repo` (o `public_repo` para repos publicos).
-3. Pega el token en el campo **"GitHub API Token"**.
-
-> Sin token: limite de 60 peticiones/hora por IP.
-> Con token: limite de 5000 peticiones/hora.
-
-### Paso 3 - Configurar GitLab (si usas GitLab OSL o local)
-
-1. En el campo **"GitLab server URL"** escribe la URL base de tu servidor:
-   - OSL universitaria: `https://gitlab.osl.ugr.es`
-   - Local: `http://localhost:8929`
-   - Cloud: `https://gitlab.com`
-2. En **"GitLab Access Token (PRIVATE-TOKEN)"**:
-   - Ve a tu instancia GitLab > **User Settings > Access Tokens**.
-   - Crea un token con scope `read_api`.
-   - Pega el token en el campo.
-
-> Para repositorios publicos en GitLab el token es opcional.
+En la pantalla principal (`Mis cursos`) verás la tarjeta del curso **`Panel de Métricas y BdC`**. Haz clic para entrar.
 
 ---
 
-## Configuracion por bloque (Profesor)
+### 2. Explorar y Buscar Documentos Markdown (Sección 0)
+En el primer apartado del curso se carga dinámicamente la sección **`📂 Acceso a Documentos de la Base de Conocimiento`**:
 
-Cada instancia del bloque se puede configurar de forma independiente:
-
-1. Activa la edicion en el curso (**Activar edicion** arriba a la derecha).
-2. Haz clic en el engranaje/menu del bloque > **Configurar bloque**.
-3. Rellena:
-   - **Git provider** - elige GitHub o GitLab
-   - **Repository URL** - la URL completa del repositorio:
-     - GitHub: `https://github.com/usuario/repositorio`
-     - GitLab OSL: `https://gitlab.osl.ugr.es/grupo/repositorio`
-     - GitLab local: `http://localhost:8929/usuario/repositorio`
-   - **Branch** - rama a analizar (por defecto: `main`)
-4. Guarda.
+- **Navegación por Carpetas Colapsables (`<details>`)**: Las rutas del repositorio git remoto (por ejemplo `okf/concepts`, `okf/entities`) se agrupan en acordeones colapsables. Haz clic sobre el nombre de la carpeta (o la flecha `▼`) para desplegar u ocultar los archivos que contiene.
+- **Filtrado en Tiempo Real mediante la Barra de Búsqueda**:
+  - En el campo **`🔍 Buscar documento por nombre, ruta o carpeta...`**, escribe cualquier término (ej. `lema-de-gronwall`, `ecuacion`, `concepts`).
+  - El buscador oculta al instante las filas que no coinciden con tu consulta y abre automáticamente las carpetas donde haya aciertos.
+  - El contador azul inferior te indicará en todo momento: `✅ Encontrados X archivos coincidentes` o `❌ No se encontraron archivos coincidentes con '...'`.
+  - Haz clic en el botón **`✕`** dentro de la barra para limpiar tu búsqueda y restaurar la vista original.
+- **Botones Globales de Expansión/Compresión**:
+  - **`➕ Abrir todas`**: Despliega todas las carpetas colapsables de golpe para visualizar el listado general del repositorio en la misma pantalla.
+  - **`➖ Cerrar todas`**: Colapsa todas las carpetas para dejar visible únicamente los títulos principales de los directorios.
 
 ---
 
-## Opcion 1 - Asignatura dedicada "Panel de Metricas y BdC"
+### 3. Visualizar Ficheros con Metadatos YAML y Wiki-links
+Haz clic en el enlace de cualquier documento (icono `📄`) o en el botón externo `↗`:
 
-Al ejecutar `./instalar.sh` se crea automaticamente una asignatura **"Panel de Metricas y BdC"** con 4 secciones:
-
-- **Volumen y Tamaño de la Base de Conocimiento**
-- **Red de Enlaces e Interconectividad Markdown**
-- **Taxonomia, Metadatos y Etiquetas YAML**
-- **Calidad Markdown y Elementos Estructurales**
-
-Para acceder:
-1. Entra a `http://localhost:8000`
-2. Inicia sesion con `admin` / `adminpass123`
-3. En **"Mis cursos"** haz clic en **"Panel de Metricas y BdC"**
+- **Apertura Interna (`view_file.php`)**: Al hacer clic sobre el nombre del fichero, se abre la vista enriquecida en Moodle.
+  - **Ficha YAML (Frontmatter)**: Si el fichero tiene metadatos en su cabecera (entre `---`), verás una tarjeta visual de color azulado y púrpura con el **Título**, **Descripción**, **Recursos** y pastillas estilizadas con las **Etiquetas (`tags`)**.
+  - **Soporte de `[[wiki-links]]`**: Los enlaces en corchetes dobles de estilo Obsidian se convierten automáticamente en links internos que apuntan al documento de destino dentro de la propia plataforma Moodle.
+  - **Cero Disco**: El archivo no se descarga como adjunto ni se guarda en Moodle; se renderiza al vuelo desde la memoria RAM.
+- **Apertura Externa (`↗`)**: Cada fila dispone del botón `↗` para abrir el fichero directamente en la interfaz de GitLab o GitHub en una pestaña nueva del navegador.
 
 ---
 
-## Opcion 2 - Pestana superior en cualquier asignatura
-
-Desde cualquier asignatura de Moodle:
-1. En la barra de navegacion superior veras la pestana **"Metricas de Base de Conocimiento Git"**.
-2. Haz clic para abrir la vista en pagina completa con los 4 acordeones de metricas.
-
----
-
-## Diferencia entre Git, GitHub y GitLab
-
-| Concepto | Que es | Donde corre |
-| :--- | :--- | :--- |
-| **Git** | Motor de control de versiones (hace los commits, ramas, historial) | En tu maquina local (consola) |
-| **GitHub** | Plataforma en la nube para alojar repos Git. De Microsoft. | `github.com` (servidores externos) |
-| **GitLab** | Plataforma DevOps completa para alojar repos Git. Puede auto-alojarse. | `gitlab.com` o en servidores propios |
-| **GitLab OSL** | Instancia GitLab gestionada por la Oficina de Software Libre de la universidad. | Servidor interno de la universidad |
-
-### Ventajas de usar el GitLab de la OSL
-
-- **Soberania de datos**: el codigo y los contenidos no salen de los servidores de la universidad.
-- **Sin limites de rate**: la API local no tiene limites de peticiones por hora.
-- **Privacidad**: los proyectos academicos pueden ser privados sin depender de proveedores externos.
-- **Integracion con el entorno universitario**: autenticacion con SSO/LDAP institucional.
+### 4. Analizar el Cuadro de Mando Cuantitativo (Secciones 1 a 4)
+Justo debajo del explorador de documentos verás los 4 grandes bloques cuantitativos calculados sobre el repositorio:
+1. **Volumen y Tamaño**: Estadísticas generales (total `.md`, profundidad de árbol, promedio de palabras) y control de ficheros estructurales de OKF (`README.md`, `SUMMARY.md`, etc.).
+2. **Red de Enlaces**: Análisis del grafo con recuento de conexiones, índice de densidad, porcentaje de interconectividad y **tasa de notas huérfanas** (documentos aislados).
+3. **Taxonomía YAML**: Nube de palabras de etiquetas (`tags`) con su frecuencia e índice de adopción de frontmatter en los apuntes del repositorio.
+4. **Calidad y Estructura**: Frecuencia media y total por archivo de elementos avanzados: fórmulas matemáticas LaTeX (`$$`), tablas Markdown, bloques de código, encabezados (`H1-H6`) y citas.
 
 ---
 
-## Arquitectura interna del cliente Git
+### 5. Añadir el Bloque o Pestaña en Otras Asignaturas
+El plugin es flexible y se puede asociar a cualquier otra asignatura o curso de tu plataforma:
+- **Opción Pestaña Superior**: Al entrar en cualquier curso, haz clic en la pestaña superior **`Métricas de Base de Conocimiento Git`** en la barra de navegación del docente.
+- **Opción Bloque Lateral**: En cualquier curso, activa la edición -> **Añadir un bloque** -> selecciona **Métricas de Base de Conocimiento Git** (`Git Knowledge Base Metrics`) y entra en **Configurar bloque** para asociarle la URL del repositorio Git deseado.
 
-```
-metrics_calculator
-       |
-       +-- make_client(provider, token, gitlab_url)
-              |
-              +-- github_client   (implements git_provider_interface)
-              |      API REST v3: api.github.com
-              |      Raw: raw.githubusercontent.com
-              |
-              +-- gitlab_client   (implements git_provider_interface)
-                     API REST v4: {gitlab_url}/api/v4/projects/{id}/repository/...
-                     Paginacion automatica (100 items/pagina)
+---
+
+## ⚙️ Arquitectura Técnica y Caché
+
+### Interfaz Única de Proveedores (`git_provider_interface`)
+El sistema está diseñado de forma modular para que los clientes de GitHub y GitLab compartan la misma interfaz:
+```php
+interface git_provider_interface {
+    public function get_repo_info(string $owner, string $repo): array;
+    public function get_tree(string $owner, string $repo, string $branch = 'main'): array;
+    public function get_file_content(string $owner, string $repo, string $filepath, string $branch = 'main'): string;
+}
 ```
 
----
-
-## Preguntas frecuentes
-
-**¿Funciona con repositorios privados?**
-Si. Configura el token correspondiente (GitHub PAT o GitLab PRIVATE-TOKEN) en los ajustes globales del plugin.
-
-**¿Puedo cambiar de GitHub a GitLab sin reinstalar el plugin?**
-Si. Simplemente cambia el proveedor en la configuracion global o por instancia de bloque.
-
-**¿Que pasa si el servidor GitLab local no tiene certificado SSL valido?**
-El plugin usa la clase `curl` de Moodle con `ignoresecurity => true` para permitir conexiones a servidores locales con certificados autofirmados.
-
-**¿Funciona con namespaces anidados de GitLab (grupo/subgrupo/repo)?**
-Si. El cliente GitLab extrae correctamente el namespace completo y el nombre del repositorio.
+### Sistema de Caché en Base de Datos (`metrics_cache`)
+Para no sobrecargar los servidores Git externos ni alcanzar los límites de peticiones por hora (Rate Limit):
+- Las métricas calculadas y la estructura se guardan en formato JSON dentro de la tabla de Moodle `mdl_block_gitmetrics_cache`.
+- El Tiempo de Vida (TTL) predeterminado es de **1 hora** (configurable desde Ajustes Globales).
+- El docente puede solicitar un cálculo inmediato marcando la casilla **`Forzar actualización de métricas`** (`force_refresh`) en la configuración del bloque.
