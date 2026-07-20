@@ -11,11 +11,9 @@ Entorno integral de Moodle (`block_gitmetrics`) y comunicación colaborativa que
 3. [Guía de Instalación Paso a Paso](#3-guía-de-instalación-paso-a-paso)
    - [Opción A: Instalación Automática (Recomendada)](#opción-a-instalación-automática-recomendada)
    - [Opción B: Instalación Manual Paso a Paso](#opción-b-instalación-manual-paso-a-paso)
-4. [Guía de Uso en Moodle y Exploración de Documentos](#4-guía-de-uso-en-moodle-y-exploración-de-documentos)
+4. [Guía de Uso y Resumen de las Secciones de Métricas](#4-guía-de-uso-y-resumen-de-las-secciones-de-métricas)
    - [Acceso al Curso Dedicado: Panel de Métricas y BdC](#acceso-al-curso-dedicado-panel-de-métricas-y-bdc)
-   - [Explorador de Documentos y Buscador Instantáneo](#explorador-de-documentos-y-buscador-instantáneo)
-   - [Visor Markdown en Vivo con Metadatos YAML y Wiki-links](#visor-markdown-en-vivo-con-metadatos-yaml-y-wiki-links)
-   - [Secciones Cuantitativas y Pestañas en Asignaturas](#secciones-cuantitativas-y-pestañas-en-asignaturas)
+   - [Integración con otras Asignaturas en Moodle](#integración-con-otras-asignaturas-en-moodle)
 5. [Guía de Apertura e Integración con Matrix y el Bot de GitHub](#5-guía-de-apertura-e-integración-con-matrix-y-el-bot-de-github)
    - [Apertura de Element Web (Matrix) y Synapse](#apertura-de-element-web-matrix-y-synapse)
    - [Paso 1: Crear la Cuenta de Administrador en Matrix](#paso-1-crear-la-cuenta-de-administrador-en-matrix)
@@ -87,27 +85,31 @@ El script inicia los servicios Docker, espera al servidor web, instala `block_gi
 
 ---
 
-## 4. Guía de Uso en Moodle y Exploración de Documentos
+## 4. Guía de Uso y Resumen de las Secciones de Métricas
 
 ### Acceso al Curso Dedicado: Panel de Métricas y BdC
-Abre `http://localhost:8000` e inicia sesión con `admin` / `adminpass123`. Accede a la tarjeta de curso **Panel de Métricas y BdC**.
+Al finalizar la instalación, entra a `http://localhost:8000` con `admin` / `adminpass123` y haz clic en la tarjeta del curso **Panel de Métricas y BdC**. La asignatura está organizada en 5 secciones que proporcionan el siguiente análisis:
 
-### Explorador de Documentos y Buscador Instantáneo
-En la sección **`📂 Acceso a Documentos`** de la asignatura:
-- **Carpetas Colapsables (`<details>`)**: Los directorios del repositorio (ej. `okf/concepts`, `okf/entities`) se presentan organizados en carpetas desplegables para no abrumar la vista.
-- **Buscador en Tiempo Real**: Escribe en la barra de búsqueda `🔍` términos o guiones exactos (`lema-de-gronwall`, `ecuacion`, `concepts`). Las filas no coincidentes se ocultan inmediatamente y se abren solo las carpetas con resultados.
-- **Botones `➕ Abrir todas` / `➖ Cerrar todas`**: Controla con un clic la expansión global de toda la jerarquía de ficheros del repositorio remoto.
+- **`Sección 0: 📂 Acceso a Documentos`**
+  Proporciona un explorador jerárquico de carpetas y un visor integrado en memoria RAM para consultar apuntes Markdown, metadatos YAML y enlaces internos al estilo Obsidian (`[[wiki-links]]`) directamente en Moodle, sin duplicar ni almacenar archivos físicos en el servidor.
 
-### Visor Markdown en Vivo con Metadatos YAML y Wiki-links
-Al hacer clic sobre cualquier fichero del explorador o sobre el botón `↗`:
-- **Lectura en Memoria RAM**: El documento se descarga por API en la memoria RAM en el segundo exacto en que lo abres. **No se almacena en disco de Moodle**, garantizando cero duplicación y datos siempre frescos.
-- **Tarjeta YAML (Frontmatter)**: El visor extrae la cabecera `---` y muestra una ficha de colores con el Título, Descripción, Tipos y pastillas de Etiquetas (`tags`).
-- **Resolución de `[[wiki-links]]`**: Convierte hipervínculos dobles estilo Obsidian (`[[okf/entities/...]]`) en enlaces de Moodle entre documentos.
-- **Botón Remoto (`↗`)**: Abre el fichero en la interfaz externa de GitLab o GitHub.
+- **`Sección 1: Volumen y Tamaño de la Base de Conocimiento`**
+  Proporciona estadísticas sobre la magnitud y cumplimiento normativo del repositorio: recuento total de archivos `.md`, profundidad de directorios, conteo y promedio de palabras por documento, y verificación automática de ficheros esenciales del marco OKF (`README.md`, `SUMMARY.md`, `LICENSE`, `CONTRIBUTING.md`).
 
-### Secciones Cuantitativas y Pestañas en Asignaturas
-Debajo del explorador se muestran los 4 acordeones estadísticos calculados sobre el repositorio (`Volumen y Tamaño`, `Red de Enlaces y Huérfanos`, `Taxonomía YAML`, y `Calidad Markdown/LaTeX/Tablas`). 
-Además, en **cualquier asignatura de tu plataforma**, el plugin añade automáticamente una pestaña superior llamada **`Métricas de Base de Conocimiento Git`** para ver el informe del repositorio a pantalla completa.
+- **`Sección 2: Red de Enlaces e Interconectividad Markdown`**
+  Proporciona un análisis de teoría de grafos del repositorio: recuento de hipervínculos internos, promedio de enlaces por documento, índice de densidad y detección de **notas huérfanas** (documentos aislados en el repositorio que no reciben ni emiten enlaces).
+
+- **`Sección 3: Taxonomía, Metadatos y Etiquetas YAML`**
+  Proporciona un inventario del uso de frontmatter en los apuntes: porcentaje de adopción de cabeceras YAML, tabla de campos utilizados (`title`, `description`, `resource`, etc.) y una nube interactiva con la frecuencia de las etiquetas (`tags`).
+
+- **`Sección 4: Calidad Markdown y Elementos Estructurales`**
+  Proporciona una medición del nivel técnico y enriquecimiento sintáctico del contenido: frecuencia media y conteo total por archivo de fórmulas matemáticas LaTeX (`$$` y `$`), tablas Markdown, bloques de código, encabezados (`H1-H6`) y citas.
+
+---
+
+### Integración con otras Asignaturas en Moodle
+- **Pestaña Superior de Curso**: El plugin inyecta automáticamente una pestaña llamada **`Métricas de Base de Conocimiento Git`** en la barra superior de cualquier curso para que el docente pueda ver el informe del repositorio a pantalla completa.
+- **Bloque en el Menú Lateral**: Puedes añadir el bloque (`Git Knowledge Base Metrics`) desde `Activar edición -> Añadir un bloque` en cualquier curso y configurarle su propia URL y rama de repositorio.
 
 ---
 
