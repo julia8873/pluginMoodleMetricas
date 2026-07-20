@@ -15,8 +15,6 @@ El sistema calcula métricas cuantitativas en tiempo real y ofrece un explorador
    - [Opción B: Instalación Manual Paso a Paso](#opción-b-instalación-manual-paso-a-paso)
 4. [Guía de Uso Paso a Paso](#4-guía-de-uso-paso-a-paso)
    - [Acceso al Curso Dedicado: Panel de Métricas y BdC](#acceso-al-curso-dedicado-panel-de-métricas-y-bdc)
-   - [Uso del Explorador de Documentos y Buscador (Sección 0)](#uso-del-explorador-de-documentos-y-buscador-sección-0)
-   - [Visor Markdown en Vivo con Soporte YAML y Wiki-links](#visor-markdown-en-vivo-con-soporte-yaml-y-wiki-links)
    - [Secciones de Métricas Cuantitativas (Secciones 1 a 4)](#secciones-de-métricas-cuantitativas-secciones-1-a-4)
    - [Uso como Pestaña Superior en Cualquier Asignatura](#uso-como-pestaña-superior-en-cualquier-asignatura)
    - [Uso como Bloque en el Menú Lateral](#uso-como-bloque-en-el-menú-lateral)
@@ -128,35 +126,6 @@ El sistema crea automáticamente un curso especial que funciona como cuadro de m
 
 ---
 
-### Uso del Explorador de Documentos y Buscador (Sección 0)
-
-En la cabecera del curso encontrarás la sección principal titulada **`📂 Acceso a Documentos`**:
-
-- **Carpetas Colapsables (`<details>` / `<summary>`)**: Todos los archivos Markdown (`.md`) del repositorio externo (por ejemplo, `okf/concepts`, `okf/entities`, `okf/sources`, `okf/reports`) están organizados por directorio. Por defecto, las carpetas pequeñas o la raíz están abiertas, y las carpetas extensas están cerradas para una navegación limpia.
-- **Barra de Búsqueda Instantánea**:
-  - Escribe en el cuadro de búsqueda (`🔍`) para filtrar los archivos en tiempo real.
-  - Puedes escribir términos como `lema-de-gronwall`, `jose-juan-urrutia-milan` o el nombre de una carpeta (ej. `concepts`).
-  - Al escribir, el buscador muestra únicamente los archivos que coincidan y abre/cierra automáticamente las carpetas pertinentes.
-  - Utiliza el botón **`✕`** para limpiar la búsqueda instantáneamente.
-- **Botones de Control Global**:
-  - **`➕ Abrir todas`**: Expande simultáneamente todas las carpetas del repositorio para ver la estructura completa de un vistazo.
-  - **`➖ Cerrar todas`**: Colapsa todas las carpetas, dejando visible únicamente los encabezados principales.
-
----
-
-### Visor Markdown en Vivo con Soporte YAML y Wiki-links
-
-Al hacer clic en cualquier documento (`📄 nombre-del-archivo.md`) dentro del explorador, se abre el visor integrado de Moodle (`/blocks/gitmetrics/view_file.php`):
-
-1. **Lectura en Memoria RAM (Cero Almacenamiento)**: El contenido es descargado directamente desde la API del servidor Git (GitHub o GitLab) en memoria en el momento en que lo solicitas. **No se almacena ni duplica ningún archivo en el servidor Moodle**, garantizando que siempre leas la versión más reciente y preservando el espacio en disco.
-2. **Ficha Estructurada de Metadatos YAML (Frontmatter)**:
-   - Si el archivo comienza con un bloque de cabecera YAML (`---`), el visor lo extrae y lo presenta en una elegante tarjeta visual de metadatos justo encima del documento.
-   - Muestra de forma limpia el **Título** (`title`), **Descripción** (`description`), **Tipos de Entidad** (`type`), **Etiquetas** (`tags` con formato pill de colores), **Claims** y **Recurso Asociado** (`resource`).
-3. **Hipervínculos Internos al estilo Obsidian (`[[wiki-links]]`)**:
-   - El visor reconoce automáticamente cualquier enlace interno en formato Obsidian/Wiki-link (ej. `[[okf/entities/jose-juan-urrutia-milan|José Juan Urrutia Milán]]` o `[[okf/concepts/lema-de-gronwall]]`).
-   - Los transforma al vuelo en enlaces clicables propios de Moodle que te llevan directamente al documento referenciado sin salir del visor ni perder el contexto de navegación.
-4. **Enlace al Repositorio Remoto (`↗`)**:
-   - En la parte superior de la ficha y en cada fila del explorador, dispones del botón **`↗ Ver en GitLab/GitHub`**, que abre una pestaña hacia la fuente original en el servidor Git externo.
 
 ---
 
