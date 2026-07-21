@@ -1,0 +1,7 @@
+# Archivos temporales y de depuracion
+communication
+*.log
+output/
+.DS_Store
+*.swp
+*.tmp
