@@ -2,15 +2,15 @@
 provider: "gitlab"
 repo_url: "https://gitlab.com/julia8873/BdC"
 gitlab_url: "https://gitlab.com"
-gitlab_token: ""
+gitlab_token: "glpat-NSLXTlCKZt4roeqRCiz7VGM6MQpvOjEKdTpvMnplMQ8.01.171flhwz5"
 github_token: ""
 default_owner: "julia8873"
 default_repo: "BdC"
 default_branch: "main"
 raw_folder: "raw"
-llm_base_url: "https://generativelanguage.googleapis.com/v1beta/openai"
+llm_base_url: "https://api.groq.com/openai/v1"
 llm_api_key: ""
-llm_model: "gemini-3.1-flash-lite"
+llm_model: "llama-3.1-8b-instant"
 # Modelo usado SOLO para transcribir imágenes/PDFs escaneados (debe admitir
 # entrada multimodal). Si se deja vacío, se usa llm_model para todo, como antes
 # (y volverá a fallar si ese modelo no soporta imágenes).

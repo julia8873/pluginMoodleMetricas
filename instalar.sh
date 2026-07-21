@@ -5,6 +5,19 @@
 
 set -e
 
+GIT_URL=""
+GIT_TOKEN=""
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --url=*) GIT_URL="${1#*=}" ;;
+        --token=*) GIT_TOKEN="${1#*=}" ;;
+        -u|--url) GIT_URL="$2"; shift ;;
+        -t|--token) GIT_TOKEN="$2"; shift ;;
+    esac
+    shift
+done
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOCKER_DIR="$SCRIPT_DIR/moodle-matrix-dev"
 PLUGIN_DIR="$SCRIPT_DIR/gitmetrics"
@@ -65,10 +78,14 @@ echo ""
 echo "[7/8] Configurando integración con Matrix y creando sala de chat..."
 docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_matrix.php
 
-# 8. Sincronizar e inicializar integración con Obsidian
+# 8. Sincronizar e inicializar integración con Obsidian y Git
 echo ""
-echo "[8/8] Habilitando integración con Obsidian y sincronizando primera exportación..."
-docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_obsidian.php
+echo "[8/8] Habilitando integración con Obsidian y sincronizando repositorio..."
+if [ -n "$GIT_URL" ]; then
+    "$SCRIPT_DIR/configurar_git.sh" --url="$GIT_URL" --token="$GIT_TOKEN"
+else
+    docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_obsidian.php
+fi
 
 # Verificación final de permisos para garantizar acceso al servidor web (daemon)
 docker exec --user root moodle-app chown -R daemon:daemon /bitnami/moodle/blocks/gitmetrics /bitnami/moodledata /obsidian-vault 2>/dev/null || true

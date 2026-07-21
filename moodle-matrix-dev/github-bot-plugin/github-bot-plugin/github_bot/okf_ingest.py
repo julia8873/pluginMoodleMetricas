@@ -74,6 +74,60 @@ def construir_prompt_ingest(agents_md: str, ruta_fuente_repo: str, nombre_ficher
     )
 
 
+def dividir_en_lotes(contenido: str, max_lineas: int = 250, solapamiento: int = 30) -> list:
+    """
+    Divide el texto de un archivo en bloques (lotes) de aproximadamente max_lineas,
+    manteniendo un solapamiento de líneas para no cortar conceptos a mitad de párrafo o frase.
+    """
+    lineas = contenido.splitlines()
+    if len(lineas) <= max_lineas:
+        return [contenido]
+    lotes = []
+    i = 0
+    paso = max(1, max_lineas - solapamiento)
+    while i < len(lineas):
+        bloque = lineas[i : i + max_lineas]
+        lotes.append("\n".join(bloque))
+        if i + max_lineas >= len(lineas):
+            break
+        i += paso
+    return lotes
+
+
+def construir_prompt_ingest_lote(agents_md: str, ruta_fuente_repo: str, nombre_fichero: str, timestamp_iso: str, num_lote: int, total_lotes: int) -> str:
+    """
+    Construye el prompt para procesar un lote (chunk) específico de un documento largo.
+    Se le pide al LLM extraer EXHAUSTIVAMENTE todos los conceptos, lecciones y entidades
+    mencionados en ESTE fragmento particular (Lote num_lote de total_lotes).
+    """
+    return (
+        "Eres el agente LLM que mantiene esta wiki OKF v0.1. A continuación tienes el "
+        "fichero AGENTS.md completo del repositorio, con las convenciones e instrucciones "
+        "que debes seguir al pie de la letra:\n\n"
+        f"--- INICIO AGENTS.md ---\n{agents_md}\n--- FIN AGENTS.md ---\n\n"
+        f"Estás ejecutando la operación INGEST POR LOTES sobre el fichero `{ruta_fuente_repo}` "
+        f"(nombre original: «{nombre_fichero}»). Estás analizando el LOTE {num_lote} de {total_lotes}.\n\n"
+        "El contenido que se te da a continuación es SOLO ESTE FRAGMENTO (LOTE) de la obra completa.\n"
+        "TU OBJETIVO CRÍTICO EN ESTE LOTE: Extrae y genera páginas completas en `okf/concepts/` (o `okf/entities/`) "
+        "para TODOS y cada uno de los conceptos, definiciones, reglas teóricas y ejercicios teóricos que aparezcan "
+        "en ESTE FRAGMENTO concreto. No resumas ni saltes conceptos; genera una ficha en `okf/concepts/nombre-concepto.md` "
+        "por cada término técnico o tema de teoría musical enseñado en este fragmento.\n\n"
+        f"Si estás en el Lote 1, incluye también `okf/sources/` con la ficha general de la fuente. En lotes posteriores, concéntrate al 100% en generar todas las fichas de `okf/concepts/` y `okf/entities/` del fragmento.\n\n"
+        f"Usa exactamente este timestamp en el frontmatter de cada fichero: {timestamp_iso}\n\n"
+        "NO toques okf/index.md: se gestiona aparte.\n\n"
+        "Responde ÚNICAMENTE con un objeto JSON válido (sin bloques de código, sin texto antes ni después), con esta forma exacta:\n"
+        "{\n"
+        '  "ficheros": [\n'
+        '    {"path": "okf/concepts/nombre-concepto.md", "contenido": "---\\ntype: Concept\\ntitle: Título\\ndescription: ...\\ntags: [teoria-musical, ...]\\ntimestamp: ...\\n---\\n\\nDesarrollo explicativo extenso con [[links]]..."}\n'
+        "  ],\n"
+        f'  "log_entry": "## [YYYY-MM-DD] ingest-lote {num_lote}/{total_lotes} | {nombre_fichero}\\n\\nResumen breve de los conceptos extraídos en este lote.",\n'
+        '  "contradicciones": [],\n'
+        '  "preguntas_seguimiento": []\n'
+        "}\n\n"
+        'Cada "path" debe empezar por "okf/". Devuelve tantas fichas como conceptos importantes haya en el fragmento.'
+    )
+
+
 # --------------------------------------------------------------------
 # Parseo de la respuesta
 # --------------------------------------------------------------------

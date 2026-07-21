@@ -13,7 +13,7 @@ $tasks = [
     [
         'classname' => 'block_gitmetrics\task\sync_obsidian',
         'blocking'  => 0,
-        'minute'    => '0',
+        'minute'    => '*',
         'hour'      => '*',
         'day'       => '*',
         'dayofweek' => '*',

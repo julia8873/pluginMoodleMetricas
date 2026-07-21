@@ -88,11 +88,14 @@ class LLMProvider:
         Envía la lista de mensajes al endpoint /chat/completions y devuelve el
         texto de respuesta del modelo. Lo comparten preguntar(), transcribir_imagen()
         y generar_texto() para no duplicar el bloque de petición HTTP.
-
-        max_tokens: si no se especifica, algunos proveedores (p.ej. OpenRouter)
-        asumen el máximo del modelo, lo que puede hacer fallar la petición por
-        crédito insuficiente aunque la respuesta real sea corta.
         """
+        is_local = any(loc in self.base_url for loc in ("://localhost", "://127.0.0.1", "://0.0.0.0", "://host.docker.internal", "://ollama"))
+        if not is_local and (not self.api_key or not self.api_key.strip()):
+            raise RuntimeError(
+                "No se ha configurado la clave API del LLM (llm_api_key o llm_vision_api_key están vacíos). "
+                "Por favor, configura tu clave API en base-config.yaml o en los ajustes del bot."
+            )
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -156,10 +159,14 @@ class LLMProvider:
         porque !pregunta siempre debe responder algo al estudiante.
         """
         system_prompt = (
-            "Eres un asistente que responde ÚNICAMENTE usando la documentación "
-            "proporcionada a continuación. Si la respuesta no está en la documentación, "
+            "Eres un asistente de estudio que responde ÚNICAMENTE usando la documentación "
+            "proporcionada a continuación. Si la pregunta pide varios datos o elementos y solo "
+            "algunos aparecen en la documentación (por ejemplo, si aparecen ejercicios pero no sus soluciones, "
+            "o si un concepto se menciona parcialmente), DEBES responder con toda la información "
+            "relevante que SÍ esté presente en la documentación y aclarar qué parte no figura o cómo lo indica el texto.\n\n"
+            "Solo si el tema consultado está COMPLETAMENTE AUSENTE o no tiene ninguna relación con la documentación, "
             "responde exactamente: 'No tengo esa información en la documentación del repositorio.' "
-            "No inventes información ni uses conocimiento externo.\n\n"
+            "No inventes información ni uses conocimiento externo al repositorio.\n\n"
             f"DOCUMENTACIÓN:\n{contexto}"
         )
         try:

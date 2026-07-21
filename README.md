@@ -39,16 +39,50 @@ Entorno integral de Moodle (`block_gitmetrics`) y comunicación colaborativa que
 
 ## 3. Guía de Instalación Paso a Paso
 
+### Resumen Rápido: ¿Qué tengo que modificar exactamente para conectar mi repositorio?
+
+**No necesitas tocar código ni modificar múltiples archivos.** Para que Moodle, el bot de Matrix (Maubot) y Obsidian se conecten simultáneamente a tu repositorio (sea de GitLab o de GitHub), tienes dos formas de hacerlo:
+
+#### Método 1: Sincronización automática por comando (Recomendado)
+No editas ningún archivo. Simplemente ejecutas un comando indicando la URL del repositorio y tu token personal:
+- Si instalas por primera vez:
+  ```bash
+  ./instalar.sh --url="https://gitlab.com/julia8873/BdC" --token="glpat-xxxxxxxxxxxxxxxx"
+  ```
+- Si el entorno ya está funcionando y quieres cambiar o conectar el repositorio en cualquier momento:
+  ```bash
+  ./configurar_git.sh --url="https://gitlab.com/julia8873/BdC" --token="glpat-xxxxxxxxxxxxxxxx"
+  ```
+
+#### Método 2: Modificación manual de archivos y ajustes web
+Si prefieres editar los ajustes manualmente en lugar de usar el comando automático, solo debes modificar 2 puntos exactos:
+1. **Para el Bot de Matrix**: Edita el archivo `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml` y modifica las claves:
+   ```yaml
+   provider: "gitlab"                                 # O "github"
+   repo_url: "https://gitlab.com/julia8873/BdC"       # URL de tu repositorio
+   gitlab_token: "glpat-xxxxxxxxxxxxxxxx"             # Tu token (o github_token si es GitHub)
+   ```
+   Luego reinicia el bot en Docker: `docker compose restart maubot`.
+2. **Para Moodle y Obsidian**: En la web de Moodle como administrador (`http://localhost:8000`), entra a **Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics (`Gitmetrics`)**, selecciona tu proveedor, pega el mismo token y guarda.
+
+---
+
 ### Opción A: Instalación Automática (Recomendada)
 
-Ejecuta el script automatizado que coordina y despliega todo el sistema:
+Ejecuta el script automatizado que coordina y despliega todo el sistema. Puedes pasarle tu URL y token de GitLab o GitHub para conectar Moodle, el bot Maubot y Obsidian de un solo golpe:
 
 ```bash
 cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas
-./instalar.sh
+./instalar.sh --url="https://gitlab.com/julia8873/BdC" --token="glpat-xxxxxxxxxxxxxxxx"
 ```
 
-El script inicia los servicios Docker, espera al servidor web, instala `block_gitmetrics`, realiza la migración de base de datos y genera el curso central de evaluación.
+El script inicia los servicios Docker, espera al servidor web, instala `block_gitmetrics`, realiza la migración de base de datos, genera el curso central de evaluación y conecta automáticamente todos los servicios al repositorio.
+
+> **Sincronización posterior (`configurar_git.sh`)**: Si en cualquier momento deseas cambiar de repositorio, rama o proveedor (por ejemplo de GitLab a GitHub o viceversa) sin reinstalar nada, simplemente ejecuta:
+> ```bash
+> ./configurar_git.sh --url="https://gitlab.com/julia8873/BdC" --token="glpat-xxxxxxxxxxxxxxxx"
+> ```
+> Ese único comando actualiza al instante la base de datos de Moodle, las instancias del bloque, la configuración de Maubot (`base-config.yaml`), reinicia el bot y sincroniza las notas en Obsidian.
 
 ---
 

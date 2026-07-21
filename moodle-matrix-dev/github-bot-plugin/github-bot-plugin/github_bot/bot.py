@@ -47,7 +47,13 @@ from .organizacion import (
     sanitizar_carpeta,
 )
 from .pdf_ingest import PdfExtractionError, extraer_texto_pdf, parece_texto_de_baja_calidad
-from .okf_ingest import IngestError, construir_prompt_ingest, parsear_respuesta_ingest
+from .okf_ingest import (
+    IngestError,
+    construir_prompt_ingest,
+    construir_prompt_ingest_lote,
+    dividir_en_lotes,
+    parsear_respuesta_ingest,
+)
 from .git_client import get_git_client
 
 
@@ -175,10 +181,10 @@ class GithubBot(Plugin):
         prov = str(self.config.get("provider", "")).strip().lower()
         url = str(self.config.get("repo_url", "")).strip().lower()
         if prov == "gitlab" or "gitlab" in url:
-            return self.config.get("gitlab_token") or self.config.get("github_token") or ""
+            return self.config.get("gitlab_token", "") or self.config.get("github_token", "") or ""
         elif prov == "github" or "github.com" in url:
-            return self.config.get("github_token") or self.config.get("gitlab_token") or ""
-        return self.config.get("gitlab_token") or self.config.get("github_token") or ""
+            return self.config.get("github_token", "") or self.config.get("gitlab_token", "") or ""
+        return self.config.get("gitlab_token", "") or self.config.get("github_token", "") or ""
 
     @classmethod
     def get_config_class(cls) -> Type[BaseProxyConfig]:
@@ -358,8 +364,12 @@ class GithubBot(Plugin):
                 await evt.reply("Es una imagen: transcribiendo los apuntes manuscritos con el modelo, puede tardar unos segundos...")
                 try:
                     texto_extraido = await transcribir_imagen(contenido_binario, mime_type, llm_vision)
-                except OcrError as exc:
-                    await evt.reply(f"No he podido transcribir «{nombre_archivo}»: {exc}")
+                except (OcrError, Exception) as exc:
+                    self.log.error(f"[github_bot] Error al transcribir imagen «{nombre_archivo}»: {exc}")
+                    await evt.reply(
+                        f"⚠️ Error al transcribir «{nombre_archivo}»: {exc}\n\n"
+                        "Verifica la clave API/configuración del LLM en base-config.yaml o intenta de nuevo."
+                    )
                     return
                 tipo_interaccion = "apuntes_manuscritos_foto"
             else:
@@ -418,13 +428,22 @@ class GithubBot(Plugin):
                 "Gemini leerá cada página como imagen. Esto puede tardar varios minutos si el PDF es largo."
             )
             try:
-                texto_extraido, paginas_fallidas = await transcribir_pdf_escaneado(contenido_binario, llm_vision)
+                async def notificar_progreso(pag_actual: int, total_pags: int) -> None:
+                    await evt.reply(f"⏳ Procesando OCR visual... (página {pag_actual}/{total_pags})")
+
+                texto_extraido, paginas_fallidas = await transcribir_pdf_escaneado(
+                    contenido_binario, llm_vision, progress_callback=notificar_progreso
+                )
                 if paginas_fallidas:
                     self.log.warning(f"[github_bot] Páginas con error al transcribir PDF: {paginas_fallidas}")
-                    await evt.reply(f"Nota: Hubo problemas al transcribir {len(paginas_fallidas)} página(s).")
+                    await evt.reply(f"⚠️ Aviso: Hubo problemas al transcribir {len(paginas_fallidas)} página(s).")
                 tipo_interaccion = "pdf_escaneado_ocr"
-            except OcrError as exc:
-                await evt.reply(f"No he podido leer «{nombre_archivo}» con OCR: {exc}")
+            except (OcrError, Exception) as exc:
+                self.log.error(f"[github_bot] Error en OCR visual de «{nombre_archivo}»: {exc}")
+                await evt.reply(
+                    f"⚠️ Error al procesar «{nombre_archivo}» con OCR visual: {exc}\n\n"
+                    "Si el error persiste, verifica la clave API/configuración del LLM en base-config.yaml o responde **no** al subir el archivo para guardar el texto extraído sin OCR visual."
+                )
                 return
         else:
             await evt.reply(f"De acuerdo, usaré el texto extraido directamente para «{nombre_archivo}».")
@@ -465,46 +484,57 @@ class GithubBot(Plugin):
         clave = (room_id, sender)
         lock = self._get_user_lock(room_id, sender)
 
-        async with lock:
-            self.tareas_lote.pop(clave, None)
-            ficheros = self.lotes_subida.pop(clave, [])
-            if not ficheros:
-                return
+        try:
+            async with lock:
+                self.tareas_lote.pop(clave, None)
+                ficheros = self.lotes_subida.pop(clave, [])
+                if not ficheros:
+                    return
 
-            owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
+                owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
 
-            if len(ficheros) == 1:
-                carpetas = await self._listar_carpetas(owner, repo, token)
-                self.pendientes_destino[clave] = {
-                    "modo": "elegir_carpeta_lote", "ficheros": ficheros, "carpetas": carpetas,
-                    "timestamp": int(time.time()),
-                }
-                nombre = ficheros[0]["nombre_archivo"]
-                vista_previa = self._vista_previa_transcripcion(ficheros[0]["texto_extraido"])
-                texto = (
-                    f"He leído «{nombre}». Esto es lo que he entendido (revísalo antes de guardarlo):\n\n"
-                    f"> {vista_previa}\n\n"
-                    f"¿Dónde guardo «{nombre}»?\n\n{formatear_lista_carpetas(carpetas)}\n\n"
-                    "Responde con el número de una carpeta, escribe el nombre de una carpeta "
-                    "nueva (usa '/' para asignatura/tema, p.ej. Calculo/Tema3), o '0' para la raíz.\n"
-                    "Si quieres cambiarle el nombre antes de guardarlo, escribe `nombre: <nuevo nombre>`."
+                if len(ficheros) == 1:
+                    carpetas = await self._listar_carpetas(owner, repo, token)
+                    self.pendientes_destino[clave] = {
+                        "modo": "elegir_carpeta_lote", "ficheros": ficheros, "carpetas": carpetas,
+                        "timestamp": int(time.time()),
+                    }
+                    nombre = ficheros[0]["nombre_archivo"]
+                    vista_previa = self._vista_previa_transcripcion(ficheros[0]["texto_extraido"])
+                    texto = (
+                        f"He leído «{nombre}». Esto es lo que he entendido (revísalo antes de guardarlo):\n\n"
+                        f"> {vista_previa}\n\n"
+                        f"¿Dónde guardo «{nombre}»?\n\n{formatear_lista_carpetas(carpetas)}\n\n"
+                        "Responde con el número de una carpeta, escribe el nombre de una carpeta "
+                        "nueva (usa '/' para asignatura/tema, p.ej. Calculo/Tema3), o '0' para la raíz.\n"
+                        "Si quieres cambiarle el nombre antes de guardarlo, escribe `nombre: <nuevo nombre>`."
+                    )
+                else:
+                    self.pendientes_destino[clave] = {
+                        "modo": "elegir_modo", "ficheros": ficheros, "timestamp": int(time.time()),
+                    }
+                    lineas = []
+                    for f in ficheros:
+                        vista_previa = self._vista_previa_transcripcion(f["texto_extraido"], longitud=120)
+                        lineas.append(f"- **{f['nombre_archivo']}**: {vista_previa}")
+                    texto = (
+                        f"He recibido {len(ficheros)} ficheros. Esto es lo que he entendido de cada uno:\n"
+                        + "\n".join(lineas) + "\n\n"
+                        "¿Los guardo todos en el mismo sitio, o eliges carpeta para cada uno? "
+                        "Responde 'todos' o 'uno por uno'."
+                    )
+
+                await self.client.send_text(room_id, texto)
+        except Exception as exc:
+            self.log.error(f"[github_bot] Error en _debounce_lote para {room_id}: {exc}")
+            try:
+                await self.client.send_text(
+                    room_id,
+                    f"⚠️ Error al preparar el guardado del fichero en el repositorio: {exc}\n"
+                    "Por favor, intenta subir el archivo nuevamente o verifica la configuración del repositorio."
                 )
-            else:
-                self.pendientes_destino[clave] = {
-                    "modo": "elegir_modo", "ficheros": ficheros, "timestamp": int(time.time()),
-                }
-                lineas = []
-                for f in ficheros:
-                    vista_previa = self._vista_previa_transcripcion(f["texto_extraido"], longitud=120)
-                    lineas.append(f"- **{f['nombre_archivo']}**: {vista_previa}")
-                texto = (
-                    f"He recibido {len(ficheros)} ficheros. Esto es lo que he entendido de cada uno:\n"
-                    + "\n".join(lineas) + "\n\n"
-                    "¿Los guardo todos en el mismo sitio, o eliges carpeta para cada uno? "
-                    "Responde 'todos' o 'uno por uno'."
-                )
-
-            await self.client.send_text(room_id, texto)
+            except Exception:
+                pass
 
     async def _procesar_respuesta_destino(self, evt: MessageEvent, estado: dict) -> None:
         clave = (evt.room_id, evt.sender)
@@ -722,8 +752,6 @@ class GithubBot(Plugin):
 
         contenido = base64.b64decode(info["content"]).decode("utf-8") if info.get("content") else ""
         self._cache_agents_md[clave_cache] = (ahora, contenido)
-        return contenido4.b64decode(info["content"]).decode("utf-8")
-        self._cache_agents_md[clave_cache] = (ahora, contenido)
         return contenido
 
     # --------------------------------------------------------------------
@@ -759,6 +787,9 @@ class GithubBot(Plugin):
             if info_fuente is None:
                 raise RuntimeError(f"No he podido releer «{ruta_fuente_repo}» recién subido.")
             contenido_fuente = base64.b64decode(info_fuente["content"]).decode("utf-8")
+            if len(contenido_fuente.splitlines()) > 350:
+                await self._ejecutar_ingest_por_lotes(evt, owner, repo, token, branch, ruta_fuente_repo, nombre_archivo, contenido_fuente, agents_md)
+                return
 
             timestamp_iso = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
             instruccion = construir_prompt_ingest(agents_md, ruta_fuente_repo, nombre_archivo, timestamp_iso)
@@ -818,10 +849,98 @@ class GithubBot(Plugin):
 
         await evt.reply("\n\n".join(partes))
 
-    async def _borrar_archivo_github(
-        self, owner: str, repo: str, token: str, path: str, branch: str, sha: str, mensaje_commit: str
+    async def _ejecutar_ingest_por_lotes(
+        self, evt: MessageEvent, owner: str, repo: str, token: str, branch: str,
+        ruta_fuente_repo: str, nombre_archivo: str, contenido_fuente: str, agents_md: str
     ) -> None:
-        await self.git.borrar_archivo(owner, repo, token, path, branch, sha, mensaje_commit, self._semaforo_github, self._invalidar_cache)
+        lotes = dividir_en_lotes(contenido_fuente, max_lineas=250, solapamiento=30)
+        total_lotes = len(lotes)
+        await evt.reply(f"El documento «{nombre_archivo}» es extenso ({len(contenido_fuente.splitlines())} líneas). Iniciando extracción exhaustiva por {total_lotes} lotes en okf/...")
+
+        llm = self._crear_llm()
+        timestamp_iso = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        creados_totales, actualizados_totales = [], []
+
+        for i, texto_lote in enumerate(lotes, start=1):
+            await evt.reply(f"📦 Procesando lote {i}/{total_lotes} de «{nombre_archivo}»...")
+            instruccion = construir_prompt_ingest_lote(
+                agents_md, ruta_fuente_repo, nombre_archivo, timestamp_iso, i, total_lotes
+            )
+            try:
+                respuesta = await llm.generar_texto(instruccion, texto_lote)
+                resultado = parsear_respuesta_ingest(respuesta)
+            except Exception as exc:
+                self.log.warning(f"[github_bot] Error procesando lote {i}/{total_lotes} de '{ruta_fuente_repo}': {exc}")
+                await evt.reply(f"⚠️ Lote {i}/{total_lotes}: Hubo un problema extrayendo conceptos ({exc}). Continuando con el siguiente lote...")
+                continue
+
+            for fichero in resultado["ficheros"]:
+                try:
+                    fue_actualizacion = await self._subir_o_actualizar_archivo_github(
+                        owner, repo, token, fichero["path"], fichero["contenido"], branch,
+                        mensaje_commit=f"INGEST lote {i}/{total_lotes} de '{ruta_fuente_repo}' (por {evt.sender})",
+                    )
+                    (actualizados_totales if fue_actualizacion else creados_totales).append(fichero["path"])
+                except Exception as exc:
+                    self.log.warning(f"[github_bot] Error subiendo '{fichero['path']}' en lote {i}: {exc}")
+
+            if resultado.get("log_entry"):
+                try:
+                    await self._append_log_okf(
+                        owner, repo, token, branch, resultado["log_entry"],
+                        mensaje_commit=f"Log INGEST lote {i}/{total_lotes} de '{ruta_fuente_repo}'",
+                    )
+                except Exception as exc:
+                    self.log.warning(f"[github_bot] Error append log okf lote {i}: {exc}")
+
+        await self.tracker.log_curacion(evt.sender, evt.room_id, "ingest_lotes", ruta_fuente_repo)
+        resumen_partes = [f"✅ Ingesta por lotes completada al 100% para «{nombre_archivo}» ({total_lotes} lotes procesados)."]
+        if creados_totales:
+            resumen_partes.append(f"**Ficheros nuevos ({len(creados_totales)}):**\n" + "\n".join(f"- `{p}`" for p in sorted(set(creados_totales))[:20]))
+        if actualizados_totales:
+            resumen_partes.append(f"**Ficheros actualizados ({len(actualizados_totales)}):**\n" + "\n".join(f"- `{p}`" for p in sorted(set(actualizados_totales))[:20]))
+        await evt.reply("\n\n".join(resumen_partes))
+
+    @command.new(
+        name="ingest_lotes",
+        help="Extrae el 100% de conceptos por lotes de un fichero largo de raw/: !ingest_lotes [tema:<...>]",
+    )
+    @command.argument("texto", pass_raw=True, required=False)
+    async def ingest_lotes_handler(self, evt: MessageEvent, texto: str = "") -> None:
+        token = self._obtener_git_token()
+        owner = self.config["default_owner"]
+        repo = self.config["default_repo"]
+        branch = self.config["default_branch"] or "main"
+
+        _, tema, _ = _extraer_modificadores(texto)
+        if not tema:
+            await evt.reply("Indica la ruta del fichero de raw/ a ingestar. Ejemplo: `!ingest_lotes [tema:raw/00Libro de Teoria Musical - Nestor Crespo-1784644777.md]`.")
+            return
+
+        if not tema.startswith("raw/"):
+            tema = f"raw/{tema}" if not tema.endswith(".md") else f"raw/{tema}"
+
+        await evt.reply(f"Leyendo `{tema}` del repositorio para ingesta por lotes...")
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
+        async with aiohttp.ClientSession() as session:
+            info_fuente = await self._obtener_sha_y_contenido_github(session, owner, repo, headers, tema)
+        if not info_fuente:
+            await evt.reply(f"No he encontrado o no he podido leer `{tema}` en el repositorio.")
+            return
+
+        contenido_fuente = base64.b64decode(info_fuente["content"]).decode("utf-8")
+        agents_md = await self._obtener_agents_md(owner, repo, token)
+        if not agents_md:
+            await evt.reply("No he encontrado AGENTS.md en el repositorio para guiar la ingesta.")
+            return
+
+        nombre_archivo = tema.split("/")[-1]
+        await self._ejecutar_ingest_por_lotes(evt, owner, repo, token, branch, tema, nombre_archivo, contenido_fuente, agents_md)
+
+    async def _borrar_archivo_github(
+        self, owner: str, repo: str, token: str, path: str, branch: str, sha: str = "", mensaje_commit: str = ""
+    ) -> None:
+        await self.git.borrar_archivo(owner, repo, token, path, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
 
     async def _mover_archivo_github(
         self, owner: str, repo: str, token: str, ruta_antigua: str, ruta_nueva: str, branch: str, sender: str

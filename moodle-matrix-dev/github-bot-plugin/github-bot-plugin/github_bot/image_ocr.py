@@ -76,7 +76,7 @@ async def transcribir_imagen(
 # --------------------------------------------------------------------
 
 async def transcribir_pdf_escaneado(
-    contenido_binario: bytes, llm: LLMProvider, max_paginas: int = 30
+    contenido_binario: bytes, llm: LLMProvider, max_paginas: int = 30, progress_callback = None
 ) -> tuple:
     """
     Para PDFs sin texto seleccionable (escaneo o fotos de apuntes pegadas):
@@ -85,14 +85,11 @@ async def transcribir_pdf_escaneado(
     max_paginas: límite de seguridad para no disparar el número de llamadas al LLM
     (y el tiempo de espera del estudiante) si se sube un PDF enorme.
 
+    progress_callback: función asíncrona opcional que recibe (pagina_actual, total_paginas)
+    para informar de avances en el chat durante PDFs largos.
+
     Devuelve (texto_completo, paginas_fallidas), donde paginas_fallidas es una lista
     de (numero_pagina, mensaje_error) para cada página que no se pudo transcribir.
-    Si TODAS las páginas fallan (p.ej. el modelo no admite imágenes), se lanza
-    OcrError en vez de devolver un documento relleno de mensajes de error como si
-    fueran contenido real: eso nunca debe guardarse en la BdC.
-
-    IMPORTANTE: el caller DEBE desempaquetar la tupla:
-        texto, fallidas = await transcribir_pdf_escaneado(...)
     """
     try:
         documento = fitz.open(stream=contenido_binario, filetype="pdf")
@@ -109,6 +106,12 @@ async def transcribir_pdf_escaneado(
     partes: list = []
     paginas_fallidas: list = []
     for i in range(num_paginas):
+        if progress_callback and (i > 0 and i % 3 == 0):
+            try:
+                await progress_callback(i + 1, num_paginas)
+            except Exception:
+                pass
+
         pagina = documento.load_page(i)
         pixmap = pagina.get_pixmap(matrix=matriz)
         imagen_png = pixmap.tobytes("png")
@@ -116,8 +119,17 @@ async def transcribir_pdf_escaneado(
         try:
             texto_pagina = await transcribir_imagen(imagen_png, "image/png", llm)
         except OcrError as exc:
-            # Una página fallida no aborta el resto; se registra y se continúa.
-            # Solo si TODAS las páginas fallan se lanza OcrError (ver más abajo).
+            msg_err = str(exc).lower()
+            # Si el error en cualquier página es fatal (autenticación, cuota, timeout, API key no configurada,
+            # o error 401/403/404/429), abortamos INMEDIATAMENTE en vez de esperar en silencio a que fallen
+            # todas las demás páginas del PDF.
+            errores_fatales = ("401", "403", "404", "429", "timeout", "api_key", "clave api", "cuota", "bearer")
+            if any(e in msg_err for e in errores_fatales) or (len(paginas_fallidas) >= 1 and paginas_fallidas[-1][1] == str(exc)):
+                documento.close()
+                raise OcrError(
+                    f"Error fatal o recurrente al consultar el modelo de visión en la página {i + 1}/{num_paginas}: {exc}"
+                )
+
             texto_pagina = f"[No se ha podido transcribir esta página: {exc}]"
             paginas_fallidas.append((i + 1, str(exc)))
 
@@ -126,9 +138,6 @@ async def transcribir_pdf_escaneado(
     documento.close()
 
     if paginas_fallidas and len(paginas_fallidas) == num_paginas:
-        # Ninguna página transcrita: devolver mensajes de error como si fueran
-        # contenido de la BdC sería silenciosamente incorrecto. Se propaga el
-        # motivo real para que el estudiante lo vea en Element.
         raise OcrError(
             f"No se ha podido transcribir ninguna de las {num_paginas} páginas. "
             f"Error en la primera página: {paginas_fallidas[0][1]}"
