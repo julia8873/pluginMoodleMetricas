@@ -176,20 +176,20 @@ $doc_html .= '</style>';
 
 $doc_html .= '<div class="gmdb-wrap">';
 $doc_html .= '<div class="gmdb-header">';
-$doc_html .= '<div class="gmdb-header-title">📂 Acceso a Documentos de la Base de Conocimiento</div>';
+$doc_html .= '<div class="gmdb-header-title">Acceso a Documentos de la Base de Conocimiento</div>';
 $doc_html .= '<div class="gmdb-header-sub">Repositorio: <a href="' . htmlspecialchars($repourl) . '" target="_blank" rel="noopener" class="gmdb-repo-link">' . htmlspecialchars($repourl) . '</a> · Rama: <strong>' . htmlspecialchars($branch_link) . '</strong></div>';
 $doc_html .= '</div>';
 
 // Barra de búsqueda y botones toggle all
 $doc_html .= '<div class="gmdb-search-bar">';
 $doc_html .= '<div class="gmdb-search-input-wrap">';
-$doc_html .= '<span class="gmdb-search-icon">🔍</span>';
+$doc_html .= '<span class="gmdb-search-icon">[Buscar]</span>';
 $doc_html .= '<input type="text" id="gmdb-search-input" class="gmdb-search-input" placeholder="Buscar documento por nombre, ruta o carpeta (ej. campo, ecuaciones, concepts)..." autocomplete="off">';
-$doc_html .= '<button type="button" id="gmdb-search-clear" class="gmdb-search-clear" style="display:none;" title="Limpiar búsqueda">✕</button>';
+$doc_html .= '<button type="button" id="gmdb-search-clear" class="gmdb-search-clear" style="display:none;" title="Limpiar busqueda">X</button>';
 $doc_html .= '</div>';
 $doc_html .= '<div class="gmdb-search-actions">';
-$doc_html .= '<button type="button" onclick="gmdbToggleAll(true)" class="gmdb-btn-toggle">➕ Abrir todas</button>';
-$doc_html .= '<button type="button" onclick="gmdbToggleAll(false)" class="gmdb-btn-toggle">➖ Cerrar todas</button>';
+$doc_html .= '<button type="button" onclick="gmdbToggleAll(true)" class="gmdb-btn-toggle">+ Abrir todas</button>';
+$doc_html .= '<button type="button" onclick="gmdbToggleAll(false)" class="gmdb-btn-toggle">- Cerrar todas</button>';
 $doc_html .= '</div>';
 $doc_html .= '</div>';
 $doc_html .= '<div id="gmdb-search-count" class="gmdb-search-count"></div>';
@@ -202,7 +202,7 @@ $obsidian_vault_name = get_config('block_gitmetrics', 'obsidian_vault_name') ?: 
 
 $total_docs = 0;
 foreach ($md_by_dir as $dir => $files) {
-    $folder_label = ($dir === '/') ? '📁 Raíz del repositorio' : '📁 ' . htmlspecialchars($dir);
+    $folder_label = ($dir === '/') ? '[Raiz del repositorio]' : '[Carpeta] ' . htmlspecialchars($dir);
     // Por defecto, si la carpeta tiene 8 o menos archivos (o es la raíz), abrimos; si tiene muchos (como okf/concepts), cerrada por defecto para no abrumar.
     $is_default_open = ($dir === '/' || count($files) <= 8);
     $open_attr = $is_default_open ? ' open' : '';
@@ -229,14 +229,14 @@ foreach ($md_by_dir as $dir => $files) {
         
         $doc_html .= '<div class="gmdb-file-row" data-path="' . htmlspecialchars(strtolower($filepath)) . '" data-name="' . htmlspecialchars(strtolower($filename)) . '">';
         $doc_html .= '<a href="' . $viewer_url . '" class="gmdb-file-link" title="Abrir ' . htmlspecialchars($filename) . ' en Moodle">';
-        $doc_html .= '<span class="gmdb-icon">📄</span>';
+        $doc_html .= '<span class="gmdb-icon">[md]</span>';
         $doc_html .= '<span>' . htmlspecialchars($filename) . '</span>';
         $doc_html .= '</a>';
         $doc_html .= '<a href="' . htmlspecialchars($external_url) . '" target="_blank" rel="noopener" class="gmdb-ext-link" title="Ver en GitLab">↗</a>';
         // OBSIDIAN_OPTIONAL_START – botón obsidian:// por archivo (eliminar líneas hasta OBSIDIAN_OPTIONAL_END para desactivar)
         if ($obsidian_enabled) {
             $obsidian_uri = \block_gitmetrics\obsidian_exporter::get_obsidian_uri($filepath, $obsidian_vault_name);
-            $doc_html .= '<a href="' . htmlspecialchars($obsidian_uri) . '" class="gmdb-obsidian-link" title="Abrir en Obsidian">🔮 Obsidian</a>';
+            $doc_html .= '<a href="' . htmlspecialchars($obsidian_uri) . '" class="gmdb-obsidian-link" title="Abrir en Obsidian">Obsidian</a>';
         }
         // OBSIDIAN_OPTIONAL_END
         $doc_html .= '</div>';
@@ -244,7 +244,7 @@ foreach ($md_by_dir as $dir => $files) {
     $doc_html .= '</div></details>';
 }
 
-$doc_html .= '<div class="gmdb-stats">📊 ' . $total_docs . ' documentos Markdown · Cargado desde el repositorio remoto · No se almacena ningún archivo en Moodle</div>';
+$doc_html .= '<div class="gmdb-stats">' . $total_docs . ' documentos Markdown · Cargado desde el repositorio remoto · No se almacena ningun archivo en Moodle</div>';
 
 // Script de búsqueda (Acepta con guión tal y como en el original) y toggle all
 $doc_html .= '<script>
@@ -298,7 +298,7 @@ function gmdbToggleAll(open) {
     
     if (countEl) {
       countEl.style.display = "block";
-      countEl.innerHTML = matches === 0 ? "❌ No se encontraron archivos coincidentes con <strong>\'" + q + "\'</strong>." : "✅ Encontrados <strong>" + matches + "</strong> archivos coincidentes.";
+      countEl.innerHTML = matches === 0 ? "Sin resultados para <strong>\'" + q + "\'</strong>." : "Encontrados <strong>" + matches + "</strong> archivos coincidentes.";
     }
   }
   
@@ -316,7 +316,7 @@ $doc_html .= '</div>';
 
 $topics = [
     0 => [
-        'name'    => '📂 Acceso a Documentos',
+        'name'    => 'Acceso a Documentos',
         'summary' => $doc_html
     ],
     1 => [

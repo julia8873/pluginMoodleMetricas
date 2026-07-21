@@ -84,10 +84,10 @@ $string['error_repo']                  = 'Repositorio no encontrado o inaccesibl
 $string['error_branch']                = 'Rama no encontrada. Prueba a cambiar la rama en los ajustes del bloque.';
 
 // Obsidian (opcional) — eliminar este bloque junto con classes/obsidian_exporter.php y cli/export_obsidian.php
-$string['heading_obsidian']            = 'Integración con Obsidian (opcional)';
-$string['heading_obsidian_desc']       = 'Permite abrir documentos directamente en Obsidian y exportar la base de conocimiento a un vault local. Esta función es completamente opcional; si no la necesitas, puedes ignorarla o desactivarla.';
+$string['heading_obsidian']            = 'Integracion con Obsidian (opcional)';
+$string['heading_obsidian_desc']       = 'Permite abrir documentos directamente en Obsidian y exportar la base de conocimiento a un vault local. Esta funcion es completamente opcional; si no la necesitas, puedes ignorarla o desactivarla.';
 $string['obsidian_enabled']            = 'Habilitar integración con Obsidian';
-$string['obsidian_enabled_desc']       = 'Cuando está activado, aparecerá un botón "🔮 Obsidian" junto a cada documento que abre la nota directamente en la aplicación Obsidian instalada en el ordenador del usuario.';
+$string['obsidian_enabled_desc']       = 'Cuando esta activado, aparecera un boton "Obsidian" junto a cada documento que abre la nota directamente en la aplicacion Obsidian instalada en el ordenador del usuario.';
 $string['obsidian_vault_path']         = 'Ruta local del vault de Obsidian';
 $string['obsidian_vault_path_desc']    = 'Ruta absoluta en el sistema de archivos del usuario donde se encuentra (o se creará) el vault de Obsidian. Ejemplo: /home/julia/Documents/OKF-Vault o C:\\Users\\julia\\Documents\\OKF-Vault';
 $string['obsidian_vault_name']         = 'Nombre del vault de Obsidian';

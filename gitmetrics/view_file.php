@@ -31,7 +31,7 @@ if (empty($filepath) || empty($repourl)) {
     $PAGE->set_pagelayout('report');
     echo $OUTPUT->header();
     echo '<div style="font-family:monospace;padding:20px;background:#1e293b;color:#e2e8f0;border-radius:8px;margin:20px;">';
-    echo '<h2 style="color:#f59e0b">⚠️ Parámetros incorrectos</h2>';
+    echo '<h2 style="color:#f59e0b">[!] Parametros incorrectos</h2>';
     echo '<pre>' . htmlspecialchars(print_r($_GET, true)) . '</pre>';
     echo '<p>REQUEST_URI: ' . htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') . '</p>';
     echo '</div>';
@@ -174,17 +174,17 @@ function gmv_convert_wiki_links(string $body, string $repourl, string $branch, i
 function gmv_render_meta_card(array $meta, string $repourl, string $branch, int $courseid, int $blockid): string {
     if (empty($meta)) return '';
 
-    // Colores y emojis por tipo
+    // Icono por tipo de documento OKF
     $type_config = [
-        'Concept'  => ['🧠', '#7c3aed', '#ede9fe'],
-        'Entity'   => ['🏛️', '#0f766e', '#ccfbf1'],
-        'Source'   => ['📚', '#b45309', '#fef3c7'],
-        'Index'    => ['🗂️', '#1e40af', '#dbeafe'],
-        'Log'      => ['📋', '#374151', '#f3f4f6'],
-        'Playbook' => ['⚡', '#be185d', '#fce7f3'],
+        'Concept'  => ['[C]', '#7c3aed', '#ede9fe'],
+        'Entity'   => ['[E]', '#0f766e', '#ccfbf1'],
+        'Source'   => ['[S]', '#b45309', '#fef3c7'],
+        'Index'    => ['[I]', '#1e40af', '#dbeafe'],
+        'Log'      => ['[L]', '#374151', '#f3f4f6'],
+        'Playbook' => ['[P]', '#be185d', '#fce7f3'],
     ];
     $type      = $meta['type'] ?? '';
-    $tc        = $type_config[$type] ?? ['📄', '#334155', '#f1f5f9'];
+    $tc        = $type_config[$type] ?? ['[D]', '#334155', '#f1f5f9'];
     $icon      = $tc[0]; $color = $tc[1]; $bg = $tc[2];
 
     $title       = $meta['title']       ?? '';
@@ -223,7 +223,7 @@ function gmv_render_meta_card(array $meta, string $repourl, string $branch, int 
             'branch'   => $branch,
         ]))->out();
         $h .= '<div class="gmv-meta-row">';
-        $h .= '<span class="gmv-meta-label">📎 Recurso:</span>';
+        $h .= '<span class="gmv-meta-label">Recurso:</span>';
         $h .= '<a href="' . $res_url . '" class="gmv-meta-link">' . htmlspecialchars(basename($res_path)) . '</a>';
         $h .= '</div>';
     }
@@ -233,7 +233,7 @@ function gmv_render_meta_card(array $meta, string $repourl, string $branch, int 
         $tags_clean = array_filter(array_map('trim', $tags));
         if (!empty($tags_clean)) {
             $h .= '<div class="gmv-meta-row gmv-meta-tags">';
-            $h .= '<span class="gmv-meta-label">🏷️ Tags:</span>';
+            $h .= '<span class="gmv-meta-label">Tags:</span>';
             foreach ($tags_clean as $tag) {
                 $h .= '<span class="gmv-tag">' . htmlspecialchars($tag) . '</span>';
             }
@@ -246,7 +246,7 @@ function gmv_render_meta_card(array $meta, string $repourl, string $branch, int 
         $claims_clean = array_filter(array_map('trim', $claims));
         if (!empty($claims_clean)) {
             $h .= '<div class="gmv-meta-row">';
-            $h .= '<span class="gmv-meta-label">💡 Afirmaciones:</span>';
+            $h .= '<span class="gmv-meta-label">Afirmaciones:</span>';
             $h .= '<ul class="gmv-claims-list">';
             foreach ($claims_clean as $claim) {
                 $h .= '<li>' . htmlspecialchars($claim) . '</li>';
@@ -264,7 +264,7 @@ function gmv_render_meta_card(array $meta, string $repourl, string $branch, int 
         } catch (\Exception $e) {
             $ts_fmt = $timestamp;
         }
-        $h .= '<div class="gmv-meta-ts">🕐 Actualizado: ' . htmlspecialchars($ts_fmt) . '</div>';
+        $h .= '<div class="gmv-meta-ts">Actualizado: ' . htmlspecialchars($ts_fmt) . '</div>';
     }
 
     $h .= '</div>';
@@ -480,9 +480,9 @@ echo $OUTPUT->header();
   <!-- Barra superior -->
   <div class="gmv-topbar">
     <div class="gmv-breadcrumb">
-      <a href="<?php echo $back_url->out(); ?>">📊 Métricas</a>
+      <a href="<?php echo $back_url->out(); ?>">Metricas</a>
       <span style="color:#cbd5e1">›</span>
-      <span class="gmv-path-badge">📄 <?php echo s($filepath); ?></span>
+      <span class="gmv-path-badge"><?php echo s($filepath); ?></span>
     </div>
     <div class="gmv-actions">
       <a href="<?php echo $back_url->out(); ?>" class="gmv-btn gmv-btn-back">← Volver</a>
@@ -497,7 +497,7 @@ echo $OUTPUT->header();
 
     <!-- Topbar azul con nombre de archivo y rama -->
     <div class="gmv-card-topbar">
-      <div class="gmv-card-filename">📄 <?php echo s(basename($filepath)); ?></div>
+      <div class="gmv-card-filename"><?php echo s(basename($filepath)); ?></div>
       <span class="gmv-branch-badge">⎇ <?php echo s($branch); ?></span>
     </div>
 
@@ -515,7 +515,7 @@ echo $OUTPUT->header();
 
 <?php else: ?>
     <div class="gmv-error-box">
-      <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
+      <div style="font-size:32px;margin-bottom:10px;">[!]</div>
       <strong>No se pudo cargar el archivo</strong>
       <?php if (!empty($fetch_error)): ?>
         <p style="margin-top:8px;font-size:13px;"><?php echo s($fetch_error); ?></p>
@@ -526,7 +526,7 @@ echo $OUTPUT->header();
   </div><!-- .gmv-card -->
 
   <div class="gmv-footer-note">
-    📡 Contenido cargado en tiempo real desde el repositorio remoto.
+    Contenido cargado en tiempo real desde el repositorio remoto.
     No se almacena ningún archivo en el servidor de Moodle.
   </div>
 

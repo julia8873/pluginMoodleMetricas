@@ -126,7 +126,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     public function render_no_repo(): string {
         $html  = $this->styles();
         $html .= '<div class="gm-wrap gm-empty">';
-        $html .= '<span class="gm-icon">📂</span>';
+        $html .= '<span class="gm-icon">[folder]</span>';
         $html .= '<p>' . get_string('no_repo_configured', 'block_gitmetrics') . '</p>';
         $html .= '</div>';
         return $html;
@@ -135,7 +135,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     public function render_error(string $message): string {
         $html  = $this->styles();
         $html .= '<div class="gm-wrap gm-error-box">';
-        $html .= '<span class="gm-icon">⚠️</span>';
+        $html .= '<span class="gm-icon">[!]</span>';
         $html .= '<p>' . html_writer::tag('strong', 'Error: ') . s($message) . '</p>';
         $html .= '</div>';
         return $html;
@@ -148,13 +148,13 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     private function render_repo_header(array $m): string {
         $repo_link = html_writer::link(
             $m['repo_url'],
-            '🔗 ' . htmlspecialchars($m['owner'] . '/' . $m['repo']),
+            $m['owner'] . '/' . $m['repo'],
             ['target' => '_blank', 'rel' => 'noopener', 'class' => 'gm-repo-link']
         );
         $branch_badge = '<span class="gm-badge gm-badge-branch">⎇ ' . s($m['branch']) . '</span>';
 
         return '<div class="gm-header">'
-             . '<div class="gm-header-title">📊 ' . get_string('pluginname', 'block_gitmetrics') . '</div>'
+             . '<div class="gm-header-title">' . get_string('pluginname', 'block_gitmetrics') . '</div>'
              . '<div class="gm-header-repo">' . $repo_link . ' ' . $branch_badge . '</div>'
              . '</div>';
     }
@@ -164,7 +164,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     // ═════════════════════════════════════════════════════════════════════
 
     public function render_volume(array $v): string {
-        $html  = $this->section_open('📁', 'section_volume', 'gm-section-vol');
+        $html  = $this->section_open('[vol]', 'section_volume', 'gm-section-vol');
 
         // Fila de tarjetas principales
         $html .= '<div class="gm-cards">';
@@ -188,7 +188,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
         foreach ($v['essential_files'] as $name => $info) {
             $ok    = $info['present'];
             $class = $ok ? 'gm-badge-ok' : 'gm-badge-missing';
-            $icon  = $ok ? '✓' : '✗';
+            $icon  = $ok ? 'ok' : 'x';
             $title = $ok ? ($info['path'] ?? $name) : get_string('missing', 'block_gitmetrics');
             $html .= '<span class="gm-badge ' . $class . '" title="' . s($title) . '">'
                    . $icon . ' ' . htmlspecialchars($name) . '</span>';
@@ -212,7 +212,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     // ═════════════════════════════════════════════════════════════════════
 
     public function render_network(array $net): string {
-        $html  = $this->section_open('🔗', 'section_network', 'gm-section-net');
+        $html  = $this->section_open('[net]', 'section_network', 'gm-section-net');
 
         $html .= '<div class="gm-cards">';
         $html .= $this->card(get_string('metric_total_nodes', 'block_gitmetrics'),      $net['total_nodes'], 'gm-card-blue');
@@ -260,7 +260,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     // ═════════════════════════════════════════════════════════════════════
 
     public function render_tags(array $tags): string {
-        $html  = $this->section_open('🏷️', 'section_tags', 'gm-section-tags');
+        $html  = $this->section_open('[tags]', 'section_tags', 'gm-section-tags');
 
         $html .= '<div class="gm-cards">';
         $html .= $this->card(get_string('metric_unique_tags', 'block_gitmetrics'),      $tags['total_unique_tags'],  'gm-card-violet');
@@ -300,7 +300,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     // ═════════════════════════════════════════════════════════════════════
 
     public function render_format(array $fmt): string {
-        $html  = $this->section_open('✅', 'section_format', 'gm-section-fmt');
+        $html  = $this->section_open('[fmt]', 'section_format', 'gm-section-fmt');
 
         $html .= '<div class="gm-cards">';
 
@@ -441,7 +441,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
                    .   '</a>'
                    . '</td>'
                    . '<td>' . $d['outgoing'] . '</td>'
-                   . '<td>' . ($d['has_incoming'] ? '✓' : '—') . '</td>'
+                   . '<td>' . ($d['has_incoming'] ? 'Si' : 'No') . '</td>'
                    . '<td>' . $status . '</td>'
                    . '<td style="white-space:nowrap">'
                    .   '<a href="' . s($external_url) . '" target="_blank" rel="noopener" class="gm-ext-link" title="Ver en repositorio externo">↗</a>'

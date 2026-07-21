@@ -6,7 +6,7 @@ Proporciona un cuadro de mando cuantitativo y estadístico que analiza el volume
 
 ---
 
-## 🏗️ Estructura del Plugin
+## Estructura del Plugin
 
 ```text
 gitmetrics/
@@ -40,7 +40,7 @@ gitmetrics/
 
 ---
 
-## 🚀 Instalación y Puesta en Marcha
+## Instalación y Puesta en Marcha
 
 Para una instalación limpia mediante un solo comando desde la raíz del proyecto en WSL:
 
@@ -53,7 +53,7 @@ El script `instalar.sh` se encarga de levantar Docker, esperar al servidor Moodl
 
 ---
 
-## 📊 Secciones de Métricas Cuantitativas
+## Secciones de Métricas Cuantitativas
 
 El plugin calcula y estructura el análisis estadístico del repositorio en 4 categorías cuantitativas:
 
@@ -64,7 +64,7 @@ El plugin calcula y estructura el análisis estadístico del repositorio en 4 ca
 
 ---
 
-## 🛠️ Guía Rápida de Uso en Moodle
+## Guía Rápida de Uso en Moodle
 
 ### 1. Acceder a la Asignatura Dedicada
 Al finalizar la instalación, entra a Moodle:
@@ -84,15 +84,15 @@ Dentro de cualquier asignatura de tu Moodle verás en la barra superior del curs
 
 ---
 
-## 🔮 Integración con Obsidian (Módulo Opcional)
+## Integración con Obsidian (Módulo Opcional)
 
 El plugin incluye un módulo completamente opcional para visualizar los documentos de la base de conocimiento directamente en **Obsidian**, la aplicación de escritura y gestión de notas con soporte nativo de `[[wiki-links]]` y grafos de conocimiento.
 
 ### Cómo Funciona
 
-1. El script `cli/export_obsidian.php` descarga todos los archivos `.md` del repositorio Git remoto (sin guardarlos en Moodle) y los sincroniza en una carpeta local que actúa como **vault de Obsidian**.
+1. El script `cli/export_obsidian.php` descarga todos los archivos `.md` del repositorio Git remoto (sin guardarlos en Moodle) y los sincroniza en una carpeta local que actúa como vault de Obsidian.
 2. Resuelve los `[[wiki-links]]` de la ruta completa OKF (ej. `[[okf/entities/jose-juan]]`) al formato nativo de Obsidian (ej. `[[jose-juan]]`).
-3. Cuando la integración está habilitada, en el explorador de documentos de Moodle aparece el botón **`🔮 Obsidian`** junto a cada nota que usa el protocolo `obsidian://` para abrirla directamente en la aplicación de escritorio.
+3. Cuando la integración está habilitada, en el explorador de documentos de Moodle aparece el botón **"Obsidian"** junto a cada nota que usa el protocolo `obsidian://` para abrirla directamente en la aplicación de escritorio.
 
 ### Paso 1: Instalar Obsidian en el Escritorio
 
@@ -102,7 +102,7 @@ Descarga e instala [Obsidian](https://obsidian.md/download) para Windows, macOS 
 
 ### Paso 2: Configurar el Plugin en Moodle
 
-1. Entra a Moodle como administrador: **Administración del sitio → Plugins → Bloques → Git Knowledge Base Metrics**.
+1. Entra a Moodle como administrador: **Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics**.
 2. En la sección **Integración con Obsidian (opcional)**:
    - Marca **Habilitar integración con Obsidian**.
    - **Ruta local del vault**: escribe la ruta absoluta a la carpeta del vault, por ejemplo:
@@ -113,14 +113,14 @@ Descarga e instala [Obsidian](https://obsidian.md/download) para Windows, macOS 
 
 ### Paso 3: Exportar el Repositorio al Vault
 
-Ejecuta el script de exportación desde el contenedor Docker o desde el servidor:
+Ejecuta el script de exportación desde el contenedor Docker:
 
 ```bash
 # Exportación completa (sincroniza todos los .md del repo al vault local)
 docker exec --user daemon moodle-app \
   php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php
 
-# Para ver qué archivos se escribirían sin tocar el disco (dry-run)
+# Previsualizar qué archivos se escribirían sin tocar el disco (dry-run)
 docker exec --user daemon moodle-app \
   php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php --dry-run
 
@@ -130,7 +130,7 @@ docker exec --user daemon moodle-app \
   --vault=/mnt/c/Users/julia/Documents/OKF-Vault
 ```
 
-Si quieres que la sincronización sea automática, añade el comando al cron del servidor (ej. cada hora):
+Para sincronización automática, añade el comando al cron del servidor:
 
 ```bash
 # Cron: exportar cada hora
@@ -139,25 +139,18 @@ Si quieres que la sincronización sea automática, añade el comando al cron del
 
 ### Paso 4: Abrir Notas desde Moodle
 
-Una vez habilitada la integración y exportado el vault, en el explorador de documentos de la asignatura **Panel de Métricas y BdC** aparecerá el botón **`🔮 Obsidian`** al lado de cada nota. Al hacer clic, el navegador envía una URI `obsidian://open?vault=OKF-Vault&file=...` que abre inmediatamente el fichero en la aplicación Obsidian del escritorio, con el grafo de conocimiento y los `[[wiki-links]]` resueltos nativamente.
+Una vez habilitada la integración y exportado el vault, en el explorador de documentos aparecerá el botón **"Obsidian"** al lado de cada nota. Al hacer clic, el navegador envía una URI `obsidian://open?vault=OKF-Vault&file=...` que abre inmediatamente el fichero en la aplicación Obsidian del escritorio, con el grafo de conocimiento y los `[[wiki-links]]` resueltos nativamente.
 
 > **Nota**: El protocolo `obsidian://` solo funciona si Obsidian está instalado en el mismo ordenador donde se está usando el navegador. No funciona desde un servidor remoto sin aplicación local.
 
-### Cómo Desactivar / Eliminar la Integración
+### Cómo Desactivar o Eliminar la Integración
 
-Para quitar completamente el módulo de Obsidian sin afectar al resto del plugin:
-
-1. **Desmarcar** la casilla *Habilitar integración con Obsidian* en los ajustes del plugin (oculta los botones instantáneamente).
-2. Si quieres eliminar el código por completo:
-   - Borra `classes/obsidian_exporter.php`.
-   - Borra `cli/export_obsidian.php`.
-   - En `settings.php`, elimina el bloque entre `OBSIDIAN_OPTIONAL_START` y `OBSIDIAN_OPTIONAL_END`.
-   - En `cli/setup_course.php`, elimina los bloques marcados con `OBSIDIAN_OPTIONAL`.
-   - En `lang/es/block_gitmetrics.php` y `lang/en/block_gitmetrics.php`, elimina las cadenas del bloque `// Obsidian (opcional)`.
+- **Desactivación rápida**: desmarcar la casilla *Habilitar integración con Obsidian* en los ajustes del plugin oculta los botones instantáneamente.
+- **Eliminación completa**: borrar `classes/obsidian_exporter.php` y `cli/export_obsidian.php`, y eliminar los bloques marcados con `OBSIDIAN_OPTIONAL` en `settings.php` y `cli/setup_course.php`.
 
 ---
 
-## ⚙️ Arquitectura Técnica y Caché
+## Arquitectura Técnica y Caché
 
 ### Interfaz Única de Proveedores (`git_provider_interface`)
 El sistema abstrae la obtención de datos mediante una interfaz estandarizada implementada por `github_client` y `gitlab_client`:

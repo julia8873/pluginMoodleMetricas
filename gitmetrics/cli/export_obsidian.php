@@ -111,12 +111,12 @@ if (!$dry_run) {
         $exporter = new \block_gitmetrics\obsidian_exporter($client, $repourl, $vault_path, $branch);
         $stats    = $exporter->export();
 
-        echo "✅ Exportación completada:\n";
+        echo "Exportacion completada:\n";
         echo "   · Archivos escritos/actualizados: {$stats['written']}\n";
         echo "   · Archivos sin cambios (omitidos): {$stats['skipped']}\n";
 
         if (!empty($stats['errors'])) {
-            echo "⚠️  Errores durante la exportación:\n";
+            echo "Errores durante la exportacion:\n";
             foreach ($stats['errors'] as $err) {
                 echo "   {$err}\n";
             }
