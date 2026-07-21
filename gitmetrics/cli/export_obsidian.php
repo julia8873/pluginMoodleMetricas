@@ -21,6 +21,9 @@
 define('CLI_SCRIPT', true);
 
 require_once(__DIR__ . '/../../../config.php');
+// Cargar filelib.php para que la clase \curl de Moodle este disponible en CLI
+require_once($CFG->libdir . '/filelib.php');
+require_once($CFG->libdir . '/clilib.php');
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/git_provider_interface.php');
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/github_client.php');
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/gitlab_client.php');

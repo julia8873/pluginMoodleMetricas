@@ -31,6 +31,10 @@ services:
     volumes:
       - moodle_data:/bitnami/moodle
       - moodledata_data:/bitnami/moodledata
+      # Volumen de exportacion a Obsidian (opcional).
+      # Monta la carpeta OKF-Vault del host en /obsidian-vault dentro del contenedor.
+      # Si no usas Obsidian, elimina esta linea sin afectar al resto del stack.
+      - ${OBSIDIAN_VAULT_PATH:-/tmp/okf-vault-placeholder}:/obsidian-vault
 
   synapse:
     image: matrixdotorg/synapse:latest

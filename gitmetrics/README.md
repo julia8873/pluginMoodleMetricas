@@ -90,14 +90,14 @@ El plugin incluye un módulo completamente opcional para visualizar los document
 
 ### Cómo Funciona
 
-1. El script `cli/export_obsidian.php` descarga todos los archivos `.md` del repositorio Git remoto (sin guardarlos en Moodle) y los sincroniza en una carpeta local que actúa como vault de Obsidian.
+1. El script `cli/export_obsidian.php` o la tarea programada `sync_obsidian` descarga todos los archivos `.md` del repositorio Git remoto (sin guardarlos en Moodle) y los sincroniza en una carpeta local que actúa como vault de Obsidian.
 2. Resuelve los `[[wiki-links]]` de la ruta completa OKF (ej. `[[okf/entities/jose-juan]]`) al formato nativo de Obsidian (ej. `[[jose-juan]]`).
-3. Cuando la integración está habilitada, en el explorador de documentos de Moodle aparece el botón **"Obsidian"** junto a cada nota que usa el protocolo `obsidian://` para abrirla directamente en la aplicación de escritorio.
+3. Cuando la integración está habilitada, en el explorador y visor de Moodle aparece el botón **"Obsidian"** junto a cada nota que usa el protocolo `obsidian://` para abrirla directamente en la aplicación de escritorio.
 
 ### Paso 1: Instalar Obsidian en el Escritorio
 
 Descarga e instala [Obsidian](https://obsidian.md/download) para Windows, macOS o Linux. Al abrirlo por primera vez, crea un nuevo vault:
-- **Nombre del vault**: `OKF-Vault` (o el nombre que quieras, anótalo).
+- **Nombre del vault**: `OKF-Vault` (o el nombre que prefieras).
 - **Carpeta del vault**: elige o crea la carpeta donde quieres que vivan los documentos exportados (ej. `C:\Users\julia\Documents\OKF-Vault`).
 
 ### Paso 2: Configurar el Plugin en Moodle
@@ -105,16 +105,18 @@ Descarga e instala [Obsidian](https://obsidian.md/download) para Windows, macOS 
 1. Entra a Moodle como administrador: **Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics**.
 2. En la sección **Integración con Obsidian (opcional)**:
    - Marca **Habilitar integración con Obsidian**.
-   - **Ruta local del vault**: escribe la ruta absoluta a la carpeta del vault, por ejemplo:
-     - Windows (WSL): `/mnt/c/Users/julia/Documents/OKF-Vault`
-     - Linux nativo: `/home/julia/Documents/OKF-Vault`
+   - **Ruta local del vault**: escribe la ruta absoluta a la carpeta del vault (`/obsidian-vault` en Docker o tu ruta del host).
    - **Nombre del vault**: escribe exactamente el nombre con el que creaste el vault en Obsidian (ej. `OKF-Vault`).
 3. Guarda los cambios.
 
-### Paso 3: Exportar el Repositorio al Vault
+### Paso 3: Exportar y Sincronizar el Repositorio al Vault
 
-Ejecuta el script de exportación desde el contenedor Docker:
+Puedes sincronizar manualmente, mediante tarea programada nativa de Moodle, o cron de Linux:
 
+#### Opción A: Tarea Programada Nativa de Moodle (Recomendado)
+El plugin registra la tarea programada `\block_gitmetrics\task\sync_obsidian` que se ejecuta automáticamente cada hora cuando corre el cron general de Moodle (`php admin/cli/cron.php`). Puedes configurarla en **Administración del sitio > Servidor > Tareas programadas**.
+
+#### Opción B: CLI o Cron de Sistema Linux
 ```bash
 # Exportación completa (sincroniza todos los .md del repo al vault local)
 docker exec --user daemon moodle-app \
@@ -130,23 +132,26 @@ docker exec --user daemon moodle-app \
   --vault=/mnt/c/Users/julia/Documents/OKF-Vault
 ```
 
-Para sincronización automática, añade el comando al cron del servidor:
-
+Para programarlo en el cron de Linux/WSL (`crontab -e`):
 ```bash
 # Cron: exportar cada hora
-0 * * * * docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php
+0 * * * * docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php >/dev/null 2>&1
 ```
 
 ### Paso 4: Abrir Notas desde Moodle
 
-Una vez habilitada la integración y exportado el vault, en el explorador de documentos aparecerá el botón **"Obsidian"** al lado de cada nota. Al hacer clic, el navegador envía una URI `obsidian://open?vault=OKF-Vault&file=...` que abre inmediatamente el fichero en la aplicación Obsidian del escritorio, con el grafo de conocimiento y los `[[wiki-links]]` resueltos nativamente.
+Una vez habilitada la integración (`obsidian_enabled`) y exportado el vault, el botón **"Obsidian"** aparecerá en:
+1. **Sección 0 (Acceso a Documentos)**: a la derecha de cada fila de la jerarquía de archivos (`[↗ Ver en GitLab] [Obsidian]`).
+2. **Visor Markdown (`view_file.php`)**: en la barra superior derecha de acciones al leer cualquier apunte.
+
+Al hacer clic, el navegador envía una URI `obsidian://open?vault=OKF-Vault&file=...` que abre inmediatamente el fichero en la aplicación Obsidian del escritorio, con el grafo de conocimiento resuelto nativamente.
 
 > **Nota**: El protocolo `obsidian://` solo funciona si Obsidian está instalado en el mismo ordenador donde se está usando el navegador. No funciona desde un servidor remoto sin aplicación local.
 
 ### Cómo Desactivar o Eliminar la Integración
 
-- **Desactivación rápida**: desmarcar la casilla *Habilitar integración con Obsidian* en los ajustes del plugin oculta los botones instantáneamente.
-- **Eliminación completa**: borrar `classes/obsidian_exporter.php` y `cli/export_obsidian.php`, y eliminar los bloques marcados con `OBSIDIAN_OPTIONAL` en `settings.php` y `cli/setup_course.php`.
+- **Desactivación rápida**: desmarcar la casilla *Habilitar integración con Obsidian* en los ajustes del plugin oculta los botones instantáneamente y detiene la tarea programada.
+- **Eliminación completa**: borrar `classes/obsidian_exporter.php`, `cli/export_obsidian.php` y `classes/task/sync_obsidian.php`, y eliminar los bloques marcados con `OBSIDIAN_OPTIONAL` en `settings.php`, `cli/setup_course.php`, `view_file.php` y `db/tasks.php`.
 
 ---
 

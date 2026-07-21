@@ -85,6 +85,16 @@ try {
     $fetch_error = $e->getMessage();
 }
 
+// OBSIDIAN_OPTIONAL_START
+require_once($CFG->dirroot . '/blocks/gitmetrics/classes/obsidian_exporter.php');
+$obsidian_enabled    = (bool) get_config('block_gitmetrics', 'obsidian_enabled');
+$obsidian_vault_name = get_config('block_gitmetrics', 'obsidian_vault_name') ?: 'OKF-Vault';
+$obsidian_uri        = '';
+if ($obsidian_enabled) {
+    $obsidian_uri = \block_gitmetrics\obsidian_exporter::get_obsidian_uri($filepath, $obsidian_vault_name);
+}
+// OBSIDIAN_OPTIONAL_END
+
 // ═════════════════════════════════════════════════════════════════════════════
 // Funciones de procesamiento de Markdown / Frontmatter / Wiki-links
 // ═════════════════════════════════════════════════════════════════════════════
@@ -358,6 +368,10 @@ echo $OUTPUT->header();
 .gmv-btn-back:hover { background: #e2e8f0; text-decoration: none; color: #1e293b; }
 .gmv-btn-ext  { background: #2563eb; color: #fff; }
 .gmv-btn-ext:hover  { background: #1d4ed8; text-decoration: none; color: #fff; }
+/* OBSIDIAN_OPTIONAL_START */
+.gmv-btn-obsidian { background: #6d28d9; color: #fff; }
+.gmv-btn-obsidian:hover { background: #5b21b6; text-decoration: none; color: #fff; }
+/* OBSIDIAN_OPTIONAL_END */
 
 /* Tarjeta principal */
 .gmv-card {
@@ -489,6 +503,13 @@ echo $OUTPUT->header();
       <a href="<?php echo s($external_url); ?>" target="_blank" rel="noopener" class="gmv-btn gmv-btn-ext">
         ↗ Ver en <?php echo ($provider === 'github') ? 'GitHub' : 'GitLab'; ?>
       </a>
+      <?php // OBSIDIAN_OPTIONAL_START ?>
+      <?php if ($obsidian_enabled && $obsidian_uri !== ''): ?>
+        <a href="<?php echo s($obsidian_uri); ?>" class="gmv-btn gmv-btn-obsidian" title="Abrir en Obsidian">
+          Obsidian
+        </a>
+      <?php endif; ?>
+      <?php // OBSIDIAN_OPTIONAL_END ?>
     </div>
   </div>
 

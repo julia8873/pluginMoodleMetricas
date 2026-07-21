@@ -183,7 +183,7 @@ $doc_html .= '</div>';
 // Barra de búsqueda y botones toggle all
 $doc_html .= '<div class="gmdb-search-bar">';
 $doc_html .= '<div class="gmdb-search-input-wrap">';
-$doc_html .= '<span class="gmdb-search-icon">[Buscar]</span>';
+$doc_html .= '<span class="gmdb-search-icon">🔎</span>';
 $doc_html .= '<input type="text" id="gmdb-search-input" class="gmdb-search-input" placeholder="Buscar documento por nombre, ruta o carpeta (ej. campo, ecuaciones, concepts)..." autocomplete="off">';
 $doc_html .= '<button type="button" id="gmdb-search-clear" class="gmdb-search-clear" style="display:none;" title="Limpiar busqueda">X</button>';
 $doc_html .= '</div>';

@@ -133,12 +133,22 @@ Descarga e instala [Obsidian](https://obsidian.md/download) para Windows, macOS 
    - **Nombre del vault**: escribe exactamente el nombre con el que creaste el vault en Obsidian (ej. `OKF-Vault`).
 3. Guarda los cambios.
 
-### Paso 3: Exportar el Repositorio al Vault
+### Paso 3: Exportar y Sincronizar el Repositorio al Vault
 
-Ejecuta el script de exportación desde el contenedor Docker:
+Puedes realizar la sincronización de dos formas (o combinadas): manual/mediante cron del sistema, o mediante la Tarea Programada nativa de Moodle.
+
+#### Opción A: Tarea Programada Nativa de Moodle (Recomendado)
+El plugin incluye la tarea programada `\block_gitmetrics\task\sync_obsidian` registrada automáticamente en Moodle.
+1. Entra a **Administración del sitio > Servidor > Tareas programadas**.
+2. Busca **Sincronización programada del vault de Obsidian** (`block_gitmetrics\task\sync_obsidian`).
+3. Por defecto está programada para ejecutarse en el minuto 0 de cada hora (`0 * * * *`). Puedes cambiar su periodicidad o ejecutarla manualmente desde la web pulsando el botón **Ejecutar ahora**.
+4. Cada vez que el cron general de Moodle se ejecuta (`php admin/cli/cron.php`), esta tarea sincronizará automáticamente las notas al vault configurado.
+
+#### Opción B: Ejecución CLI por Comando o Cron de Sistema Linux
+Puedes lanzar la exportación manualmente o integrarla en el cron del sistema operativo:
 
 ```bash
-# Exportación completa (sincroniza todos los .md del repo al vault local)
+# Exportación manual desde el contenedor Docker
 docker exec --user daemon moodle-app \
   php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php
 
@@ -152,23 +162,26 @@ docker exec --user daemon moodle-app \
   --vault=/mnt/c/Users/julia/Documents/OKF-Vault
 ```
 
-Para sincronización automática, añade el comando al cron del servidor:
-
+Para programarlo en el cron de Linux/WSL (`crontab -e`):
 ```bash
-# Cron: exportar cada hora
-0 * * * * docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php
+# Ejecutar cada hora exacta en el host
+0 * * * * docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php >/dev/null 2>&1
 ```
 
 ### Paso 4: Abrir Notas desde Moodle
 
-Una vez habilitada la integración y exportado el vault, en el explorador de documentos aparecerá el botón **"Obsidian"** al lado de cada nota. Al hacer clic, el navegador envía una URI `obsidian://open?vault=OKF-Vault&file=...` que abre inmediatamente el fichero en la aplicación Obsidian del escritorio, con el grafo de conocimiento y los `[[wiki-links]]` resueltos nativamente.
+Una vez habilitada la integración (`obsidian_enabled`) y exportado el vault, el botón **"Obsidian"** aparecerá en dos ubicaciones estratégicas:
+1. **En la Sección 0 (Acceso a Documentos)**: a la derecha de cada fila del explorador jerárquico (`[↗ Ver en GitLab] [Obsidian]`).
+2. **En el Visor de Documentos (`view_file.php`)**: en la barra superior derecha de acciones al consultar cualquier apunte.
+
+Al hacer clic, el navegador envía una URI del tipo `obsidian://open?vault=OKF-Vault&file=...` que abre inmediatamente el fichero en la aplicación Obsidian del escritorio, con el grafo de conocimiento y los enlaces internos (`[[wiki-links]]`) resueltos nativamente.
 
 > **Nota**: El protocolo `obsidian://` solo funciona si Obsidian está instalado en el mismo ordenador donde se está usando el navegador. No funciona desde un servidor remoto sin aplicación local.
 
 ### Cómo Desactivar o Eliminar la Integración
 
-- **Desactivación rápida**: desmarcar la casilla *Habilitar integración con Obsidian* en los ajustes del plugin oculta los botones instantáneamente.
-- **Eliminación completa**: borrar `classes/obsidian_exporter.php` y `cli/export_obsidian.php`, y eliminar los bloques marcados con `OBSIDIAN_OPTIONAL` en `settings.php` y `cli/setup_course.php`.
+- **Desactivación rápida**: desmarcar la casilla *Habilitar integración con Obsidian* en los ajustes del plugin oculta los botones instantáneamente y detiene la tarea programada.
+- **Eliminación completa**: borrar `classes/obsidian_exporter.php`, `cli/export_obsidian.php` y `classes/task/sync_obsidian.php`, y eliminar los bloques marcados con `OBSIDIAN_OPTIONAL` en `settings.php`, `cli/setup_course.php`, `view_file.php` y `db/tasks.php`.
 
 ---
 
@@ -210,34 +223,52 @@ Para que Moodle pueda crear salas e invitar a profesores/estudiantes de forma au
 
 ---
 
-### Paso 3: Activar la Comunicación con Matrix en Moodle
-Ahora vincularemos el LMS Moodle con el Homeserver Matrix:
+### Paso 3: Activar y Desbloquear la Comunicación con Matrix en Moodle
+Ahora vincularemos el LMS Moodle con el Homeserver Matrix y permitiremos las peticiones internas:
 
-1. Entra a Moodle (`http://localhost:8000`) como administrador (`admin` / `adminpass123`).
-2. **Activar Comunicaciones**:
+1. **Entra a Moodle** (`http://localhost:8000`) como administrador (`admin` / `adminpass123`).
+2. **Activar el Subsistema de Comunicaciones**:
    - Ve a **Administración del sitio > Desarrollo > Características experimentales (`Experimental settings`)**.
    - Marca la casilla **Habilitar proveedores de comunicación (`Enable communication providers` / `enablecommunication`)**.
    - Guarda los cambios al final de la página.
-3. **Configurar el Proveedor Matrix**:
+3. **Desbloquear Puertos y Red Interna de Docker (Importante para evitar `The URL is blocked`)**:
+   Por defecto, la seguridad cURL de Moodle bloquea peticiones a redes privadas y puertos no estándar. Para que Moodle pueda consultar Synapse (`http://matrix-synapse:8008`), ve a **Administración del sitio > Seguridad > Seguridad HTTP**:
+   - En **Lista de puertos permitidos (`curlsecurityallowedport`)**, añade los puertos del stack: `443`, `80`, `8008`, `8081` y `8080` (uno por línea).
+   - En **Lista de hosts bloqueados (`curlsecurityblockedhosts`)**, elimina o vacía las subredes internas (`172.16.0.0/12`, `127.0.0.0/8`, `localhost`) que impidan a los contenedores hablar entre sí.
+   - Guarda los cambios.
+4. **Configurar el Proveedor Matrix**:
    - Ve a **Administración del sitio > Plugins > Comunicación (`Communication`) > Matrix**.
    - Completa los siguientes parámetros exactos:
      - **URL del servidor Matrix**: `http://matrix-synapse:8008` *(Usar el nombre del contenedor interno de Docker, no `localhost`)*.
-     - **Access Token**: Pega el token de Element Web copiado en el Paso 2.
+     - **Access Token**: Pega el token de Element Web copiado en el Paso 2 (`@admin:localhost`). *(Nota: Si este campo se deja vacío, Moodle ocultará la opción de Matrix en las asignaturas).*
      - **URL de Element Web**: `http://localhost:8081`
    - Guarda los cambios.
 
 ---
 
-### Paso 4: Conectar una Sala de Matrix con una Asignatura
-Una vez configurado el proveedor, cualquier docente puede asociar una sala de chat colaborativa a su asignatura:
-1. Entra a un curso (por ejemplo, **`Panel de Métricas y BdC`**).
-2. En la barra superior de pestañas del curso, pulsa en **Configuración (`Settings`)**.
-3. Despliega la sección inferior **Comunicación (`Communication`)**.
-4. En **Proveedor de comunicación (`Communication provider`)**, selecciona **`Matrix`**.
-5. Escribe un nombre para la sala (ej. `Chat de Evaluación de Apuntes OKF`).
-6. Guarda los cambios.
+### Paso 4: Conectar una Asignatura y Creación Automática de la Sala
+En Moodle 4.3+, la configuración de comunicación tiene su propia pestaña dedicada independiente de los ajustes generales del curso. Para asociar una sala y hacer que se cree automáticamente en Synapse:
 
-> **Nota:** Moodle procesa y crea la sala de Matrix mediante sus tareas programadas en segundo plano (`cron`). Tras la sincronización del cron, dentro del curso aparecerá un enlace directo para abrir **Element Web** y chatear con los miembros matriculados en tiempo real.
+1. **Acceder a la configuración de Comunicación del Curso**:
+   - Entra a la asignatura (por ejemplo, **`Panel de Métricas y BdC`**).
+   - En la barra superior horizontal de pestañas del curso (`Curso | Configuración | Participantes | Calificaciones | Más...`), pulsa en **`Más...` -> `Comunicación`** (o en **`Comunicación`** si está visible directamente en la barra).
+   - *(Ruta directa: `/communication/configure.php?instanceid=ID_CURSO`)*.
+2. **Seleccionar el Proveedor Matrix**:
+   - En el menú desplegable **Proveedor (`Provider`)**, selecciona **`Matrix`**.
+   - Escribe un nombre identificativo para la sala (ej. `Panel de Métricas y BdC` o `Chat OKF de Asignatura`).
+   - Pulsa en **Guardar cambios**.
+
+#### Proceso de Creación Automática en Synapse
+Al guardar la configuración, Moodle gestiona la creación de la sala de forma totalmente automática y desatendida mediante su cola de tareas en segundo plano (`Ad-hoc tasks`):
+- **Encolado automático**: Moodle crea el registro local en su base de datos (`mdl_communication`) y encola la tarea `\core_communication\task\create_and_configure_room_task`.
+- **Ejecución y creación remota**: Cuando se ejecuta el cron del sistema (`php admin/cli/cron.php`), Moodle se conecta a la API REST de Synapse (`_matrix/client/v3/createRoom`), crea la sala de chat privada en Matrix, le asigna el tema y registra su identificador único (`room_id`, por ejemplo `!KVJQNCcFnFgfcpvSfG:localhost`).
+- **Sincronización de participantes**: El sistema matriculará de forma progresiva en la sala de Matrix a los profesores y estudiantes inscritos en el curso conforme accedan al entorno.
+
+> **Ejecución inmediata por CLI (Opcional)**: Si no deseas esperar al ciclo regular del cron del servidor para que se genere la sala en Matrix, puedes forzar el procesado instantáneo de las tareas ad-hoc ejecutando este comando desde tu terminal:
+> ```bash
+> docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/cron.php
+> ```
+> Una vez completado, dentro del curso aparecerá el enlace directo para abrir **Element Web** (`http://localhost:8081`) y acceder a la sala.
 
 ---
 

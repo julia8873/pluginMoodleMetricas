@@ -116,3 +116,4 @@ $string['obsidian_vault_path']         = 'Local Obsidian vault path';
 $string['obsidian_vault_path_desc']    = 'Absolute path on the user\'s file system where the Obsidian vault is (or will be created). Example: /home/julia/Documents/OKF-Vault or C:\\Users\\julia\\Documents\\OKF-Vault';
 $string['obsidian_vault_name']         = 'Obsidian vault name';
 $string['obsidian_vault_name_desc']    = 'Exact name of the vault as Obsidian registered it when it was created (the vault folder name). This is used to build the obsidian:// protocol links.';
+$string['task_sync_obsidian']          = 'Scheduled Obsidian vault synchronization';
