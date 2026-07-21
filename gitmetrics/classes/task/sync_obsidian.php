@@ -49,7 +49,7 @@ class sync_obsidian extends \core\task\scheduled_task {
         require_once($CFG->dirroot . '/blocks/gitmetrics/classes/github_client.php');
         require_once($CFG->dirroot . '/blocks/gitmetrics/classes/gitlab_client.php');
 
-        $provider = get_config('block_gitmetrics', 'git_provider') ?: 'gitlab';
+        $provider = get_config('block_gitmetrics', 'default_provider') ?: 'gitlab';
         $repourl  = get_config('block_gitmetrics', 'repo_url') ?: 'https://gitlab.com/julia8873/BdC';
         $branch   = get_config('block_gitmetrics', 'default_branch') ?: 'main';
 

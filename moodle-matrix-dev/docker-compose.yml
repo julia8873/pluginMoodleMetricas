@@ -64,6 +64,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./github-bot-plugin/maubot-data:/data
+      - ./github-bot-plugin/github-bot-plugin:/plugin-src:ro
     ports:
       - "29316:29316"
     depends_on:

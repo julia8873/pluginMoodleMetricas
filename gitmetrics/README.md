@@ -85,6 +85,28 @@ Dentro de cualquier asignatura de tu Moodle verás en la barra superior del curs
 
 ---
 
+## Configurar y Ejecutar con GitLab vs GitHub
+
+El plugin de bloque `block_gitmetrics` incluye una arquitectura multi-proveedor gestionada a través de `classes/git_provider_interface.php`, permitiendo elegir la fuente en la configuración global:
+
+### Ejecución con GitLab (Recomendado)
+1. Ve en Moodle a **Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics (`Gitmetrics`)**.
+2. Configura:
+   - **Proveedor Git principal**: Selecciona `GitLab`.
+   - **URL Base de GitLab**: `https://gitlab.com` (o la URL de tu instancia privada/universitaria).
+   - **Token de API (GitLab Access Token)**: Pega tu `PRIVATE-TOKEN` con permisos `api` o `read_api` (`glpat-...`).
+   - **Tolerancia SSL**: Si usas un servidor local con SSL autofirmado, marca `Ignorar verificación SSL (`ignoresecurity`)`.
+3. Guarda los cambios. En la configuración del bloque de cualquier curso, introduce la URL del repositorio en GitLab (`https://gitlab.com/julia8873/BdC`).
+
+### Ejecución con GitHub
+1. Ve en Moodle a **Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics (`Gitmetrics`)**.
+2. Configura:
+   - **Proveedor Git principal**: Selecciona `GitHub`.
+   - **Token de API (GitHub Personal Access Token)**: Pega tu token clásico con scope `repo` (`ghp_...`).
+3. Guarda los cambios. En el bloque del curso, introduce la URL del repositorio en GitHub (`https://github.com/julia8873/BdC`).
+
+---
+
 ## Integración con Obsidian (Módulo Opcional)
 
 El plugin incluye un módulo completamente opcional para visualizar los documentos de la base de conocimiento directamente en **Obsidian**, la aplicación de escritura y gestión de notas con soporte nativo de `[[wiki-links]]` y grafos de conocimiento.

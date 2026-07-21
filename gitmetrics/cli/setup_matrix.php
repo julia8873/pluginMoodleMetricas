@@ -53,62 +53,9 @@ set_config('matrixaccesstoken', $token, 'communication_matrix');
 set_config('matrixelementurl', 'http://localhost:8081', 'communication_matrix');
 echo "Parametros de Matrix guardados correctamente en la base de datos de Moodle.\n";
 
-echo "=== 5. Vinculando sala de Matrix a la asignatura 'Panel de Metricas y BdC' ===\n";
-global $DB;
-$course = $DB->get_record('course', ['shortname' => 'METRICAS_BDC']);
-if ($course) {
-    $context = \core\context\course::instance($course->id);
-    $commrecord = $DB->get_record('communication', [
-        'contextid' => $context->id,
-        'component' => 'core_course',
-        'instancetype' => 'coursecommunication',
-        'instanceid' => $course->id
-    ]);
-
-    if (!$commrecord) {
-        $commrecord = new stdClass();
-        $commrecord->contextid = $context->id;
-        $commrecord->component = 'core_course';
-        $commrecord->instancetype = 'coursecommunication';
-        $commrecord->instanceid = $course->id;
-        $commrecord->provider = 'communication_matrix';
-        $commrecord->roomname = 'Chat Panel de Metricas y BdC';
-        $commrecord->active = 1;
-        $commrecord->timecreated = time();
-        $commrecord->timemodified = time();
-        $commrecord->id = $DB->insert_record('communication', $commrecord);
-        echo "Instancia de comunicacion para el curso creada (ID: {$commrecord->id}).\n";
-    } else {
-        $commrecord->provider = 'communication_matrix';
-        if (empty($commrecord->roomname)) {
-            $commrecord->roomname = 'Chat Panel de Metricas y BdC';
-        }
-        $commrecord->active = 1;
-        $commrecord->timemodified = time();
-        $DB->update_record('communication', $commrecord);
-        echo "Instancia de comunicacion para el curso actualizada (ID: {$commrecord->id}).\n";
-    }
-
-    require_once($CFG->dirroot . '/communication/classes/api.php');
-    $comm = \core_communication\api::load_by_instance(
-        context: $context,
-        component: 'core_course',
-        instancetype: 'coursecommunication',
-        instanceid: $course->id,
-        provider: 'communication_matrix'
-    );
-    
-    $provider = $comm->get_processor()->get_room_provider();
-    if ($provider) {
-        try {
-            $provider->create_chat_room();
-            echo "Sala de Matrix creada y enlazada automaticamente en Synapse.\n";
-        } catch (Exception $e) {
-            echo "Aviso al crear sala en Synapse: " . $e->getMessage() . "\n";
-        }
-    }
-} else {
-    echo "Asignatura 'Panel de Metricas y BdC' no encontrada. Ejecuta primero setup_course.php.\n";
-}
+echo "=== 5. Vinculando sala de Matrix e incluyendo al bot en todos los cursos de Moodle ===\n";
+require_once($CFG->dirroot . '/blocks/gitmetrics/classes/matrix_helper.php');
+$count = \block_gitmetrics\matrix_helper::process_all_existing_courses();
+echo "Se ha comprobado y asegurado la sala de chat y la inclusión del bot (@githubbot:localhost) en {$count} asignaturas.\n";
 
 echo "\n=== CONFIGURACION AUTOMATICA DE MATRIX COMPLETADA ===\n";

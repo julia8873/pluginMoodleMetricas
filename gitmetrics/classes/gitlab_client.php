@@ -3,6 +3,9 @@ namespace block_gitmetrics;
 
 defined('MOODLE_INTERNAL') || die();
 
+global $CFG;
+require_once($CFG->libdir . '/filelib.php');
+
 /**
  * Cliente HTTP para la API v4 de GitLab (auto-alojado u OSL).
  *

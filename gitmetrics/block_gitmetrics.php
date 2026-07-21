@@ -25,6 +25,24 @@ class block_gitmetrics extends block_base {
         return true;
     }
 
+    public function instance_create() {
+        if (!empty($this->page->course->id) && $this->page->course->id > 1) {
+            if (class_exists('\block_gitmetrics\matrix_helper')) {
+                \block_gitmetrics\matrix_helper::ensure_room_and_bot((int)$this->page->course->id);
+            }
+        }
+        return parent::instance_create();
+    }
+
+    public function instance_config_save($data, $nolongerused = false) {
+        if (!empty($this->page->course->id) && $this->page->course->id > 1) {
+            if (class_exists('\block_gitmetrics\matrix_helper')) {
+                \block_gitmetrics\matrix_helper::ensure_room_and_bot((int)$this->page->course->id);
+            }
+        }
+        return parent::instance_config_save($data, $nolongerused);
+    }
+
     // ── Contenido del bloque ──────────────────────────────────────────────
 
     public function get_content() {
@@ -102,7 +120,7 @@ class block_gitmetrics extends block_base {
             $blockid  = isset($this->instance->id) ? (int)$this->instance->id : 0;
             $this->content->text = $renderer->render_metrics($metrics, $courseid, $blockid);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->content->text = $renderer->render_error($e->getMessage());
         }
 

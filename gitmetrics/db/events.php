@@ -1,5 +1,10 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
 
-// block_gitmetrics no define eventos de Moodle por ahora.
-$observers = [];
+$observers = [
+    [
+        'eventname'   => '\core\event\course_created',
+        'callback'    => '\block_gitmetrics\observer::course_created',
+        'internal'    => false,
+    ],
+];

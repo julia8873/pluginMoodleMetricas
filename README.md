@@ -279,10 +279,10 @@ Al guardar la configuración, Moodle gestiona la creación de la sala de forma t
 
 ---
 
-### Paso 5: Configurar el Bot Asistente de GitHub (Maubot)
-El stack incluye **Maubot**, un servicio que ejecuta un bot inteligente en Matrix (`dev.julia.githubbot`) para interactuar con repositorios de GitHub/GitLab directamente desde el chat:
+### Paso 5: Configurar el Bot Asistente de Git (Maubot: Soporte Multi-Proveedor GitLab y GitHub)
+El stack incluye **Maubot**, un servicio que ejecuta un bot inteligente en Matrix (`dev.julia.githubbot`) para interactuar con repositorios de GitHub o GitLab directamente desde las salas de chat:
 
-1. **Crear fichero de configuración inicial (si no existe)**:
+1. **Crear fichero de configuración inicial de Maubot (si no existe)**:
    ```bash
    cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
    cp github-bot-plugin/maubot-data/config.yaml.example github-bot-plugin/maubot-data/config.yaml
@@ -290,20 +290,92 @@ El stack incluye **Maubot**, un servicio que ejecuta un bot inteligente en Matri
 2. **Acceso al Panel Web de Maubot**:
    - Abre `http://localhost:29316/_matrix/maubot/`
    - Inicia sesión con el usuario `admin` y la contraseña especificada en `config.yaml`.
-3. **Puesta en marcha del Bot**:
+3. **Puesta en marcha e Instancia del Bot**:
    - Ve a **Clients** -> crea una cuenta cliente en Matrix para que el bot pueda unirse a las salas.
-   - Ve a **Instances** -> crea una instancia del plugin `dev.julia.githubbot` y vincúlala al cliente.
-   - En la configuración de la instancia (`base-config.yaml`), rellena tu `github_token` o claves de LLM (ej. de Ollama en `http://localhost:11434`) si deseas asistencia por inteligencia artificial dentro del chat.
-   - El bot recompilará su código en cada reinicio (`docker compose restart maubot`).
+   - Ve a **Instances** -> crea una instancia del plugin `dev.julia.githubbot` y vincúlala al cliente creado.
+   - En la configuración de la instancia (`base-config.yaml`), define tu proveedor (`gitlab` o `github`) y las claves de acceso correspondientes (ver sección siguiente para instrucciones paso a paso).
+   - El bot compila y carga sus cambios automáticamente en cada reinicio (`docker compose restart maubot`).
 
 ---
 
-## 7. Configuración de Proveedores Git (GitHub vs GitLab)
+## 7. Guía Paso a Paso de Ejecución y Configuración: GitLab vs GitHub
 
-| Proveedor | Cuándo Elegirlo | URL del Repositorio | Token Necesario |
-| :--- | :--- | :--- | :--- |
-| **GitHub** | Proyectos y repos en `github.com`. | `https://github.com/owner/repo` | GitHub Personal Access Token (PAT) clásico con scope `repo` o `public_repo`. Configurable en *Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics*. |
-| **GitLab (OSL / Local / Cloud)** | Servidor de la Oficina de Software Libre (OSL) de tu universidad, laboratorios locales o `gitlab.com`. | `https://gitlab.osl.ugr.es/owner/repo`<br>`http://localhost:8929/owner/repo` | GitLab Access Token (`PRIVATE-TOKEN`) con scope `read_api`. Tolerante a SSL autofirmado (`ignoresecurity => true`). |
+El ecosistema (tanto el plugin Moodle `block_gitmetrics` como el bot de Matrix `github-bot-plugin`) es completamente agnóstico y modular. Puedes alternar o unificar todo tu entorno en **GitLab** o **GitHub** siguiendo estos pasos:
+
+### Opción 1: Ejecución Completa con GitLab (Configuración Recomendada)
+
+#### Paso 1: Preparar Token y Repositorio en GitLab
+1. Crea o verifica tu repositorio en GitLab (por ejemplo: `https://gitlab.com/julia8873/BdC` o servidor propio/universitario).
+2. En GitLab, entra en **Edit Profile > Access Tokens** (o **Settings > Access Tokens** del proyecto).
+3. Genera un nuevo **Personal Access Token (`PRIVATE-TOKEN`)** con permisos:
+   - `api` (o `read_api` + `write_repository` si el bot debe subir, borrar y mover documentos en las carpetas `raw/` y `okf/`).
+4. Copia y guarda el token (`glpat-xxxxxxxxxxxxxxxx`).
+
+#### Paso 2: Configurar Moodle (`block_gitmetrics`)
+1. Accede a Moodle como administrador (`http://localhost:8000`, credenciales `admin` / `adminpass123`).
+2. Ve a **Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics (`Gitmetrics`)**.
+3. Configura los parámetros globales:
+   - **Proveedor Git principal**: `GitLab`
+   - **URL Base de GitLab**: `https://gitlab.com` (o la URL base de tu instancia de GitLab).
+   - **Token de API (GitLab Access Token)**: pega el token generado (`glpat-...`).
+   - **Tolerancia SSL**: marca `Ignorar verificación SSL` si estás en una instancia local/universitaria con certificado autofirmado.
+4. Guarda los cambios.
+5. En el curso (ej. **Panel de Métricas y BdC**), accede a la configuración del bloque e introduce la URL completa de tu repositorio: `https://gitlab.com/julia8873/BdC` y la rama `main`. El panel calculará las métricas directamente sobre GitLab.
+
+#### Paso 3: Configurar el Bot de Matrix (`github-bot-plugin`)
+1. Edita el archivo `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml` (o desde el panel web de Maubot en `http://localhost:29316/_matrix/maubot/` -> **Instances** -> tu instancia):
+   ```yaml
+   provider: "gitlab"
+   repo_url: "https://gitlab.com/julia8873/BdC"
+   gitlab_url: "https://gitlab.com"
+   gitlab_token: "glpat-xxxxxxxxxxxxxxxx"
+   default_owner: "julia8873"
+   default_repo: "BdC"
+   default_branch: "main"
+   ```
+2. Guarda el archivo y reinicia el bot para aplicar la nueva configuración:
+   ```bash
+   cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
+   docker compose restart maubot
+   ```
+3. **Verificación en Matrix**: Entra a **Element Web** (`http://localhost:8081`), abre la sala de chat de la asignatura e interactúa con el bot:
+   - `!ficheros` -> Listará el árbol recursivo descargado desde la API v4 de GitLab.
+   - `!documento <nombre>` -> Consultará el archivo y su historial de commits en GitLab.
+   - Subir un archivo `.md` -> El bot realizará un commit de subida en GitLab mediante el endpoint transaccional `POST /repository/commits`.
+
+---
+
+### Opción 2: Ejecución Completa con GitHub
+
+#### Paso 1: Preparar Token y Repositorio en GitHub
+1. Crea o verifica tu repositorio en GitHub (por ejemplo: `https://github.com/julia8873/BdC`).
+2. Ve a **Settings > Developer settings > Personal access tokens > Tokens (classic)** en GitHub.
+3. Genera un nuevo PAT clásico con el permiso `repo` (o `public_repo` si el repositorio es público).
+4. Copia y guarda el token (`ghp_xxxxxxxxxxxxxxxx`).
+
+#### Paso 2: Configurar Moodle (`block_gitmetrics`)
+1. En Moodle, ve a **Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics (`Gitmetrics`)**.
+2. Configura los parámetros globales:
+   - **Proveedor Git principal**: `GitHub`
+   - **Token de API (GitHub Personal Access Token)**: pega tu token (`ghp_...`).
+3. Guarda los cambios. En la instancia del bloque dentro del curso, introduce la URL del repositorio de GitHub: `https://github.com/julia8873/BdC` y la rama `main`.
+
+#### Paso 3: Configurar el Bot de Matrix (`github-bot-plugin`)
+1. Edita `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml` (o en la interfaz de Maubot):
+   ```yaml
+   provider: "github"
+   repo_url: "https://github.com/julia8873/BdC"
+   github_token: "ghp_xxxxxxxxxxxxxxxx"
+   default_owner: "julia8873"
+   default_repo: "BdC"
+   default_branch: "main"
+   ```
+2. Guarda y reinicia el bot en Docker:
+   ```bash
+   cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
+   docker compose restart maubot
+   ```
+3. **Verificación en Matrix**: El bot utilizará de manera nativa la clase `GitHubClient` conectándose a `api.github.com` para todas las operaciones de consulta, subida y gestión de apuntes.
 
 ---
 

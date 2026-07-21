@@ -75,27 +75,53 @@ Luego inicia sesión en Element Web (`http://localhost:8081`) con `admin` / `adm
 
 ---
 
-## GitHub Bot (Maubot)
+## Bot de Matrix Multi-Proveedor (Maubot: GitLab y GitHub)
 
-El bot se compila automáticamente desde el código fuente al levantar el contenedor. El código fuente está en `github-bot-plugin/github-bot-plugin/`.
+El bot se compila automáticamente desde el código fuente al levantar el contenedor. El código fuente está en `github-bot-plugin/github-bot-plugin/`. El bot cuenta con una arquitectura modular (`GitProvider`) que soporta indistintamente repositorios en **GitLab** o **GitHub**.
 
-### Configurar el bot tras el primer arranque
+### Paso 1: Configurar el bot tras el primer arranque
 
 1. Accede a la interfaz de Maubot: `http://localhost:29316/_matrix/maubot/`
 2. Inicia sesión con las credenciales definidas en `config.yaml` (`admins`)
-3. Crea un **Client** (cuenta de Matrix que usará el bot)
-4. Crea una **Instance** del plugin `dev.julia.githubbot`
-5. Configura el plugin: `github_token`, `llm_api_key`, etc. (ver `base-config.yaml`)
+3. Crea un **Client** (cuenta de Matrix que usará el bot para unirse a las salas)
+4. Crea una **Instance** del plugin `dev.julia.githubbot` vinculada a tu cliente.
 
-### Actualizar el plugin
+### Paso 2: Elegir Proveedor Git y Configurar (`base-config.yaml`)
 
-El plugin se recompila automáticamente en cada reinicio del contenedor:
+Puedes definir el comportamiento del bot directamente editando el archivo `github-bot-plugin/github-bot-plugin/base-config.yaml` o en el panel de configuración de tu instancia en Maubot:
+
+#### Opción A: Ejecución en GitLab
+```yaml
+provider: "gitlab"
+repo_url: "https://gitlab.com/julia8873/BdC"
+gitlab_url: "https://gitlab.com"
+gitlab_token: "glpat-xxxxxxxxxxxxxxxx"
+default_owner: "julia8873"
+default_repo: "BdC"
+default_branch: "main"
+```
+*(El bot utilizará `GitLabClient` con llamadas a la API v4 de GitLab, resolviendo rutas codificadas y transacciones multi-acción para commits).*
+
+#### Opción B: Ejecución en GitHub
+```yaml
+provider: "github"
+repo_url: "https://github.com/julia8873/BdC"
+github_token: "ghp_xxxxxxxxxxxxxxxx"
+default_owner: "julia8873"
+default_repo: "BdC"
+default_branch: "main"
+```
+*(El bot utilizará `GitHubClient` conectándose a `api.github.com`).*
+
+### Paso 3: Reiniciar y Probar
+
+Cada vez que modifiques el archivo de configuración o el código Python, el plugin se recompila y recarga automáticamente al reiniciar el contenedor:
 
 ```bash
 docker compose restart maubot
 ```
 
-O bien, reconstruye la imagen si cambiaron las dependencias Python:
+O bien, reconstruye la imagen si cambiaron las dependencias:
 
 ```bash
 docker compose up -d --build maubot

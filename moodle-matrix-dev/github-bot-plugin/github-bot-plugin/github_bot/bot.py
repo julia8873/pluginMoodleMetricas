@@ -48,6 +48,7 @@ from .organizacion import (
 )
 from .pdf_ingest import PdfExtractionError, extraer_texto_pdf, parece_texto_de_baja_calidad
 from .okf_ingest import IngestError, construir_prompt_ingest, parsear_respuesta_ingest
+from .git_client import get_git_client
 
 
 # --------------------------------------------------------------------
@@ -121,6 +122,10 @@ def _extraer_modificadores(texto: str) -> tuple:
 
 class Config(BaseProxyConfig):
     def do_update(self, helper: ConfigUpdateHelper) -> None:
+        helper.copy("provider")         # Proveedor Git principal ('gitlab' o 'github')
+        helper.copy("repo_url")         # URL completa de tu repositorio Git
+        helper.copy("gitlab_url")       # URL base del servidor GitLab
+        helper.copy("gitlab_token")     # Token de acceso de GitLab
         helper.copy("github_token")     # Token de acceso personal de GitHub
         helper.copy("default_owner")    # Owner/organización del repo por defecto
         helper.copy("default_repo")     # Nombre del repo por defecto
@@ -144,6 +149,7 @@ class GithubBot(Plugin):
 
     async def start(self) -> None:
         self.config.load_and_update()
+        self.git = get_git_client(self.config)
         self.tracker = Tracker(self.database)
         self.pendientes = {}
         self.lotes_subida = {}
@@ -151,6 +157,8 @@ class GithubBot(Plugin):
         self.pendientes_destino = {}
         self.pendientes_borrado = {}
         self.pendientes_borrado_carpeta = {}
+        # Confirmacion de si el usuario quiere OCR visual tras ver la vista previa del PDF
+        self.pendientes_ocr = {}
 
         # T2: Control de concurrencia por usuario/sala para evitar race conditions
         self._user_locks = {}
@@ -161,6 +169,16 @@ class GithubBot(Plugin):
         self._cache_carpetas = {}  # (owner, repo) -> (timestamp, lista_carpetas)
         self._cache_agents_md = {} # (owner, repo) -> (timestamp, contenido_agents_md)
         self._semaforo_github = asyncio.Semaphore(MAX_CONCURRENCIA_GITHUB)
+
+    def _obtener_git_token(self) -> str:
+        """Obtiene el token adecuado según el proveedor (GitLab o GitHub)."""
+        prov = str(self.config.get("provider", "")).strip().lower()
+        url = str(self.config.get("repo_url", "")).strip().lower()
+        if prov == "gitlab" or "gitlab" in url:
+            return self.config.get("gitlab_token") or self.config.get("github_token") or ""
+        elif prov == "github" or "github.com" in url:
+            return self.config.get("github_token") or self.config.get("gitlab_token") or ""
+        return self.config.get("gitlab_token") or self.config.get("github_token") or ""
 
     @classmethod
     def get_config_class(cls) -> Type[BaseProxyConfig]:
@@ -231,169 +249,36 @@ class GithubBot(Plugin):
 
     async def _obtener_documentacion(self, owner: str, repo: str, token: str, filtro: str = "") -> str:
         ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
-        ahora = time.time()
-        clave_cache = (owner, repo, filtro.lower())
-
-        if clave_cache in self._cache_docs:
-            ts_guardado, contenido_cached = self._cache_docs[clave_cache]
-            if ahora - ts_guardado < ttl_segundos:
-                self.log.info(f"[github_bot] Usando caché en memoria para documentación (filtro: '{filtro}')")
-                return contenido_cached
-
-        headers = {
-            "Authorization": f"token {token}",
-            "Accept": "application/vnd.github+json",
-        }
         async with aiohttp.ClientSession() as session:
-            textos = await self._recorrer_carpeta(session, owner, repo, headers, "", filtro)
-
-        contenido_total = "\n\n".join(textos)
-        self._cache_docs[clave_cache] = (ahora, contenido_total)
-        return contenido_total
+            return await self.git.obtener_documentacion(
+                session, owner, repo, token, filtro, self._cache_docs, ttl_segundos, self._semaforo_github, self.log
+            )
 
     async def _recorrer_carpeta(self, session, owner: str, repo: str, headers: dict, path: str, filtro: str = "") -> list:
-        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        textos = []
-
-        async with self._semaforo_github:
-            self.log.info(f"[github_bot] Consultando: {url}")
-            async with session.get(url, headers=headers) as resp:
-                if resp.status != 200:
-                    error_body = await resp.text()
-                    self.log.warning(f"[github_bot] Error de GitHub en '{path}': {error_body}")
-                    return textos
-                elementos = await resp.json()
-
-        dir_tasks = []
-        file_tasks = []
-
-        for elem in elementos:
-            if elem["type"] == "dir":
-                dir_tasks.append(self._recorrer_carpeta(session, owner, repo, headers, elem["path"], filtro))
-            elif elem["type"] == "file" and elem["name"].endswith((".md", ".txt")):
-                if elem["name"].lower() in FICHEROS_EXCLUIDOS_CONTEXTO:
-                    continue
-                if filtro and filtro.lower() not in elem["path"].lower():
-                    continue
-                file_tasks.append(self._descargar_contenido_fichero(session, elem["path"], elem["download_url"], headers))
-
-        if dir_tasks or file_tasks:
-            resultados = await asyncio.gather(*(dir_tasks + file_tasks), return_exceptions=True)
-            for res in resultados:
-                if isinstance(res, Exception):
-                    self.log.warning(f"[github_bot] Error en subtarea de descarga/recorrido: {res}")
-                elif isinstance(res, list):
-                    textos.extend(res)
-                elif isinstance(res, str) and res.strip():
-                    textos.append(res)
-
-        return textos
+        # Mantener compatibilidad interna si se invoca directo
+        token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
+        res = await self.git.obtener_documentacion(session, owner, repo, token, filtro, self._cache_docs, 0, self._semaforo_github, self.log)
+        return [res] if res else []
 
     async def _descargar_contenido_fichero(self, session, path: str, download_url: str, headers: dict) -> str:
-        async with self._semaforo_github:
-            self.log.info(f"[github_bot] Descargando archivo: {path}")
-            async with session.get(download_url, headers=headers) as resp:
-                if resp.status == 200:
-                    contenido = await resp.text()
-                    return f"## Archivo: {path}\n{contenido}"
+        # Compatibilidad heredada
         return ""
 
     async def _listar_rutas(self, session, owner: str, repo: str, headers: dict, path: str) -> list:
         ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
-        ahora = time.time()
-        clave_cache = (owner, repo, path)
-
-        if clave_cache in self._cache_rutas:
-            ts_guardado, rutas_cached = self._cache_rutas[clave_cache]
-            if ahora - ts_guardado < ttl_segundos:
-                return list(rutas_cached)
-
-        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        rutas = []
-
-        async with self._semaforo_github:
-            async with session.get(url, headers=headers) as resp:
-                if resp.status != 200:
-                    return rutas
-                elementos = await resp.json()
-
-        sub_tasks = []
-        for elem in elementos:
-            if elem["type"] == "dir":
-                sub_tasks.append(self._listar_rutas(session, owner, repo, headers, elem["path"]))
-            elif elem["type"] == "file" and elem["name"].endswith((".md", ".txt")):
-                rutas.append(elem["path"])
-
-        if sub_tasks:
-            resultados = await asyncio.gather(*sub_tasks, return_exceptions=True)
-            for res in resultados:
-                if isinstance(res, list):
-                    rutas.extend(res)
-
-        self._cache_rutas[clave_cache] = (ahora, list(rutas))
-        return rutas
+        token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
+        return await self.git.listar_rutas(session, owner, repo, token, path, self._cache_rutas, ttl_segundos, self._semaforo_github)
 
     async def _listar_carpetas(self, owner: str, repo: str, token: str) -> list:
         ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
-        ahora = time.time()
-        clave_cache = (owner, repo)
-
-        if clave_cache in self._cache_carpetas:
-            ts_guardado, carpetas_cached = self._cache_carpetas[clave_cache]
-            if ahora - ts_guardado < ttl_segundos:
-                return list(carpetas_cached)
-
-        headers = {
-            "Authorization": f"token {token}",
-            "Accept": "application/vnd.github+json",
-        }
-        carpetas: list = []
-        async with aiohttp.ClientSession() as session:
-            await self._recorrer_carpetas_dirs(session, owner, repo, headers, "", carpetas)
-        resultado = sorted(carpetas)
-        self._cache_carpetas[clave_cache] = (ahora, list(resultado))
-        return resultado
+        return await self.git.listar_carpetas(owner, repo, token, self._cache_carpetas, ttl_segundos, self._semaforo_github)
 
     async def _recorrer_carpetas_dirs(self, session, owner: str, repo: str, headers: dict, path: str, acumulador: list) -> None:
-        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        async with self._semaforo_github:
-            async with session.get(url, headers=headers) as resp:
-                if resp.status != 200:
-                    return
-                elementos = await resp.json()
-
-        for elem in elementos:
-            if elem["type"] == "dir":
-                acumulador.append(elem["path"])
-                await self._recorrer_carpetas_dirs(session, owner, repo, headers, elem["path"], acumulador)
+        pass
 
     async def _recorrer_carpeta_con_sha(self, session, owner: str, repo: str, headers: dict, path: str) -> list:
-        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        ficheros = []
-        async with self._semaforo_github:
-            async with session.get(url, headers=headers) as resp:
-                if resp.status != 200:
-                    return ficheros
-                elementos = await resp.json()
-
-        if not isinstance(elementos, list):
-            if isinstance(elementos, dict) and elementos.get("type") == "file":
-                return [{"path": elementos["path"], "sha": elementos["sha"]}]
-            return ficheros
-
-        sub_tasks = []
-        for elem in elementos:
-            if elem["type"] == "dir":
-                sub_tasks.append(self._recorrer_carpeta_con_sha(session, owner, repo, headers, elem["path"]))
-            elif elem["type"] == "file":
-                ficheros.append({"path": elem["path"], "sha": elem["sha"]})
-
-        if sub_tasks:
-            resultados = await asyncio.gather(*sub_tasks, return_exceptions=True)
-            for res in resultados:
-                if isinstance(res, list):
-                    ficheros.extend(res)
-        return ficheros
+        token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
+        return await self.git.recorrer_carpeta_con_sha(session, owner, repo, token, path, self._semaforo_github)
 
     # --------------------------------------------------------------------
     # Ingesta de fuentes (PDFs, imágenes y apuntes manuscritos)
@@ -410,6 +295,12 @@ class GithubBot(Plugin):
         # T2: Protegemos la evaluación del mensaje y acceso al estado con lock
         async with lock:
             if evt.content.msgtype == MessageType.TEXT and evt.content.body and not evt.content.body.startswith("!"):
+                # Confirmacion OCR: tiene prioridad sobre todo lo demas
+                ocr_pendiente = self.pendientes_ocr.pop(clave, None)
+                if ocr_pendiente is not None:
+                    await self._procesar_confirmacion_ocr(evt, ocr_pendiente)
+                    return
+
                 borrado_pendiente = self.pendientes_borrado.get(clave)
                 if borrado_pendiente is not None:
                     await self._procesar_confirmacion_borrado(evt, borrado_pendiente)
@@ -479,23 +370,68 @@ class GithubBot(Plugin):
                     texto_extraido = ""
                     texto_de_baja_calidad = True
 
-                if texto_de_baja_calidad:
-                    await evt.reply(
-                        f"«{nombre_archivo}» parece un PDF escaneado o de baja calidad OCR. "
-                        "Voy a transcribirlo con el modelo multimodal, esto puede tardar..."
-                    )
-                    try:
-                        # T2 BUGFIX CRÍTICO: Desempaquetado correcto de la tupla devuelta por transcribir_pdf_escaneado
-                        texto_extraido, paginas_fallidas = await transcribir_pdf_escaneado(contenido_binario, llm_vision)
-                        if paginas_fallidas:
-                            self.log.warning(f"[github_bot] Páginas con error al transcribir PDF: {paginas_fallidas}")
-                            await evt.reply(f"Nota: Hubo problemas al transcribir {len(paginas_fallidas)} página(s) del PDF.")
-                    except OcrError as exc:
-                        await evt.reply(f"No he podido leer «{nombre_archivo}»: {exc}")
-                        return
-                    tipo_interaccion = "pdf_escaneado_ocr"
+                vista_previa = self._vista_previa_transcripcion(texto_extraido, 400) if texto_extraido else ""
 
+                if texto_de_baja_calidad:
+                    aviso = (
+                        f"He detectado que «{nombre_archivo}» contiene notacion musical, "
+                        "simbolos de partitura u otro contenido que no se lee bien como texto.\n\n"
+                    )
+                else:
+                    aviso = f"He extraido texto de «{nombre_archivo}». Vista previa:\n\n> {vista_previa}\n\n"
+
+                await evt.reply(
+                    aviso +
+                    "¿Quieres que use **OCR visual** (Gemini lee cada pagina como imagen, "
+                    "mas lento pero mucho mas preciso para partituras, libros escaneados y "
+                    "documentos con graficos)?\n\n"
+                    "Responde **si** para OCR o **no** para guardar el texto extraido tal como esta."
+                )
+                self.pendientes_ocr[clave] = {
+                    "nombre_archivo": nombre_archivo,
+                    "contenido_binario": contenido_binario,
+                    "texto_extraido": texto_extraido,
+                    "llm_vision": llm_vision,
+                    "timestamp": int(time.time()),
+                }
+                return
+
+            # Solo llega aqui el camino de imagenes (es_foto_apuntes=True),
+            # ya que el camino PDF hace return despues de guardar pendientes_ocr.
             await self._encolar_para_lote(evt, nombre_archivo, texto_extraido, tipo_interaccion)
+
+    async def _procesar_confirmacion_ocr(self, evt: MessageEvent, estado: dict) -> None:
+        """
+        Procesa la respuesta del usuario a la pregunta de si quiere OCR visual.
+        Si responde 'si'/'s'/'yes'/'y' -> lanza transcripcion visual pagina a pagina.
+        Cualquier otra respuesta -> usa el texto extraido previamente con pypdf.
+        """
+        respuesta = (evt.content.body or "").strip().lower()
+        nombre_archivo = estado["nombre_archivo"]
+        contenido_binario = estado["contenido_binario"]
+        llm_vision = estado["llm_vision"]
+        texto_extraido = estado["texto_extraido"]
+
+        if respuesta in ("si", "sí", "s", "yes", "y", "1"):
+            await evt.reply(
+                f"Usando OCR visual para «{nombre_archivo}»... "
+                "Gemini leerá cada página como imagen. Esto puede tardar varios minutos si el PDF es largo."
+            )
+            try:
+                texto_extraido, paginas_fallidas = await transcribir_pdf_escaneado(contenido_binario, llm_vision)
+                if paginas_fallidas:
+                    self.log.warning(f"[github_bot] Páginas con error al transcribir PDF: {paginas_fallidas}")
+                    await evt.reply(f"Nota: Hubo problemas al transcribir {len(paginas_fallidas)} página(s).")
+                tipo_interaccion = "pdf_escaneado_ocr"
+            except OcrError as exc:
+                await evt.reply(f"No he podido leer «{nombre_archivo}» con OCR: {exc}")
+                return
+        else:
+            await evt.reply(f"De acuerdo, usaré el texto extraido directamente para «{nombre_archivo}».")
+            tipo_interaccion = "pdf_subido"
+
+        await self._encolar_para_lote(evt, nombre_archivo, texto_extraido, tipo_interaccion)
+
 
     async def _encolar_para_lote(
         self, evt: MessageEvent, nombre_archivo: str, texto_extraido: str, tipo_interaccion: str
@@ -535,7 +471,7 @@ class GithubBot(Plugin):
             if not ficheros:
                 return
 
-            owner, repo, token = self.config["default_owner"], self.config["default_repo"], self.config["github_token"]
+            owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
 
             if len(ficheros) == 1:
                 carpetas = await self._listar_carpetas(owner, repo, token)
@@ -590,7 +526,7 @@ class GithubBot(Plugin):
                 await evt.reply("No te he entendido. Responde 'todos' o 'uno por uno'.")
                 return
 
-            owner, repo, token = self.config["default_owner"], self.config["default_repo"], self.config["github_token"]
+            owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
             carpetas = await self._listar_carpetas(owner, repo, token)
             estado["carpetas"] = carpetas
             estado["timestamp"] = int(time.time())
@@ -679,7 +615,7 @@ class GithubBot(Plugin):
         )
 
     async def _guardar_ficheros_en_carpeta(self, evt: MessageEvent, ficheros: list, carpeta: Optional[str]) -> None:
-        token = self.config["github_token"]
+        token = self._obtener_git_token()
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
         branch = self.config["default_branch"] or "main"
@@ -749,98 +685,27 @@ class GithubBot(Plugin):
         return coincidencias[0]
 
     # --------------------------------------------------------------------
-    # API de GitHub (escritura)
+    # API de Git (escritura) delegada en self.git
     # --------------------------------------------------------------------
 
     async def _obtener_sha_y_contenido_github(
         self, session, owner: str, repo: str, headers: dict, path: str
     ) -> Optional[dict]:
-        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        async with session.get(url, headers=headers) as resp:
-            if resp.status != 200:
-                return None
-            datos = await resp.json()
-        return {"sha": datos["sha"], "content": datos.get("content", "")}
+        token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
+        return await self.git.obtener_info_y_contenido(session, owner, repo, token, path, self._semaforo_github)
 
     async def _subir_o_actualizar_archivo_github(
         self, owner: str, repo: str, token: str, path: str, contenido: str, branch: str, mensaje_commit: str
     ) -> bool:
-        """
-        Como _subir_archivo_github, pero sirve tanto para crear como para
-        actualizar: si el fichero ya existe, incluye su sha en el PUT (la API
-        de contenidos de GitHub lo exige para no pisar cambios a ciegas).
-        Se usa para la ingesta OKF porque, a diferencia de una subida a raw/
-        (siempre con nombre nuevo y timestamp), aquí sí es habitual actualizar
-        un concepto o entidad que ya existía.
-
-        Devuelve True si fue una actualización, False si fue creación.
-        """
-        headers = {
-            "Authorization": f"token {token}",
-            "Accept": "application/vnd.github+json",
-        }
-        async with aiohttp.ClientSession() as session:
-            info = await self._obtener_sha_y_contenido_github(session, owner, repo, headers, path)
-
-        payload = {
-            "message": mensaje_commit,
-            "content": base64.b64encode(contenido.encode("utf-8")).decode("ascii"),
-            "branch": branch,
-        }
-        es_actualizacion = info is not None
-        if es_actualizacion:
-            payload["sha"] = info["sha"]
-
-        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        async with aiohttp.ClientSession() as session:
-            async with session.put(url, headers=headers, json=payload) as resp:
-                if resp.status not in (200, 201):
-                    error_body = await resp.text()
-                    raise RuntimeError(f"GitHub devolvió {resp.status}: {error_body}")
-        self._invalidar_cache()
-        return es_actualizacion
+        return await self.git.subir_o_actualizar_archivo(owner, repo, token, path, contenido, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
 
     async def _append_log_okf(
         self, owner: str, repo: str, token: str, branch: str, entrada: str, mensaje_commit: str
     ) -> None:
-        """
-        Añade `entrada` al final de okf/log.md sin reescribir el resto del
-        fichero, tal y como exige AGENTS.md ("nunca reescribas todo el
-        archivo log.md"). Si el fichero no existe todavía, falla explícito en
-        vez de crearlo desde cero, porque log.md forma parte del bundle base
-        y su ausencia normalmente indica una BdC mal configurada.
-        """
-        headers = {
-            "Authorization": f"token {token}",
-            "Accept": "application/vnd.github+json",
-        }
-        async with aiohttp.ClientSession() as session:
-            info = await self._obtener_sha_y_contenido_github(session, owner, repo, headers, OKF_LOG_PATH)
-        if info is None:
-            raise RuntimeError(f"No se ha encontrado «{OKF_LOG_PATH}» en el repo; no se puede hacer append.")
-
-        contenido_actual = base64.b64decode(info["content"]).decode("utf-8")
-        contenido_nuevo = contenido_actual.rstrip("\n") + "\n\n" + entrada.strip() + "\n"
-
-        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{OKF_LOG_PATH}"
-        payload = {
-            "message": mensaje_commit,
-            "content": base64.b64encode(contenido_nuevo.encode("utf-8")).decode("ascii"),
-            "sha": info["sha"],
-            "branch": branch,
-        }
-        async with aiohttp.ClientSession() as session:
-            async with session.put(url, headers=headers, json=payload) as resp:
-                if resp.status not in (200, 201):
-                    error_body = await resp.text()
-                    raise RuntimeError(f"GitHub devolvió {resp.status}: {error_body}")
+        await self.git.append_log_okf(owner, repo, token, branch, entrada, mensaje_commit, self._semaforo_github)
         self._invalidar_cache()
 
     async def _obtener_agents_md(self, owner: str, repo: str, token: str) -> Optional[str]:
-        """
-        Lee AGENTS.md en vivo del repo (con caché TTL, igual que _obtener_documentacion).
-        Devuelve None si no existe, para que quien llame decida cómo avisar.
-        """
         ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
         ahora = time.time()
         clave_cache = (owner, repo)
@@ -850,16 +715,14 @@ class GithubBot(Plugin):
             if ahora - ts_guardado < ttl_segundos:
                 return contenido_cached
 
-        headers = {
-            "Authorization": f"token {token}",
-            "Accept": "application/vnd.github+json",
-        }
         async with aiohttp.ClientSession() as session:
-            info = await self._obtener_sha_y_contenido_github(session, owner, repo, headers, AGENTS_MD_PATH)
+            info = await self.git.obtener_info_y_contenido(session, owner, repo, token, AGENTS_MD_PATH, self._semaforo_github)
         if info is None:
             return None
 
-        contenido = base64.b64decode(info["content"]).decode("utf-8")
+        contenido = base64.b64decode(info["content"]).decode("utf-8") if info.get("content") else ""
+        self._cache_agents_md[clave_cache] = (ahora, contenido)
+        return contenido4.b64decode(info["content"]).decode("utf-8")
         self._cache_agents_md[clave_cache] = (ahora, contenido)
         return contenido
 
@@ -958,70 +821,17 @@ class GithubBot(Plugin):
     async def _borrar_archivo_github(
         self, owner: str, repo: str, token: str, path: str, branch: str, sha: str, mensaje_commit: str
     ) -> None:
-        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        headers = {
-            "Authorization": f"token {token}",
-            "Accept": "application/vnd.github+json",
-        }
-        payload = {"message": mensaje_commit, "sha": sha, "branch": branch}
-
-        async with aiohttp.ClientSession() as session:
-            async with session.delete(url, headers=headers, json=payload) as resp:
-                if resp.status not in (200, 204):
-                    error_body = await resp.text()
-                    raise RuntimeError(f"GitHub devolvió {resp.status}: {error_body}")
-        self._invalidar_cache()
+        await self.git.borrar_archivo(owner, repo, token, path, branch, sha, mensaje_commit, self._semaforo_github, self._invalidar_cache)
 
     async def _mover_archivo_github(
         self, owner: str, repo: str, token: str, ruta_antigua: str, ruta_nueva: str, branch: str, sender: str
     ) -> None:
-        headers = {
-            "Authorization": f"token {token}",
-            "Accept": "application/vnd.github+json",
-        }
-        async with aiohttp.ClientSession() as session:
-            info = await self._obtener_sha_y_contenido_github(session, owner, repo, headers, ruta_antigua)
-        if info is None:
-            raise RuntimeError(f"No se ha encontrado «{ruta_antigua}» en el repo.")
-
-        url_destino = f"https://api.github.com/repos/{owner}/{repo}/contents/{ruta_nueva}"
-        payload_put = {
-            "message": f"Mover '{ruta_antigua}' -> '{ruta_nueva}' (por {sender})",
-            "content": info["content"],
-            "branch": branch,
-        }
-        async with aiohttp.ClientSession() as session:
-            async with session.put(url_destino, headers=headers, json=payload_put) as resp:
-                if resp.status not in (200, 201):
-                    error_body = await resp.text()
-                    raise RuntimeError(f"No he podido crear «{ruta_nueva}»: GitHub devolvió {resp.status}: {error_body}")
-
-        await self._borrar_archivo_github(
-            owner, repo, token, ruta_antigua, branch, info["sha"],
-            mensaje_commit=f"Mover '{ruta_antigua}' -> '{ruta_nueva}' (por {sender}, borrado del origen)",
-        )
-        self._invalidar_cache()
+        await self.git.mover_archivo(owner, repo, token, ruta_antigua, ruta_nueva, branch, sender, self._semaforo_github, self._invalidar_cache)
 
     async def _subir_archivo_github(
         self, owner: str, repo: str, token: str, path: str, contenido: str, branch: str, mensaje_commit: str
     ) -> None:
-        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        headers = {
-            "Authorization": f"token {token}",
-            "Accept": "application/vnd.github+json",
-        }
-        payload = {
-            "message": mensaje_commit,
-            "content": base64.b64encode(contenido.encode("utf-8")).decode("ascii"),
-            "branch": branch,
-        }
-
-        async with aiohttp.ClientSession() as session:
-            async with session.put(url, headers=headers, json=payload) as resp:
-                if resp.status not in (200, 201):
-                    error_body = await resp.text()
-                    raise RuntimeError(f"GitHub devolvió {resp.status}: {error_body}")
-        self._invalidar_cache()
+        await self.git.subir_archivo(owner, repo, token, path, contenido, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
 
     # --------------------------------------------------------------------
     # Comandos de información y estadísticas
@@ -1033,7 +843,7 @@ class GithubBot(Plugin):
     )
     @command.argument("texto", pass_raw=True, required=True)
     async def pregunta_handler(self, evt: MessageEvent, texto: str) -> None:
-        token = self.config["github_token"]
+        token = self._obtener_git_token()
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
 
@@ -1066,7 +876,7 @@ class GithubBot(Plugin):
 
     @command.new(name="ficheros", help="Lista los archivos .md/.txt encontrados en el repo de la BdC")
     async def ficheros_handler(self, evt: MessageEvent) -> None:
-        token = self.config["github_token"]
+        token = self._obtener_git_token()
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
 
@@ -1267,7 +1077,7 @@ class GithubBot(Plugin):
 
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
-        token = self.config["github_token"]
+        token = self._obtener_git_token()
         headers = {
             "Authorization": f"token {token}",
             "Accept": "application/vnd.github+json",
@@ -1299,12 +1109,10 @@ class GithubBot(Plugin):
         ruta = info_db["ruta_repo"] if info_db else rutas_solo_repo[0]
 
         async with aiohttp.ClientSession() as session:
-            url = f"https://api.github.com/repos/{owner}/{repo}/contents/{ruta}"
-            async with session.get(url, headers=headers) as resp:
-                if resp.status != 200:
-                    await evt.reply(f"He encontrado `{ruta}` pero no he podido leer su contenido desde GitHub.")
-                    return
-                datos = await resp.json()
+            datos = await self.git.obtener_info_y_contenido(session, owner, repo, token, ruta, self._semaforo_github)
+            if not datos:
+                await evt.reply(f"He encontrado `{ruta}` pero no he podido leer su contenido.")
+                return
 
         contenido_decodificado = ""
         if datos.get("content"):
@@ -1325,14 +1133,10 @@ class GithubBot(Plugin):
             partes.append(f"Aportado por: {info_db['student_id']} el {fecha}")
         else:
             async with aiohttp.ClientSession() as session:
-                url_commits = f"https://api.github.com/repos/{owner}/{repo}/commits"
-                params = {"path": ruta, "per_page": 1}
-                async with session.get(url_commits, headers=headers, params=params) as resp:
-                    if resp.status == 200:
-                        commits = await resp.json()
-                        if commits:
-                            commit = commits[0]["commit"]
-                            partes.append(f"Última modificación: {commit['author']['date']} (commit de {commit['author']['name']})")
+                historial = await self.git.obtener_historial_fichero(session, owner, repo, token, ruta, self._semaforo_github)
+                if historial:
+                    commit = historial[0]
+                    partes.append(f"Última modificación: {commit['author_date']} (commit de {commit['author_name']})")
 
         if vista_previa:
             partes.append(f"\nVista previa:\n{vista_previa}")
@@ -1350,7 +1154,7 @@ class GithubBot(Plugin):
 
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
-        token = self.config["github_token"]
+        token = self._obtener_git_token()
         headers = {
             "Authorization": f"token {token}",
             "Accept": "application/vnd.github+json",
@@ -1389,7 +1193,7 @@ class GithubBot(Plugin):
 
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
-        token = self.config["github_token"]
+        token = self._obtener_git_token()
         branch = self.config["default_branch"] or "main"
         ruta = estado["ruta"]
 
@@ -1423,7 +1227,7 @@ class GithubBot(Plugin):
 
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
-        token = self.config["github_token"]
+        token = self._obtener_git_token()
         branch = self.config["default_branch"] or "main"
         carpeta = estado["carpeta"]
         ficheros = estado["ficheros"]
@@ -1471,7 +1275,7 @@ class GithubBot(Plugin):
 
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
-        token = self.config["github_token"]
+        token = self._obtener_git_token()
         branch = self.config["default_branch"] or "main"
         headers = {
             "Authorization": f"token {token}",
@@ -1516,7 +1320,7 @@ class GithubBot(Plugin):
 
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
-        token = self.config["github_token"]
+        token = self._obtener_git_token()
         branch = self.config["default_branch"] or "main"
 
         marca_tiempo = int(time.time())
@@ -1540,7 +1344,7 @@ class GithubBot(Plugin):
     async def carpeta_listar_handler(self, evt: MessageEvent) -> None:
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
-        token = self.config["github_token"]
+        token = self._obtener_git_token()
 
         carpetas = await self._listar_carpetas(owner, repo, token)
         if not carpetas:
@@ -1559,7 +1363,7 @@ class GithubBot(Plugin):
 
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
-        token = self.config["github_token"]
+        token = self._obtener_git_token()
         branch = self.config["default_branch"] or "main"
         headers = {
             "Authorization": f"token {token}",
@@ -1612,7 +1416,7 @@ class GithubBot(Plugin):
     async def _plantear_pregunta(
         self, evt: MessageEvent, tipo: str, generador, tema: str = "", tipo_contenido: str = ""
     ) -> None:
-        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self.config["github_token"]
+        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
         contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
         if not contenido_docs and tema:
             await evt.reply(f"No he encontrado ningún fichero en la BdC que coincida con «{tema}».")
@@ -1643,7 +1447,7 @@ class GithubBot(Plugin):
         clave = (evt.room_id, evt.sender)
         contenido_docs = pendiente.get("contenido_docs")
         if contenido_docs is None:
-            owner, repo, token = self.config["default_owner"], self.config["default_repo"], self.config["github_token"]
+            owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
             contenido_docs = await self._obtener_documentacion(owner, repo, token, pendiente.get("tema", ""))
 
         try:
@@ -1735,7 +1539,7 @@ class GithubBot(Plugin):
             )
             return
 
-        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self.config["github_token"]
+        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
         contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
         if not contenido_docs and tema:
             await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
@@ -1788,7 +1592,7 @@ class GithubBot(Plugin):
     ) -> None:
         concepto, tema, tipo_contenido = _extraer_modificadores(nombre)
 
-        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self.config["github_token"]
+        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
         contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
         if not contenido_docs and tema:
             await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
@@ -1820,7 +1624,7 @@ class GithubBot(Plugin):
     async def repasartema_handler(self, evt: MessageEvent, texto: str = "") -> None:
         _, tema, tipo_contenido = _extraer_modificadores(texto)
 
-        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self.config["github_token"]
+        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
         contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
         if not contenido_docs and tema:
             await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
@@ -1891,7 +1695,7 @@ class GithubBot(Plugin):
 
         await evt.reply(f"Buscando ejercicios en la BdC que apliquen «{tecnica}», un momento...")
 
-        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self.config["github_token"]
+        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
         contenido_docs = await self._obtener_documentacion(owner, repo, token)
         if not contenido_docs:
             await evt.reply("No he podido leer la documentación del repositorio.")
@@ -1932,7 +1736,7 @@ class GithubBot(Plugin):
             await evt.reply(f"No tienes actividad registrada en las últimas {horas} horas.")
             return
 
-        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self.config["github_token"]
+        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
         contenido_docs = await self._obtener_documentacion(owner, repo, token)
 
         try:

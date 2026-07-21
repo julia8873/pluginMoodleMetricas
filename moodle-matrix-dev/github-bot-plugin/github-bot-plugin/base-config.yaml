@@ -1,6 +1,11 @@
+# Proveedor Git principal ('gitlab' o 'github', o autodetectado por repo_url)
+provider: "gitlab"
+repo_url: "https://gitlab.com/julia8873/BdC"
+gitlab_url: "https://gitlab.com"
+gitlab_token: ""
 github_token: ""
-default_owner: ""
-default_repo: ""
+default_owner: "julia8873"
+default_repo: "BdC"
 default_branch: "main"
 raw_folder: "raw"
 llm_base_url: "https://generativelanguage.googleapis.com/v1beta/openai"

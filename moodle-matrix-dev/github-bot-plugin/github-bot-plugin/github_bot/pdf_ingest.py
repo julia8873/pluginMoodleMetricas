@@ -26,19 +26,17 @@ class PdfExtractionError(Exception):
 
 def parece_texto_de_baja_calidad(texto: str) -> bool:
     """
-    Detecta texto extraído de PDFs que en realidad es ruido de OCR de baja calidad.
+    Detecta texto extraído de PDFs que en realidad es ruido de OCR de baja calidad
+    o notación sin valor semántico (p.ej. símbolos de música, caracteres sueltos).
 
     Muchas apps de escaneo de móvil (CamScanner, Notes, Adobe Scan...) incrustan
     su propia capa de OCR dentro del PDF para hacerlo buscable. pypdf la lee como
-    "texto seleccionable" aunque sea ilegible (p.ej. "~Jla.n L ~ ~i1,fn•]"), así
-    que extraer_texto_pdf() la aceptaría y el bot nunca intentaría la transcripción
-    de calidad vía LLM de visión. Esta función filtra ese caso comprobando la
-    proporción de caracteres alfanuméricos y palabras reconocibles.
+    "texto seleccionable" aunque sea ilegible, o extrae símbolos sin sentido
+    (notación musical, fragmentos de iconos).
 
-    No es infalible: es una heurística calibrada para separar el caso típico de
-    ruido (muchos símbolos sueltos, pocas palabras) del texto real (que puede
-    tener bastante notación LaTeX y aun así mantener una proporción razonable
-    de palabras legibles).
+    Esta función filtra esos casos comprobando la proporción de caracteres
+    alfanuméricos, la densidad de palabras reales y la proporción de tokens
+    de un solo carácter.
     """
     texto = texto.strip()
     if not texto:
@@ -51,13 +49,26 @@ def parece_texto_de_baja_calidad(texto: str) -> bool:
     alfanumericos = len(re.findall(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]", texto))
     ratio_alfanumerico = alfanumericos / total_no_espacio
 
-    palabras_reconocibles = _PATRON_PALABRA.findall(texto)
-    total_tokens = texto.split()
-    ratio_palabras = len(palabras_reconocibles) / max(len(total_tokens), 1)
+    tokens = texto.split()
+    total_tokens = len(tokens)
+    if total_tokens == 0:
+        return True
 
-    # Umbrales calibrados contra una transcripción real con bastante LaTeX
-    # (ratios ~0.65) frente a una capa de OCR basura típica (ratios ~0.51/0.35).
-    return ratio_alfanumerico < 0.55 or ratio_palabras < 0.45
+    palabras_reconocibles = _PATRON_PALABRA.findall(texto)
+    tokens_un_caracter = [t for t in tokens if len(t) == 1]
+
+    ratio_palabras = len(palabras_reconocibles) / total_tokens
+    ratio_un_caracter = len(tokens_un_caracter) / total_tokens
+
+    # Umbrales:
+    # 1. Mucho símbolo no alfanumérico.
+    # 2. Muy pocas palabras reales (longitud >= 2).
+    # 3. Demasiados tokens de un solo carácter: umbral bajo (0.25) porque incluso
+    #    una proporción moderada de caracteres sueltos (notación musical, símbolos
+    #    de partituras como w, b, &, #, œ, ˙) hace inútil el texto para el LLM.
+    return (ratio_alfanumerico < 0.55 or 
+            ratio_palabras < 0.45 or 
+            ratio_un_caracter > 0.25)
 
 
 # --------------------------------------------------------------------

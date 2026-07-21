@@ -3,6 +3,9 @@ namespace block_gitmetrics;
 
 defined('MOODLE_INTERNAL') || die();
 
+global $CFG;
+require_once($CFG->libdir . '/filelib.php');
+
 /**
  * Cliente HTTP para la API de GitHub y raw.githubusercontent.com.
  *
