@@ -28,6 +28,7 @@ gitmetrics/
 │   └── obsidian_exporter.php       [OPCIONAL] Exporta todos los .md del repo a un vault local de Obsidian. Eliminar para desactivar.
 ├── cli/
 │   ├── setup_course.php            Script CLI para inicializar y poblar la asignatura dedicada "Panel de Métricas y BdC".
+│   ├── setup_matrix.php            Script CLI para automatizar la configuración del subsistema Matrix, token, seguridad cURL y sala.
 │   └── export_obsidian.php         [OPCIONAL] CLI para sincronizar el repositorio con el vault de Obsidian. Eliminar para desactivar.
 ├── db/
 │   ├── access.php                  Capacidades y permisos del bloque.

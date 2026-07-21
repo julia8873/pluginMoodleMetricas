@@ -224,8 +224,15 @@ Para que Moodle pueda crear salas e invitar a profesores/estudiantes de forma au
 ---
 
 ### Paso 3: Activar y Desbloquear la Comunicación con Matrix en Moodle
-Ahora vincularemos el LMS Moodle con el Homeserver Matrix y permitiremos las peticiones internas:
+Ahora vincularemos el LMS Moodle con el Homeserver Matrix y permitiremos las peticiones internas.
 
+> **Automatización total CLI (Recomendado)**: Todos los pasos manuales descritos en este apartado y la creación inicial de la sala (Paso 4) se realizan **automáticamente en un solo segundo** al ejecutar `./instalar.sh` o lanzando el script CLI dedicado desde el contenedor:
+> ```bash
+> docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_matrix.php
+> ```
+> *(Este script activa el subsistema `enablecommunicationsubsystem`, desbloquea la seguridad cURL de Moodle, consulta por API REST a Synapse para extraer automáticamente el `Access Token` de `@admin:localhost`, guarda los parámetros en base de datos y crea la sala de la asignatura)*.
+
+#### Configuración Manual Paso a Paso (Alternativa sin CLI)
 1. **Entra a Moodle** (`http://localhost:8000`) como administrador (`admin` / `adminpass123`).
 2. **Activar el Subsistema de Comunicaciones**:
    - Ve a **Administración del sitio > Desarrollo > Características experimentales (`Experimental settings`)**.

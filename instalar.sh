@@ -57,8 +57,13 @@ docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/upgrade.php -
 
 # 6. Crear asignatura dedicada y configurar pestaña de curso
 echo ""
-echo "[6/6] Creando asignatura dedicada 'Panel de Métricas y BdC' en Moodle..."
+echo "[6/7] Creando asignatura dedicada 'Panel de Métricas y BdC' en Moodle..."
 docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_course.php
+
+# 7. Configurar automáticamente Matrix, desbloquear red interna y crear sala
+echo ""
+echo "[7/7] Configurando integración con Matrix y creando sala de chat..."
+docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_matrix.php
 
 echo ""
 echo "------------------------------------------------------------------------------"

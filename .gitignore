@@ -2,6 +2,7 @@
 communication
 *.log
 output/
+scratch/
 .DS_Store
 *.swp
 *.tmp
