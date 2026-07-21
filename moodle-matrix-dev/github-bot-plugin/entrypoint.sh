@@ -48,4 +48,4 @@ rm -rf "$TMP_BUILD"
 echo "[entrypoint] Plugin construido: $MBP_FILE"
 
 # Arrancar el servidor maubot
-exec python -m maubot.server "$@"
+exec python -m maubot -c /data/config.yaml "$@"

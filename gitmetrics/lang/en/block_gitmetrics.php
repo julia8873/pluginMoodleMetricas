@@ -106,3 +106,13 @@ $string['error_api']                   = 'Could not connect to the Git API. Chec
 $string['error_json']                  = 'Unexpected response from the API (JSON parse error).';
 $string['error_repo']                  = 'Repository not found or inaccessible';
 $string['error_branch']                = 'Branch not found. Try changing the branch in the block settings.';
+
+// Obsidian (optional) — delete this block together with classes/obsidian_exporter.php and cli/export_obsidian.php
+$string['heading_obsidian']            = 'Obsidian Integration (optional)';
+$string['heading_obsidian_desc']       = 'Allows opening documents directly in Obsidian and exporting the knowledge base to a local vault. This feature is completely optional; you can ignore or disable it if not needed.';
+$string['obsidian_enabled']            = 'Enable Obsidian integration';
+$string['obsidian_enabled_desc']       = 'When enabled, a "🔮 Obsidian" button will appear next to each document that opens the note directly in the Obsidian desktop application.';
+$string['obsidian_vault_path']         = 'Local Obsidian vault path';
+$string['obsidian_vault_path_desc']    = 'Absolute path on the user\'s file system where the Obsidian vault is (or will be created). Example: /home/julia/Documents/OKF-Vault or C:\\Users\\julia\\Documents\\OKF-Vault';
+$string['obsidian_vault_name']         = 'Obsidian vault name';
+$string['obsidian_vault_name_desc']    = 'Exact name of the vault as Obsidian registered it when it was created (the vault folder name). This is used to build the obsidian:// protocol links.';

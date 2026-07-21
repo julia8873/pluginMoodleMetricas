@@ -24,9 +24,11 @@ gitmetrics/
 │   ├── gitlab_client.php           Cliente HTTP para la API REST v4 de GitLab (con paginación y soporte SSL autofirmado).
 │   ├── markdown_parser.php         Analizador sintáctico de frontmatter YAML, enlaces y elementos estructurales.
 │   ├── metrics_calculator.php      Orquestador que descarga el árbol del repositorio y calcula las métricas cuantitativas.
-│   └── metrics_cache.php           Gestor de persistencia temporal en base de datos (`mdl_block_gitmetrics_cache`) con TTL.
+│   ├── metrics_cache.php           Gestor de persistencia temporal en base de datos (`mdl_block_gitmetrics_cache`) con TTL.
+│   └── obsidian_exporter.php       [OPCIONAL] Exporta todos los .md del repo a un vault local de Obsidian. Eliminar para desactivar.
 ├── cli/
-│   └── setup_course.php            Script CLI para inicializar y poblar la asignatura dedicada "Panel de Métricas y BdC".
+│   ├── setup_course.php            Script CLI para inicializar y poblar la asignatura dedicada "Panel de Métricas y BdC".
+│   └── export_obsidian.php         [OPCIONAL] CLI para sincronizar el repositorio con el vault de Obsidian. Eliminar para desactivar.
 ├── db/
 │   ├── access.php                  Capacidades y permisos del bloque.
 │   ├── install.xml                 Esquema XMLDB de la tabla de caché.
@@ -79,6 +81,79 @@ Dentro de cualquier asignatura de tu Moodle verás en la barra superior del curs
 1. Activa la edición en cualquier curso (`Activar edición`).
 2. En el cajón derecho o menú de bloques haz clic en **Añadir un bloque** -> **Métricas de Base de Conocimiento Git**.
 3. Pulsa el icono de engranaje -> **Configurar bloque** y especifica la URL de GitHub o GitLab del repositorio a analizar.
+
+---
+
+## 🔮 Integración con Obsidian (Módulo Opcional)
+
+El plugin incluye un módulo completamente opcional para visualizar los documentos de la base de conocimiento directamente en **Obsidian**, la aplicación de escritura y gestión de notas con soporte nativo de `[[wiki-links]]` y grafos de conocimiento.
+
+### Cómo Funciona
+
+1. El script `cli/export_obsidian.php` descarga todos los archivos `.md` del repositorio Git remoto (sin guardarlos en Moodle) y los sincroniza en una carpeta local que actúa como **vault de Obsidian**.
+2. Resuelve los `[[wiki-links]]` de la ruta completa OKF (ej. `[[okf/entities/jose-juan]]`) al formato nativo de Obsidian (ej. `[[jose-juan]]`).
+3. Cuando la integración está habilitada, en el explorador de documentos de Moodle aparece el botón **`🔮 Obsidian`** junto a cada nota que usa el protocolo `obsidian://` para abrirla directamente en la aplicación de escritorio.
+
+### Paso 1: Instalar Obsidian en el Escritorio
+
+Descarga e instala [Obsidian](https://obsidian.md/download) para Windows, macOS o Linux. Al abrirlo por primera vez, crea un nuevo vault:
+- **Nombre del vault**: `OKF-Vault` (o el nombre que quieras, anótalo).
+- **Carpeta del vault**: elige o crea la carpeta donde quieres que vivan los documentos exportados (ej. `C:\Users\julia\Documents\OKF-Vault`).
+
+### Paso 2: Configurar el Plugin en Moodle
+
+1. Entra a Moodle como administrador: **Administración del sitio → Plugins → Bloques → Git Knowledge Base Metrics**.
+2. En la sección **Integración con Obsidian (opcional)**:
+   - Marca **Habilitar integración con Obsidian**.
+   - **Ruta local del vault**: escribe la ruta absoluta a la carpeta del vault, por ejemplo:
+     - Windows (WSL): `/mnt/c/Users/julia/Documents/OKF-Vault`
+     - Linux nativo: `/home/julia/Documents/OKF-Vault`
+   - **Nombre del vault**: escribe exactamente el nombre con el que creaste el vault en Obsidian (ej. `OKF-Vault`).
+3. Guarda los cambios.
+
+### Paso 3: Exportar el Repositorio al Vault
+
+Ejecuta el script de exportación desde el contenedor Docker o desde el servidor:
+
+```bash
+# Exportación completa (sincroniza todos los .md del repo al vault local)
+docker exec --user daemon moodle-app \
+  php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php
+
+# Para ver qué archivos se escribirían sin tocar el disco (dry-run)
+docker exec --user daemon moodle-app \
+  php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php --dry-run
+
+# Sobreescribir la ruta del vault sin cambiar los ajustes del plugin
+docker exec --user daemon moodle-app \
+  php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php \
+  --vault=/mnt/c/Users/julia/Documents/OKF-Vault
+```
+
+Si quieres que la sincronización sea automática, añade el comando al cron del servidor (ej. cada hora):
+
+```bash
+# Cron: exportar cada hora
+0 * * * * docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php
+```
+
+### Paso 4: Abrir Notas desde Moodle
+
+Una vez habilitada la integración y exportado el vault, en el explorador de documentos de la asignatura **Panel de Métricas y BdC** aparecerá el botón **`🔮 Obsidian`** al lado de cada nota. Al hacer clic, el navegador envía una URI `obsidian://open?vault=OKF-Vault&file=...` que abre inmediatamente el fichero en la aplicación Obsidian del escritorio, con el grafo de conocimiento y los `[[wiki-links]]` resueltos nativamente.
+
+> **Nota**: El protocolo `obsidian://` solo funciona si Obsidian está instalado en el mismo ordenador donde se está usando el navegador. No funciona desde un servidor remoto sin aplicación local.
+
+### Cómo Desactivar / Eliminar la Integración
+
+Para quitar completamente el módulo de Obsidian sin afectar al resto del plugin:
+
+1. **Desmarcar** la casilla *Habilitar integración con Obsidian* en los ajustes del plugin (oculta los botones instantáneamente).
+2. Si quieres eliminar el código por completo:
+   - Borra `classes/obsidian_exporter.php`.
+   - Borra `cli/export_obsidian.php`.
+   - En `settings.php`, elimina el bloque entre `OBSIDIAN_OPTIONAL_START` y `OBSIDIAN_OPTIONAL_END`.
+   - En `cli/setup_course.php`, elimina los bloques marcados con `OBSIDIAN_OPTIONAL`.
+   - En `lang/es/block_gitmetrics.php` y `lang/en/block_gitmetrics.php`, elimina las cadenas del bloque `// Obsidian (opcional)`.
 
 ---
 

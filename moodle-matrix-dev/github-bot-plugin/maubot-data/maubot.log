@@ -1,0 +1,33 @@
+[2026-07-20 09:47:29,636] [INFO@mau.init] Initializing maubot 0.6.0
+[2026-07-20 09:47:29,639] [DEBUG@maubot.loader.zip] Preloading plugins...
+[2026-07-20 09:47:29,665] [DEBUG@maubot.loader.zip] Preloaded plugin dev.julia.githubbot from /data/plugins/dev.julia.githubbot-v2.9.1.mbp
+[2026-07-20 09:47:29,690] [INFO@mau.init] Initialization complete in 0.16 seconds
+[2026-07-20 09:47:29,691] [DEBUG@mau.init] Running startup actions...
+[2026-07-20 09:47:29,693] [DEBUG@mau.init] Starting database...
+[2026-07-20 09:47:29,695] [DEBUG@mau.db] Connecting to sqlite:/data/maubot.db
+[2026-07-20 09:47:29,696] [DEBUG@mau.db] Database connection init commands: ['PRAGMA foreign_keys = ON', 'PRAGMA journal_mode = WAL', 'PRAGMA synchronous = NORMAL', 'PRAGMA busy_timeout = 5000']
+[2026-07-20 09:47:29,802] [DEBUG@mau.db.upgrade] Upgrading database from v0 to v1: Initial asyncpg revision
+[2026-07-20 09:47:29,820] [DEBUG@mau.db.upgrade] Upgrading database from v1 to v2: Store instance database engine
+[2026-07-20 09:47:29,844] [DEBUG@mau.client.db.upgrade] Upgrading matrix state cache from v0 to v4: Latest revision
+[2026-07-20 09:47:29,875] [DEBUG@mau.crypto.db.upgrade] Upgrading crypto store from v0 to v10: Latest revision
+[2026-07-20 09:47:29,941] [INFO@maubot.server] Listening on http://0.0.0.0:29316
+[2026-07-20 09:47:29,942] [INFO@mau.init] Startup actions complete in 0.25 seconds, now running forever
+[2026-07-20 09:48:47,351] [DEBUG@mau.init] Interrupt received, stopping...
+[2026-07-20 09:48:47,360] [DEBUG@maubot.server.websocket] Closing log listener websockets
+[2026-07-20 09:48:47,362] [DEBUG@mau.init] Stopping server
+[2026-07-20 09:48:47,447] [INFO@mau.init] Everything stopped, shutting down
+[2026-07-20 09:48:50,396] [INFO@mau.init] Initializing maubot 0.6.0
+[2026-07-20 09:48:50,398] [DEBUG@maubot.loader.zip] Preloading plugins...
+[2026-07-20 09:48:50,419] [DEBUG@maubot.loader.zip] Preloaded plugin dev.julia.githubbot from /data/plugins/dev.julia.githubbot-v2.9.1.mbp
+[2026-07-20 09:48:50,435] [INFO@mau.init] Initialization complete in 0.12 seconds
+[2026-07-20 09:48:50,437] [DEBUG@mau.init] Running startup actions...
+[2026-07-20 09:48:50,439] [DEBUG@mau.init] Starting database...
+[2026-07-20 09:48:50,440] [DEBUG@mau.db] Connecting to sqlite:/data/maubot.db
+[2026-07-20 09:48:50,442] [DEBUG@mau.db] Database connection init commands: ['PRAGMA foreign_keys = ON', 'PRAGMA journal_mode = WAL', 'PRAGMA synchronous = NORMAL', 'PRAGMA busy_timeout = 5000']
+[2026-07-20 09:48:50,497] [DEBUG@mau.db.upgrade] Database at v2, not upgrading
+[2026-07-20 09:48:50,504] [DEBUG@mau.client.db.upgrade] Database at v4, not upgrading
+[2026-07-20 09:48:50,509] [DEBUG@mau.crypto.db.upgrade] Database at v10, not upgrading
+[2026-07-20 09:48:50,521] [INFO@maubot.server] Listening on http://0.0.0.0:29316
+[2026-07-20 09:48:50,523] [INFO@mau.init] Startup actions complete in 0.08 seconds, now running forever
+[2026-07-20 09:49:07,546] [INFO@aiohttp.access] 127.0.0.1 "POST /_matrix/maubot/_matrix/maubot/v1/auth/login 404 174 in 0.0054s"
+[2026-07-20 09:49:16,558] [INFO@aiohttp.access] 127.0.0.1 "POST /_matrix/maubot/v1/auth/login 200 279 in 0.3532s"

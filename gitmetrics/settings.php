@@ -84,4 +84,41 @@ if ($ADMIN->fulltree) {
         'main',
         PARAM_ALPHANUMEXT
     ));
+
+    // ── Sección Obsidian (opcional, eliminar para desactivar) ─────────────────
+    // OBSIDIAN_OPTIONAL_START
+    // Para desactivar: elimina desde OBSIDIAN_OPTIONAL_START hasta OBSIDIAN_OPTIONAL_END
+    // y borra los archivos: classes/obsidian_exporter.php y cli/export_obsidian.php
+    $settings->add(new admin_setting_heading(
+        'block_gitmetrics/heading_obsidian',
+        get_string('heading_obsidian', 'block_gitmetrics'),
+        get_string('heading_obsidian_desc', 'block_gitmetrics')
+    ));
+
+    // Toggle para habilitar o deshabilitar la integración con Obsidian
+    $settings->add(new admin_setting_configcheckbox(
+        'block_gitmetrics/obsidian_enabled',
+        get_string('obsidian_enabled', 'block_gitmetrics'),
+        get_string('obsidian_enabled_desc', 'block_gitmetrics'),
+        0  // Desactivado por defecto
+    ));
+
+    // Ruta local del vault de Obsidian (carpeta en el sistema de archivos del servidor o del usuario)
+    $settings->add(new admin_setting_configtext(
+        'block_gitmetrics/obsidian_vault_path',
+        get_string('obsidian_vault_path', 'block_gitmetrics'),
+        get_string('obsidian_vault_path_desc', 'block_gitmetrics'),
+        '',
+        PARAM_RAW
+    ));
+
+    // Nombre del vault tal y como Obsidian lo registra (nombre de la carpeta del vault)
+    $settings->add(new admin_setting_configtext(
+        'block_gitmetrics/obsidian_vault_name',
+        get_string('obsidian_vault_name', 'block_gitmetrics'),
+        get_string('obsidian_vault_name_desc', 'block_gitmetrics'),
+        'OKF-Vault',
+        PARAM_TEXT
+    ));
+    // OBSIDIAN_OPTIONAL_END
 }
