@@ -1,0 +1,24 @@
+# Proveedor Git principal ('gitlab' o 'github', o autodetectado por repo_url)
+provider: "gitlab"
+repo_url: "https://gitlab.com/tu-usuario/tu-repo"
+gitlab_url: "https://gitlab.com"
+gitlab_token: "TU_TOKEN_GITLAB_AQUI"
+github_token: ""
+default_owner: "tu-usuario"
+default_repo: "tu-repo"
+default_branch: "main"
+raw_folder: "raw"
+llm_base_url: "https://api.groq.com/openai/v1"
+llm_api_key: ""
+llm_model: "llama-3.1-8b-instant"
+# Modelo usado SOLO para transcribir imagenes/PDFs escaneados (debe admitir
+# entrada multimodal). Si se deja vacio, se usa llm_model para todo.
+llm_vision_model: ""
+# URL base y API key opcionales especificas para el modelo de vision.
+# Si se dejan vacias, se usaran llm_base_url y llm_api_key por defecto.
+llm_vision_base_url: ""
+llm_vision_api_key: ""
+# TTL de la cache de contenido de la BdC, en minutos.
+bdc_cache_ttl_minutos: 30
+# Si es true, cada fuente subida a raw/ se estructura automaticamente en okf/
+ingest_automatico: true

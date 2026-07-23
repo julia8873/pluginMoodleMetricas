@@ -1,236 +1,225 @@
 # pluginMoodleMetricas — Plataforma de Evaluación de Bases de Conocimiento e Integración con Matrix en Moodle
 
-Entorno integral de Moodle (`block_gitmetrics`) y comunicación colaborativa que analiza repositorios de **GitHub y GitLab** bajo el estándar **OKF (Open Knowledge Framework)** e integra salas de chat **Matrix (Synapse & Element)** sincronizadas nativamente con cada asignatura del LMS.
+Entorno integral formado por el plugin de bloque Moodle **`block_gitmetrics`** y un stack de comunicación colaborativa que analiza repositorios de **GitHub y GitLab** bajo el estándar **OKF (Open Knowledge Framework)** e integra salas de chat **Matrix (Synapse + Element)** sincronizadas nativamente con cada asignatura del LMS.
+
+### Diagramas
+---
+
+**Diagrama de Arquitectura:**
+
+![Diagrama de Arquitectura del Entorno Integral](./imagenes/arquitectura.png)
+
+**Diagrama de Interacción:**
+
+![Diagrama de Interacción entre los componentes del Entorno Integral](./imagenes/interaccion.png)
+
 
 ---
 
 ## Índice de Contenidos
 
-1. [Componentes del Proyecto](#1-componentes-del-proyecto)
-2. [Requisitos Previos](#2-requisitos-previos)
-3. [Guía de Instalación Paso a Paso](#3-guía-de-instalación-paso-a-paso)
+1. [Arquitectura General](#1-arquitectura-general)
+2. [Inventario Completo de Ficheros](#2-inventario-completo-de-ficheros)
+   - [Raíz del Proyecto](#raíz-del-proyecto)
+   - [gitmetrics/ — Plugin Moodle block_gitmetrics](#gitmetrics--plugin-moodle-block_gitmetrics)
+   - [moodle-matrix-dev/ — Stack Docker](#moodle-matrix-dev--stack-docker)
+3. [Requisitos Previos](#3-requisitos-previos)
+4. [Despliegue en Producción](#4-despliegue-en-producción)
    - [Opción A: Instalación Automática (Recomendada)](#opción-a-instalación-automática-recomendada)
    - [Opción B: Instalación Manual Paso a Paso](#opción-b-instalación-manual-paso-a-paso)
-4. [Guía de Uso y Resumen de las Secciones de Métricas](#4-guía-de-uso-y-resumen-de-las-secciones-de-métricas)
-5. [Integración con Obsidian (Módulo Opcional)](#5-integración-con-obsidian-módulo-opcional)
-6. [Guía de Apertura e Integración con Matrix y el Bot de GitHub](#6-guía-de-apertura-e-integración-con-matrix-y-el-bot-de-github)
-7. [Configuración de Proveedores Git (GitHub vs GitLab)](#7-configuración-de-proveedores-git-github-vs-gitlab)
-8. [Credenciales Rápidas del Entorno](#8-credenciales-rápidas-del-entorno)
+5. [Cambiar o Reconectar el Repositorio Git](#5-cambiar-o-reconectar-el-repositorio-git)
+6. [Guía de Uso: Secciones de Métricas](#6-guía-de-uso-secciones-de-métricas)
+7. [Integración con Matrix y el Bot Git](#7-integración-con-matrix-y-el-bot-git)
+8. [Integración con Obsidian (Opcional)](#8-integración-con-obsidian-opcional)
+9. [Configuración de Proveedores Git](#9-configuración-de-proveedores-git)
+10. [Credenciales del Entorno](#10-credenciales-del-entorno)
+11. [Gestión de Contenedores Docker](#11-gestión-de-contenedores-docker)
+12. [Seguridad: Gestión de Credenciales](#12-seguridad-gestión-de-credenciales)
 
 ---
 
-## 1. Componentes del Proyecto
+## 1. Arquitectura General
 
-| Componente | Descripción | Enlace |
-| :--- | :--- | :--- |
-| **`gitmetrics/`** | Plugin de bloque oficial para Moodle (`block_gitmetrics`). Contiene el motor cuantitativo OKF, el explorador en memoria, la resolución de enlaces `[[wiki-links]]` y los scripts CLI de despliegue. | [`gitmetrics/README.md`](./gitmetrics/README.md) |
-| **`moodle-matrix-dev/`** | Stack Docker Compose orquestado que contiene Moodle 4.2+, MariaDB, Synapse (Homeserver Matrix), Element Web (Cliente), Maubot (GitHub Bot) y Ollama (LLM local). | [`moodle-matrix-dev/README.md`](./moodle-matrix-dev/README.md) |
-| **`instalar.sh`** | Guion automatizado que inicializa los contenedores, instala y actualiza el plugin, ajusta permisos al demonio web y puebla la asignatura de métricas de un solo golpe. | Ver raíz |
+```
+pluginMoodleMetricas/
+├── instalar.sh              ← Script para el despliegue
+├── configurar_git.sh        ← Script para el cambio de
+                                 repositorio Git
+├── gitmetrics/              ← Plugin PHP para Moodle
+                                 (block_gitmetrics)
+└── moodle-matrix-dev/       ← Stack Docker con servicios
+    ├── docker-compose.yml   ← Define los contenedores
+    ├── synapse-data/        ← Datos persistentes
+    ├── github-bot-plugin/   ← Bot de Matrix (Maubot)
+    └── usuarios/            ← Scripts CLI de gestión de 
+                                 usuarios Moodle
+```
+
+**Contenedores Docker del stack:**
+
+| Contenedor | Imagen | Puerto | Función |
+|:---|:---|:---|:---|
+| `moodle-app` | `bitnamilegacy/moodle:latest` | `8000` | LMS Moodle 4.2+ con el plugin instalado |
+| `moodle-mariadb` | `mariadb:10.11` | `3306` (interno) | Base de datos relacional de Moodle |
+| `matrix-synapse` | `matrixdotorg/synapse:latest` | `8008` | Homeserver Matrix federado |
+| `element-web` | `vectorim/element-web:latest` | `8081` | Cliente web Matrix |
+| `maubot` | Custom (`Dockerfile.maubot`) | `29316` | Bot de Matrix con integración Git |
+| `ollama` | `ollama/ollama:latest` | `11434` | LLM local para asistencia del bot |
+
+---
+
+## 2. Información sobre cada directorio
+
+- **`Raíz del proyecto (/)`**: Contiene los scripts principales de despliegue (`instalar.sh` y `configurar_git.sh`). Son los encargados de levantar toda la infraestructura de contenedores, configurar las conexiones de repositorios e inicializar los servicios.
+- **`gitmetrics/`**: Es el código fuente del plugin de Moodle (`block_gitmetrics`). Aquí se aloja la lógica en PHP para extraer métricas de GitHub/GitLab, procesar los documentos Markdown bajo el estándar OKF y mostrar las estadísticas.
+- **`moodle-matrix-dev/`**: Contiene el fichero de Docker Compose que enlaza Moodle con el servidor de chat, además de los siguientes subdirectorios:
+  - **`synapse-data/`**: Carpeta donde se guardan de forma permanente los datos, archivos y base de datos del servidor Matrix.
+  - **`github-bot-plugin/`**: Contiene el código y la configuración del bot Maubot.
+  - **`usuarios/`**: Para gestionar usuarios de Moodle usando la línea de comandos.
+---
+## 3. Requisitos Previos
+
+| Requisito | Versión mínima | Notas |
+|:---|:---|:---|
+| **Docker Desktop** | 4.x+ | Debe estar activo con el motor Docker en ejecución |
+| **WSL 2 (Ubuntu)** | Ubuntu 20.04+ | Solo en Windows. Los scripts `.sh` se ejecutan en WSL |
+| **Python 3** | 3.8+ | Necesario en el host para que `configurar_git.sh` edite el YAML |
+| **Git** | 2.x+ | Para clonar el repositorio |
+| **Bash** | 4.x+ | Para ejecutar `instalar.sh` y `configurar_git.sh` |
+
+> **IMPORTANTE**: En Windows, todos los comandos `bash` y `docker` se deben ejecutar desde una terminal **WSL 2 (Ubuntu)**, no desde PowerShell ni CMD.
 
 ---
 
-## 2. Requisitos Previos
-
-- **Docker Desktop** activo y corriendo en tu máquina local.
-- **WSL 2 (Ubuntu)** en sistemas Windows.
-- **Git** en `/mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas`.
-
----
-
-## 3. Guía de Instalación Paso a Paso
-
-### Resumen Rápido: ¿Qué tengo que modificar exactamente para conectar mi repositorio?
-
-**No necesitas tocar código ni modificar múltiples archivos.** Para que Moodle, el bot de Matrix (Maubot) y Obsidian se conecten simultáneamente a tu repositorio (sea de GitLab o de GitHub), tienes dos formas de hacerlo:
-
-#### Método 1: Sincronización automática por comando (Recomendado)
-No editas ningún archivo. Simplemente ejecutas un comando indicando la URL del repositorio y tu token personal:
-- Si instalas por primera vez:
-  ```bash
-  ./instalar.sh --url="https://gitlab.com/julia8873/BdC" --token="glpat-xxxxxxxxxxxxxxxx"
-  ```
-- Si el entorno ya está funcionando y quieres cambiar o conectar el repositorio en cualquier momento:
-  ```bash
-  ./configurar_git.sh --url="https://gitlab.com/julia8873/BdC" --token="glpat-xxxxxxxxxxxxxxxx"
-  ```
-
-#### Método 2: Modificación manual de archivos y ajustes web
-Si prefieres editar los ajustes manualmente en lugar de usar el comando automático, solo debes modificar 2 puntos exactos:
-1. **Para el Bot de Matrix**: Edita el archivo `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml` y modifica las claves:
-   ```yaml
-   provider: "gitlab"                                 # O "github"
-   repo_url: "https://gitlab.com/julia8873/BdC"       # URL de tu repositorio
-   gitlab_token: "glpat-xxxxxxxxxxxxxxxx"             # Tu token (o github_token si es GitHub)
-   ```
-   Luego reinicia el bot en Docker: `docker compose restart maubot`.
-2. **Para Moodle y Obsidian**: En la web de Moodle como administrador (`http://localhost:8000`), entra a **Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics (`Gitmetrics`)**, selecciona tu proveedor, pega el mismo token y guarda.
-
----
+## 4. Instalación
 
 ### Opción A: Instalación Automática (Recomendada)
 
-Ejecuta el script automatizado que coordina y despliega todo el sistema. Puedes pasarle tu URL y token de GitLab o GitHub para conectar Moodle, el bot Maubot y Obsidian de un solo golpe:
+Clona el repositorio y ejecuta el script de instalación desde WSL (Ubuntu) indicando la URL y el token de acceso a tu repositorio Git:
 
 ```bash
+# Acceder al directorio del proyecto en WSL
 cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas
-./instalar.sh --url="https://gitlab.com/julia8873/BdC" --token="glpat-xxxxxxxxxxxxxxxx"
+
+# Despliegue completo con GitLab
+./instalar.sh --url="https://gitlab.com/tu-usuario/tu-repo" --token="glpat-xxxxxxxxxxxxxxxx"
+
+# Despliegue completo con GitHub
+./instalar.sh --url="https://github.com/tu-usuario/tu-repo" --token="ghp_xxxxxxxxxxxxxxxx"
+
+# Despliegue sin repositorio (métricas inactivas hasta configurarlas manualmente)
+./instalar.sh
 ```
 
-El script inicia los servicios Docker, espera al servidor web, instala `block_gitmetrics`, realiza la migración de base de datos, genera el curso central de evaluación y conecta automáticamente todos los servicios al repositorio.
+El script realiza automáticamente estos 8 pasos:
 
-> **Sincronización posterior (`configurar_git.sh`)**: Si en cualquier momento deseas cambiar de repositorio, rama o proveedor (por ejemplo de GitLab a GitHub o viceversa) sin reinstalar nada, simplemente ejecuta:
-> ```bash
-> ./configurar_git.sh --url="https://gitlab.com/julia8873/BdC" --token="glpat-xxxxxxxxxxxxxxxx"
-> ```
-> Ese único comando actualiza al instante la base de datos de Moodle, las instancias del bloque, la configuración de Maubot (`base-config.yaml`), reinicia el bot y sincroniza las notas en Obsidian.
+1. Levanta los contenedores Docker (`docker compose up -d`)
+2. Espera a que Moodle esté operativo (polling con reintentos)
+3. Copia el plugin `gitmetrics/` al contenedor `moodle-app`
+4. Ajusta permisos del plugin y del volumen Obsidian
+5. Instala/actualiza el plugin en la BD de Moodle (`upgrade.php`)
+6. Crea la asignatura "Panel de Métricas y BdC"
+7. Configura la integración Matrix (Synapse + Element)
+8. Sincroniza el repositorio Git y habilita la integración Obsidian
+
+Al finalizar, el entorno estará accesible en:
+
+```
+Moodle:   http://localhost:8000   → Usuario: admin
+                                    Contraseña: adminpass123
+Matrix:   http://localhost:8081   → Usuario: admin
+                                    Contraseña: adminpass123
+Maubot:   http://localhost:29316/_matrix/maubot/
+```
 
 ---
 
 ### Opción B: Instalación Manual Paso a Paso
 
-1. **Levantar contenedores**:
-   ```bash
-   cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
-   docker compose up -d
-   ```
-2. **Esperar a Moodle** verificando los logs hasta `** Moodle setup finished! **`:
-   ```bash
-   docker compose logs -f moodle
-   ```
-3. **Copiar y asignar permisos al plugin en el contenedor**:
-   ```bash
-   docker cp ../gitmetrics moodle-app:/bitnami/moodle/blocks/gitmetrics
-   docker exec --user root moodle-app chown -R daemon:daemon /bitnami/moodle/blocks/gitmetrics
-   docker exec --user root moodle-app chmod -R 755 /bitnami/moodle/blocks/gitmetrics
-   ```
-4. **Instalar en Base de Datos y Crear Curso**:
-   ```bash
-   docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/upgrade.php --non-interactive
-   docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_course.php
-   docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/purge_caches.php
-   ```
-
----
-
-## 4. Guía de Uso y Resumen de las Secciones de Métricas
-
-### Acceso al Curso Dedicado: Panel de Métricas y BdC
-Al finalizar la instalación, entra a `http://localhost:8000` con `admin` / `adminpass123` y haz clic en la tarjeta del curso **Panel de Métricas y BdC**. La asignatura está organizada en 5 secciones que proporcionan el siguiente análisis:
-
-- **Sección 0: Acceso a Documentos**
-  Proporciona un explorador jerárquico de carpetas y un visor integrado en memoria RAM para consultar apuntes Markdown, metadatos YAML y enlaces internos al estilo Obsidian (`[[wiki-links]]`) directamente en Moodle, sin duplicar ni almacenar archivos físicos en el servidor.
-
-- **Sección 1: Volumen y Tamaño de la Base de Conocimiento**
-  Proporciona estadísticas sobre la magnitud y cumplimiento normativo del repositorio: recuento total de archivos `.md`, profundidad de directorios, conteo y promedio de palabras por documento, y verificación automática de ficheros esenciales del marco OKF (`README.md`, `SUMMARY.md`, `LICENSE`, `CONTRIBUTING.md`).
-
-- **Sección 2: Red de Enlaces e Interconectividad Markdown**
-  Proporciona un análisis de teoría de grafos del repositorio: recuento de hipervínculos internos, promedio de enlaces por documento, índice de densidad y detección de **notas huérfanas** (documentos aislados en el repositorio que no reciben ni emiten enlaces).
-
-- **Sección 3: Taxonomía, Metadatos y Etiquetas YAML**
-  Proporciona un inventario del uso de frontmatter en los apuntes: porcentaje de adopción de cabeceras YAML, tabla de campos utilizados (`title`, `description`, `resource`, etc.) y una nube interactiva con la frecuencia de las etiquetas (`tags`).
-
-- **Sección 4: Calidad Markdown y Elementos Estructurales**
-  Proporciona una medición del nivel técnico y enriquecimiento sintáctico del contenido: frecuencia media y conteo total por archivo de fórmulas matemáticas LaTeX (`$$` y `$`), tablas Markdown, bloques de código, encabezados (`H1-H6`) y citas.
-
----
-
-### Integración con otras Asignaturas en Moodle
-- **Pestaña Superior de Curso**: El plugin inyecta automáticamente una pestaña llamada **`Métricas de Base de Conocimiento Git`** en la barra superior de cualquier curso para que el docente pueda ver el informe del repositorio a pantalla completa.
-- **Bloque en el Menú Lateral**: Puedes añadir el bloque (`Git Knowledge Base Metrics`) desde `Activar edición -> Añadir un bloque` en cualquier curso y configurarle su propia URL y rama de repositorio.
-
----
-
-## 5. Integración con Obsidian (Módulo Opcional)
-
-El plugin incluye un módulo completamente opcional para visualizar los documentos de la base de conocimiento directamente en **Obsidian**, la aplicación de escritura y gestión de notas con soporte nativo de `[[wiki-links]]` y grafos de conocimiento.
-
-### Cómo Funciona
-
-1. El script `cli/export_obsidian.php` descarga todos los archivos `.md` del repositorio Git remoto (sin guardarlos en Moodle) y los sincroniza en una carpeta local que actúa como vault de Obsidian.
-2. Resuelve los `[[wiki-links]]` de la ruta completa OKF (ej. `[[okf/entities/jose-juan]]`) al formato nativo de Obsidian (ej. `[[jose-juan]]`).
-3. Cuando la integración está habilitada, en el explorador de documentos de Moodle aparece el botón **"Obsidian"** junto a cada nota que usa el protocolo `obsidian://` para abrirla directamente en la aplicación de escritorio.
-
-### Paso 1: Instalar Obsidian en el Escritorio
-
-Descarga e instala [Obsidian](https://obsidian.md/download) para Windows, macOS o Linux. Al abrirlo por primera vez, crea un nuevo vault:
-- **Nombre del vault**: `OKF-Vault` (o el nombre que quieras, anótalo).
-- **Carpeta del vault**: elige o crea la carpeta donde quieres que vivan los documentos exportados (ej. `C:\Users\julia\Documents\OKF-Vault`).
-
-### Paso 2: Configurar el Plugin en Moodle
-
-1. Entra a Moodle como administrador: **Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics**.
-2. En la sección **Integración con Obsidian (opcional)**:
-   - Marca **Habilitar integración con Obsidian**.
-   - **Ruta local del vault**: escribe la ruta absoluta a la carpeta del vault, por ejemplo:
-     - Windows (WSL): `/mnt/c/Users/julia/Documents/OKF-Vault`
-     - Linux nativo: `/home/julia/Documents/OKF-Vault`
-   - **Nombre del vault**: escribe exactamente el nombre con el que creaste el vault en Obsidian (ej. `OKF-Vault`).
-3. Guarda los cambios.
-
-### Paso 3: Exportar y Sincronizar el Repositorio al Vault
-
-Puedes realizar la sincronización de dos formas (o combinadas): manual/mediante cron del sistema, o mediante la Tarea Programada nativa de Moodle.
-
-#### Opción A: Tarea Programada Nativa de Moodle (Recomendado)
-El plugin incluye la tarea programada `\block_gitmetrics\task\sync_obsidian` registrada automáticamente en Moodle.
-1. Entra a **Administración del sitio > Servidor > Tareas programadas**.
-2. Busca **Sincronización programada del vault de Obsidian** (`block_gitmetrics\task\sync_obsidian`).
-3. Por defecto está programada para ejecutarse en el minuto 0 de cada hora (`0 * * * *`). Puedes cambiar su periodicidad o ejecutarla manualmente desde la web pulsando el botón **Ejecutar ahora**.
-4. Cada vez que el cron general de Moodle se ejecuta (`php admin/cli/cron.php`), esta tarea sincronizará automáticamente las notas al vault configurado.
-
-#### Opción B: Ejecución CLI por Comando o Cron de Sistema Linux
-Puedes lanzar la exportación manualmente o integrarla en el cron del sistema operativo:
-
 ```bash
-# Exportación manual desde el contenedor Docker
-docker exec --user daemon moodle-app \
-  php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php
+# 1. Levantar contenedores
+cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
+docker compose up -d
 
-# Previsualizar qué archivos se escribirían sin tocar el disco (dry-run)
-docker exec --user daemon moodle-app \
-  php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php --dry-run
+# 2. Esperar a Moodle (ver logs hasta "** Moodle setup finished! **")
+docker compose logs -f moodle
 
-# Sobreescribir la ruta del vault sin cambiar los ajustes del plugin
-docker exec --user daemon moodle-app \
-  php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php \
-  --vault=/mnt/c/Users/julia/Documents/OKF-Vault
+# 3. Copiar el plugin al contenedor
+docker cp ../gitmetrics moodle-app:/bitnami/moodle/blocks/gitmetrics
+
+# 4. Ajustar permisos
+docker exec --user root moodle-app chown -R daemon:daemon /bitnami/moodle/blocks/gitmetrics
+docker exec --user root moodle-app chmod -R 755 /bitnami/moodle/blocks/gitmetrics
+
+# 5. Registrar el plugin en la BD de Moodle
+docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/upgrade.php --non-interactive
+
+# 6. Crear la asignatura dedicada
+docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_course.php
+
+# 7. Configurar Matrix
+docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_matrix.php
+
+# 8. Limpiar cachés
+docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/purge_caches.php
 ```
 
-Para programarlo en el cron de Linux/WSL (`crontab -e`):
+---
+
+## 5. Cambiar o Reconectar el Repositorio Git
+
+Para cambiar el repositorio (nueva URL, nuevo token, otra rama o pasar de GitLab a GitHub) sin reinstalar nada:
+
 ```bash
-# Ejecutar cada hora exacta en el host
-0 * * * * docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php >/dev/null 2>&1
+cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas
+
+# Sintaxis completa
+./configurar_git.sh --url="<URL>" --token="<TOKEN>" --branch="<RAMA>"
+
+# Ejemplo con GitLab (rama main por defecto)
+./configurar_git.sh --url="https://gitlab.com/julia8873/BdC" --token="glpat-xxxxxxxxxxxxxxxx"
+
+# Ejemplo con GitHub, rama específica
+./configurar_git.sh --url="https://github.com/julia8873/BdC" --token="ghp_xxxxxxxxxxxxxxxx" --branch="develop"
+
+# Modo interactivo (sin argumentos, solicita URL y token)
+./configurar_git.sh
 ```
 
-### Paso 4: Abrir Notas desde Moodle
-
-Una vez habilitada la integración (`obsidian_enabled`) y exportado el vault, el botón **"Obsidian"** aparecerá en dos ubicaciones estratégicas:
-1. **En la Sección 0 (Acceso a Documentos)**: a la derecha de cada fila del explorador jerárquico (`[↗ Ver en GitLab] [Obsidian]`).
-2. **En el Visor de Documentos (`view_file.php`)**: en la barra superior derecha de acciones al consultar cualquier apunte.
-
-Al hacer clic, el navegador envía una URI del tipo `obsidian://open?vault=OKF-Vault&file=...` que abre inmediatamente el fichero en la aplicación Obsidian del escritorio, con el grafo de conocimiento y los enlaces internos (`[[wiki-links]]`) resueltos nativamente.
-
-> **Nota**: El protocolo `obsidian://` solo funciona si Obsidian está instalado en el mismo ordenador donde se está usando el navegador. No funciona desde un servidor remoto sin aplicación local.
-
-### Cómo Desactivar o Eliminar la Integración
-
-- **Desactivación rápida**: desmarcar la casilla *Habilitar integración con Obsidian* en los ajustes del plugin oculta los botones instantáneamente y detiene la tarea programada.
-- **Eliminación completa**: borrar `classes/obsidian_exporter.php`, `cli/export_obsidian.php` y `classes/task/sync_obsidian.php`, y eliminar los bloques marcados con `OBSIDIAN_OPTIONAL` en `settings.php`, `cli/setup_course.php`, `view_file.php` y `db/tasks.php`.
+Este único comando actualiza simultáneamente:
+- `base-config.yaml` del bot Maubot (fichero en disco)
+- BD interna de Maubot (SQLite dentro del contenedor)
+- Contenedor `maubot` (reinicio automático)
+- Configuración de Moodle (`mdl_config_plugins`)
+- Integración con Obsidian
 
 ---
 
-## 6. Guía de Apertura e Integración con Matrix y el Bot de GitHub
+## 6. Guía de Uso: Secciones de Métricas
 
-El entorno incluye una solución completa de mensajería instantánea federada que conecta de forma nativa los cursos de Moodle con salas de chat en **Matrix (Synapse)** accesibles mediante el cliente web **Element**.
+Accede a `http://localhost:8000` → curso **Panel de Métricas y BdC**. El panel está organizado en 5 secciones:
 
-### Apertura de Element Web (Matrix) y Synapse
-- **Cliente Web Element**: Abre en tu navegador `http://localhost:8081`
-- **Servidor Homeserver Synapse**: Escucha en `http://localhost:8008` (en Docker se comunica con Moodle bajo el nombre de host interno `http://matrix-synapse:8008`).
+| Sección | Título | Contenido |
+|:---|:---|:---|
+| **0** | Acceso a Documentos | Explorador jerárquico de carpetas y visor Markdown en memoria RAM. Soporta `[[wiki-links]]`, LaTeX, tablas y código. Sin almacenamiento local de ficheros. |
+| **1** | Volumen y Tamaño de la BdC | Recuento de `.md`, profundidad de directorios, estadísticas de palabras, verificación de ficheros OKF obligatorios (`README.md`, `SUMMARY.md`, `LICENSE`, `CONTRIBUTING.md`). |
+| **2** | Red de Enlaces e Interconectividad | Análisis de grafos: recuento de `[[wiki-links]]`, densidad de interconexión, detección de notas huérfanas (sin enlaces entrantes ni salientes). |
+| **3** | Taxonomía, Metadatos y Etiquetas YAML | Porcentaje de adopción de frontmatter YAML, tabla de campos usados (`title`, `description`, `resource`, etc.), nube de etiquetas `tags`. |
+| **4** | Calidad Markdown y Elementos Estructurales | Frecuencia de fórmulas LaTeX (`$`/`$$`), tablas Markdown, bloques de código, encabezados H1–H6 y citas por documento. |
+
+El plugin también inyecta la pestaña **"Métricas de Base de Conocimiento Git"** en la barra superior de cualquier curso, accesible a pantalla completa desde cualquier asignatura de Moodle.
 
 ---
 
-### Paso 1: Crear la Cuenta de Administrador en Matrix
-Para inicializar el usuario principal que vinculará Moodle con el servidor Synapse, ejecuta el siguiente comando en tu consola de WSL:
+## 7. Integración con Matrix y el Bot Git
+
+> **Nota:** Los pasos **7a** y **7b** se realizan automáticamente al ejecutar `instalar.sh`. Solo necesitas ejecutarlos manualmente si realizas la instalación paso a paso (Opción B) o si necesitas reconfigurar el entorno.
+
+---
+
+### 7a. Crear el usuario administrador de Matrix
+
+Crear la cuenta de administrador en el servidor Synapse. **`instalar.sh` lo ejecuta automáticamente** como parte del despliegue. Para hacerlo manualmente:
 
 ```bash
 docker exec -it matrix-synapse register_new_matrix_user \
@@ -238,186 +227,243 @@ docker exec -it matrix-synapse register_new_matrix_user \
   --user admin --password adminpass123 --admin \
   http://localhost:8008
 ```
-*(Si te pide confirmación, escribe `Y`. El usuario será `@admin:localhost` y su clave `adminpass123`).*
-
-Una vez creado, entra a **`http://localhost:8081` (Element Web)** e inicia sesión con:
-- **Username**: `admin`
-- **Password**: `adminpass123`
-- **Homeserver URL**: Si no aparece por defecto, indícale `http://localhost:8008`
 
 ---
 
-### Paso 2: Obtener el Access Token en Element Web
-Para que Moodle pueda crear salas e invitar a profesores/estudiantes de forma automática por API, necesita el token de acceso del administrador:
-1. En **Element Web** (`http://localhost:8081`), haz clic en tu avatar o menú de usuario.
-2. Selecciona **All settings (Todos los ajustes)**.
-3. Ve a la pestaña **Help & About (Ayuda y Acerca de)**.
-4. Despliega la sección **Advanced (Avanzado)** al final.
-5. Copia el valor de **Access Token** (un texto largo que empieza por `syd_...` o similar).
+### 7b. Conectar Moodle con Matrix
+
+Conectar el plugin de Moodle con el servidor Synapse para permitir la comunicación entre ambos. Existen dos formas de hacerlo:
+
+#### Alternativa 1: Configuración automática (script)
+
+Activa el subsistema de comunicaciones, desbloquea los puertos internos Docker en las reglas cURL de Moodle, obtiene el Access Token de Synapse automáticamente y guarda todo en la base de datos. **`instalar.sh` lo ejecuta automáticamente.** Para lanzarlo de forma aislada:
+
+```bash
+docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_matrix.php
+```
+
+#### Alternativa 2: Configuración manual (web)
+
+Configurar manualmente desde la interfaz web de Moodle:
+
+1. **Administración del sitio → Desarrollo → Características experimentales** → activar **Habilitar proveedores de comunicación**.
+2. **Administración del sitio → Seguridad → Seguridad HTTP** → añadir puertos `80`, `443`, `8008`, `8081` a la lista de puertos permitidos y vaciar la lista de hosts bloqueados.
+3. **Administración del sitio → Plugins → Comunicación → Matrix** y configurar:
+   - **URL del servidor**: `http://matrix-synapse:8008` *(nombre interno Docker, no `localhost`)*
+   - **Access Token**: copiar desde Element Web (`http://localhost:8081`) → Configuración → Help & About → Advanced
+   - **URL de Element Web**: `http://localhost:8081`
 
 ---
 
-### Paso 3: Activar y Desbloquear la Comunicación con Matrix en Moodle
-Ahora vincularemos el LMS Moodle con el Homeserver Matrix y permitiremos las peticiones internas.
+### 7c. Las salas de chat (Automatización y Desactivación)
 
-> **Automatización total CLI (Recomendado)**: Todos los pasos manuales descritos en este apartado y la creación inicial de la sala (Paso 4) se realizan **automáticamente en un solo segundo** al ejecutar `./instalar.sh` o lanzando el script CLI dedicado desde el contenedor:
-> ```bash
-> docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_matrix.php
-> ```
-> *(Este script activa el subsistema `enablecommunicationsubsystem`, desbloquea la seguridad cURL de Moodle, consulta por API REST a Synapse para extraer automáticamente el `Access Token` de `@admin:localhost`, guarda los parámetros en base de datos y crea la sala de la asignatura)*.
+Cada vez que creas una asignatura nueva en Moodle, se genera y vincula automáticamente una sala de chat en Matrix (con el bot).
 
-#### Configuración Manual Paso a Paso (Alternativa sin CLI)
-1. **Entra a Moodle** (`http://localhost:8000`) como administrador (`admin` / `adminpass123`).
-2. **Activar el Subsistema de Comunicaciones**:
-   - Ve a **Administración del sitio > Desarrollo > Características experimentales (`Experimental settings`)**.
-   - Marca la casilla **Habilitar proveedores de comunicación (`Enable communication providers` / `enablecommunication`)**.
-   - Guarda los cambios al final de la página.
-3. **Desbloquear Puertos y Red Interna de Docker (Importante para evitar `The URL is blocked`)**:
-   Por defecto, la seguridad cURL de Moodle bloquea peticiones a redes privadas y puertos no estándar. Para que Moodle pueda consultar Synapse (`http://matrix-synapse:8008`), ve a **Administración del sitio > Seguridad > Seguridad HTTP**:
-   - En **Lista de puertos permitidos (`curlsecurityallowedport`)**, añade los puertos del stack: `443`, `80`, `8008`, `8081` y `8080` (uno por línea).
-   - En **Lista de hosts bloqueados (`curlsecurityblockedhosts`)**, elimina o vacía las subredes internas (`172.16.0.0/12`, `127.0.0.0/8`, `localhost`) que impidan a los contenedores hablar entre sí.
-   - Guarda los cambios.
-4. **Configurar el Proveedor Matrix**:
-   - Ve a **Administración del sitio > Plugins > Comunicación (`Communication`) > Matrix**.
-   - Completa los siguientes parámetros exactos:
-     - **URL del servidor Matrix**: `http://matrix-synapse:8008` *(Usar el nombre del contenedor interno de Docker, no `localhost`)*.
-     - **Access Token**: Pega el token de Element Web copiado en el Paso 2 (`@admin:localhost`). *(Nota: Si este campo se deja vacío, Moodle ocultará la opción de Matrix en las asignaturas).*
-     - **URL de Element Web**: `http://localhost:8081`
-   - Guarda los cambios.
+Si un profesor no desea tener el chat activo para su asignatura, puede **deshabilitarlo manualmente** (Opt-out):
+1. En la asignatura, ve a la barra superior → **Más... → Comunicación**.
+2. Selecciona **Ninguno** en el proveedor de comunicación y pulsa guardar.
+
+*Nota: Si acabas de crear el curso y el chat aún no aparece en Element, puedes ejecutar el cron para que se genere:* 
+
+```bash
+docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/cron.php
+```
 
 ---
 
-### Paso 4: Conectar una Asignatura y Creación Automática de la Sala
-En Moodle 4.3+, la configuración de comunicación tiene su propia pestaña dedicada independiente de los ajustes generales del curso. Para asociar una sala y hacer que se cree automáticamente en Synapse:
+### 7d. Comandos del bot en la sala Matrix
 
-1. **Acceder a la configuración de Comunicación del Curso**:
-   - Entra a la asignatura (por ejemplo, **`Panel de Métricas y BdC`**).
-   - En la barra superior horizontal de pestañas del curso (`Curso | Configuración | Participantes | Calificaciones | Más...`), pulsa en **`Más...` -> `Comunicación`** (o en **`Comunicación`** si está visible directamente en la barra).
-   - *(Ruta directa: `/communication/configure.php?instanceid=ID_CURSO`)*.
-2. **Seleccionar el Proveedor Matrix**:
-   - En el menú desplegable **Proveedor (`Provider`)**, selecciona **`Matrix`**.
-   - Escribe un nombre identificativo para la sala (ej. `Panel de Métricas y BdC` o `Chat OKF de Asignatura`).
-   - Pulsa en **Guardar cambios**.
-
-#### Proceso de Creación Automática en Synapse
-Al guardar la configuración, Moodle gestiona la creación de la sala de forma totalmente automática y desatendida mediante su cola de tareas en segundo plano (`Ad-hoc tasks`):
-- **Encolado automático**: Moodle crea el registro local en su base de datos (`mdl_communication`) y encola la tarea `\core_communication\task\create_and_configure_room_task`.
-- **Ejecución y creación remota**: Cuando se ejecuta el cron del sistema (`php admin/cli/cron.php`), Moodle se conecta a la API REST de Synapse (`_matrix/client/v3/createRoom`), crea la sala de chat privada en Matrix, le asigna el tema y registra su identificador único (`room_id`, por ejemplo `!KVJQNCcFnFgfcpvSfG:localhost`).
-- **Sincronización de participantes**: El sistema matriculará de forma progresiva en la sala de Matrix a los profesores y estudiantes inscritos en el curso conforme accedan al entorno.
-
-> **Ejecución inmediata por CLI (Opcional)**: Si no deseas esperar al ciclo regular del cron del servidor para que se genere la sala en Matrix, puedes forzar el procesado instantáneo de las tareas ad-hoc ejecutando este comando desde tu terminal:
-> ```bash
-> docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/cron.php
-> ```
-> Una vez completado, dentro del curso aparecerá el enlace directo para abrir **Element Web** (`http://localhost:8081`) y acceder a la sala.
+| Comando | Descripción |
+|:---|:---|
+| `!ficheros` | Lista el árbol completo del repositorio |
+| `!documento <nombre>` | Muestra el contenido y el historial de commits de un fichero |
+| `!estudio` | Inicia una sesión de estudio guiado por LLM con preguntas de comprensión |
+| `!repaso` | Repaso de conceptos previamente estudiados |
+| `!organizacion` | Analiza y propone reorganizaciones de la estructura OKF |
+| Adjuntar `.md` / PDF / imagen | Ingesta automática en OKF (si `ingest_automatico: true` en `base-config.yaml`) |
 
 ---
 
-### Paso 5: Configurar el Bot Asistente de Git (Maubot: Soporte Multi-Proveedor GitLab y GitHub)
-El stack incluye **Maubot**, un servicio que ejecuta un bot inteligente en Matrix (`dev.julia.githubbot`) para interactuar con repositorios de GitHub o GitLab directamente desde las salas de chat:
+## 8. Integración con Obsidian (Opcional)
 
-1. **Crear fichero de configuración inicial de Maubot (si no existe)**:
-   ```bash
-   cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
-   cp github-bot-plugin/maubot-data/config.yaml.example github-bot-plugin/maubot-data/config.yaml
+### Configuración previa
+
+1. Editar `moodle-matrix-dev/.env` y definir la ruta del vault en el host:
    ```
-2. **Acceso al Panel Web de Maubot**:
-   - Abre `http://localhost:29316/_matrix/maubot/`
-   - Inicia sesión con el usuario `admin` y la contraseña especificada en `config.yaml`.
-3. **Puesta en marcha e Instancia del Bot**:
-   - Ve a **Clients** -> crea una cuenta cliente en Matrix para que el bot pueda unirse a las salas.
-   - Ve a **Instances** -> crea una instancia del plugin `dev.julia.githubbot` y vincúlala al cliente creado.
-   - En la configuración de la instancia (`base-config.yaml`), define tu proveedor (`gitlab` o `github`) y las claves de acceso correspondientes (ver sección siguiente para instrucciones paso a paso).
-   - El bot compila y carga sus cambios automáticamente en cada reinicio (`docker compose restart maubot`).
+   OBSIDIAN_VAULT_PATH=/mnt/c/Users/julia/Documents/OKF-Vault
+   ```
+2. En Moodle admin → **Plugins → Bloques → Git Knowledge Base Metrics**:
+   - Marcar **Habilitar integración con Obsidian**
+   - **Ruta local del vault**: `/mnt/c/Users/julia/Documents/OKF-Vault`
+   - **Nombre del vault**: `OKF-Vault`
+
+### Sincronización manual
+
+```bash
+# Exportar el repositorio al vault
+docker exec --user daemon moodle-app \
+  php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php
+
+# Modo dry-run (previsualiza sin escribir)
+docker exec --user daemon moodle-app \
+  php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php --dry-run
+
+# Especificar ruta de vault directamente
+docker exec --user daemon moodle-app \
+  php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php \
+  --vault=/mnt/c/Users/julia/Documents/OKF-Vault
+```
+
+### Sincronización automática
+
+La tarea programada `sync_obsidian` se ejecuta cada hora. Para lanzarla manualmente:
+
+```bash
+docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/cron.php
+```
+
+Para programarla en el cron del sistema Linux/WSL (`crontab -e`):
+
+```bash
+0 * * * * docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/export_obsidian.php >/dev/null 2>&1
+```
+
+> **Nota**: El protocolo `obsidian://` solo funciona si Obsidian está instalado en el mismo equipo desde el que se usa el navegador. No funciona en acceso remoto.
 
 ---
 
-## 7. Guía Paso a Paso de Ejecución y Configuración: GitLab vs GitHub
+## 9. Configuración de Proveedores Git
 
-El ecosistema (tanto el plugin Moodle `block_gitmetrics` como el bot de Matrix `github-bot-plugin`) es completamente agnóstico y modular. Puedes alternar o unificar todo tu entorno en **GitLab** o **GitHub** siguiendo estos pasos:
+### GitLab
 
-### Opción 1: Ejecución Completa con GitLab (Configuración Recomendada)
+**Token necesario**: Personal Access Token con permiso `api` (o `read_api` + `write_repository`).
 
-#### Paso 1: Preparar Token y Repositorio en GitLab
-1. Crea o verifica tu repositorio en GitLab (por ejemplo: `https://gitlab.com/julia8873/BdC` o servidor propio/universitario).
-2. En GitLab, entra en **Edit Profile > Access Tokens** (o **Settings > Access Tokens** del proyecto).
-3. Genera un nuevo **Personal Access Token (`PRIVATE-TOKEN`)** con permisos:
-   - `api` (o `read_api` + `write_repository` si el bot debe subir, borrar y mover documentos en las carpetas `raw/` y `okf/`).
-4. Copia y guarda el token (`glpat-xxxxxxxxxxxxxxxx`).
+Editar `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml`:
 
-#### Paso 2: Configurar Moodle (`block_gitmetrics`)
-1. Accede a Moodle como administrador (`http://localhost:8000`, credenciales `admin` / `adminpass123`).
-2. Ve a **Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics (`Gitmetrics`)**.
-3. Configura los parámetros globales:
-   - **Proveedor Git principal**: `GitLab`
-   - **URL Base de GitLab**: `https://gitlab.com` (o la URL base de tu instancia de GitLab).
-   - **Token de API (GitLab Access Token)**: pega el token generado (`glpat-...`).
-   - **Tolerancia SSL**: marca `Ignorar verificación SSL` si estás en una instancia local/universitaria con certificado autofirmado.
-4. Guarda los cambios.
-5. En el curso (ej. **Panel de Métricas y BdC**), accede a la configuración del bloque e introduce la URL completa de tu repositorio: `https://gitlab.com/julia8873/BdC` y la rama `main`. El panel calculará las métricas directamente sobre GitLab.
+```yaml
+provider: "gitlab"
+repo_url: "https://gitlab.com/julia8873/BdC"
+gitlab_url: "https://gitlab.com"
+gitlab_token: "glpat-xxxxxxxxxxxxxxxx"
+github_token: ""
+default_owner: "julia8873"
+default_repo: "BdC"
+default_branch: "main"
+```
 
-#### Paso 3: Configurar el Bot de Matrix (`github-bot-plugin`)
-1. Edita el archivo `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml` (o desde el panel web de Maubot en `http://localhost:29316/_matrix/maubot/` -> **Instances** -> tu instancia):
-   ```yaml
-   provider: "gitlab"
-   repo_url: "https://gitlab.com/julia8873/BdC"
-   gitlab_url: "https://gitlab.com"
-   gitlab_token: "glpat-xxxxxxxxxxxxxxxx"
-   default_owner: "julia8873"
-   default_repo: "BdC"
-   default_branch: "main"
-   ```
-2. Guarda el archivo y reinicia el bot para aplicar la nueva configuración:
-   ```bash
-   cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
-   docker compose restart maubot
-   ```
-3. **Verificación en Matrix**: Entra a **Element Web** (`http://localhost:8081`), abre la sala de chat de la asignatura e interactúa con el bot:
-   - `!ficheros` -> Listará el árbol recursivo descargado desde la API v4 de GitLab.
-   - `!documento <nombre>` -> Consultará el archivo y su historial de commits en GitLab.
-   - Subir un archivo `.md` -> El bot realizará un commit de subida en GitLab mediante el endpoint transaccional `POST /repository/commits`.
+En Moodle admin → **Plugins → Bloques → Git Knowledge Base Metrics**:
+- Proveedor: `GitLab`
+- URL Base de GitLab: `https://gitlab.com`
+- Token de API: `glpat-...`
 
----
+### GitHub
 
-### Opción 2: Ejecución Completa con GitHub
+**Token necesario**: Personal Access Token (classic) con permiso `repo`.
 
-#### Paso 1: Preparar Token y Repositorio en GitHub
-1. Crea o verifica tu repositorio en GitHub (por ejemplo: `https://github.com/julia8873/BdC`).
-2. Ve a **Settings > Developer settings > Personal access tokens > Tokens (classic)** en GitHub.
-3. Genera un nuevo PAT clásico con el permiso `repo` (o `public_repo` si el repositorio es público).
-4. Copia y guarda el token (`ghp_xxxxxxxxxxxxxxxx`).
+Editar `base-config.yaml`:
 
-#### Paso 2: Configurar Moodle (`block_gitmetrics`)
-1. En Moodle, ve a **Administración del sitio > Plugins > Bloques > Git Knowledge Base Metrics (`Gitmetrics`)**.
-2. Configura los parámetros globales:
-   - **Proveedor Git principal**: `GitHub`
-   - **Token de API (GitHub Personal Access Token)**: pega tu token (`ghp_...`).
-3. Guarda los cambios. En la instancia del bloque dentro del curso, introduce la URL del repositorio de GitHub: `https://github.com/julia8873/BdC` y la rama `main`.
+```yaml
+provider: "github"
+repo_url: "https://github.com/julia8873/BdC"
+gitlab_token: ""
+github_token: "ghp_xxxxxxxxxxxxxxxx"
+default_owner: "julia8873"
+default_repo: "BdC"
+default_branch: "main"
+```
 
-#### Paso 3: Configurar el Bot de Matrix (`github-bot-plugin`)
-1. Edita `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml` (o en la interfaz de Maubot):
-   ```yaml
-   provider: "github"
-   repo_url: "https://github.com/julia8873/BdC"
-   github_token: "ghp_xxxxxxxxxxxxxxxx"
-   default_owner: "julia8873"
-   default_repo: "BdC"
-   default_branch: "main"
-   ```
-2. Guarda y reinicia el bot en Docker:
-   ```bash
-   cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
-   docker compose restart maubot
-   ```
-3. **Verificación en Matrix**: El bot utilizará de manera nativa la clase `GitHubClient` conectándose a `api.github.com` para todas las operaciones de consulta, subida y gestión de apuntes.
+En Moodle admin → **Plugins → Bloques → Git Knowledge Base Metrics**:
+- Proveedor: `GitHub`
+- Token de API: `ghp_...`
+
+Tras modificar `base-config.yaml` manualmente, reiniciar el bot:
+
+```bash
+cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
+docker compose restart maubot
+```
 
 ---
 
-## 8. Credenciales Rápidas del Entorno
+## 10. Credenciales del Entorno
 
-| Servicio | URL Local | Usuario | Contraseña |
-| :--- | :--- | :--- | :--- |
+| Servicio | URL | Usuario | Contraseña |
+|:---|:---|:---|:---|
 | **Moodle 4.2+** | `http://localhost:8000` | `admin` | `adminpass123` |
-| **Element Web (Cliente Matrix)** | `http://localhost:8081` | `admin` | `adminpass123` |
-| **Maubot (GitHub Bot Manager)** | `http://localhost:29316/_matrix/maubot/` | Ver `config.yaml` | Ver `config.yaml` |
-| **MariaDB (Base de datos Moodle)** | Interno en Docker (`localhost:3306`) | `bn_moodle` | `moodle_db_pass` |
+| **Element Web (Matrix)** | `http://localhost:8081` | `admin` | `adminpass123` |
+| **Maubot (Bot Manager)** | `http://localhost:29316/_matrix/maubot/` | Ver `maubot-data/config.yaml` | Ver `maubot-data/config.yaml` |
+| **MariaDB (Moodle DB)** | Interno Docker (`moodle-mariadb:3306`) | `bn_moodle` | `moodle_db_pass` |
+| **Synapse Homeserver** | `http://localhost:8008` | — | — |
+| **Ollama (LLM local)** | `http://localhost:11434` | — | — |
+
+> **ADVERTENCIA**: Cambiar las credenciales por defecto antes de exponer el entorno en una red distinta a `localhost`. Las contraseñas por defecto son para desarrollo y despliegue local únicamente.
+
+---
+
+## 11. Gestión de Contenedores Docker
+
+```bash
+cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
+
+# Arrancar todos los servicios
+docker compose up -d
+
+# Detener todos los servicios (conserva los datos)
+docker compose down
+
+# Ver estado de los contenedores
+docker compose ps
+
+# Ver logs de un servicio concreto
+docker compose logs -f moodle
+docker compose logs -f maubot
+docker compose logs -f synapse
+
+# Reiniciar un servicio individual
+docker compose restart maubot
+
+# Actualizar el plugin sin reinstalar el entorno
+docker cp ../gitmetrics/. moodle-app:/bitnami/moodle/blocks/gitmetrics/
+docker exec --user root moodle-app chown -R daemon:daemon /bitnami/moodle/blocks/gitmetrics
+docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/upgrade.php --non-interactive
+docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/purge_caches.php
+
+# Acceder a la shell del contenedor Moodle
+docker exec -it --user daemon moodle-app bash
+
+# Resetear completamente el entorno (borra todos los datos)
+docker compose down -v
+```
+
+---
+
+## 12. Seguridad: Gestión de Credenciales
+
+Este proyecto utiliza un sistema de **ficheros plantilla (`.example`)** para evitar que contraseñas, tokens y claves criptográficas se suban al repositorio Git.
+
+### Cómo funciona
+
+Cada fichero que contiene credenciales tiene una versión `.example` con valores de ejemplo. Los ficheros reales (con tus credenciales) están excluidos del repositorio mediante `.gitignore`.
+
+| Fichero real (excluido de Git) | Plantilla versionada (`.example`) |
+|:---|:---|
+| `moodle-matrix-dev/.env` | `.env.example` |
+| `moodle-matrix-dev/synapse-data/homeserver.yaml` | `homeserver.yaml.example` |
+| `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml` | `base-config.yaml.example` |
+| `moodle-matrix-dev/github-bot-plugin/maubot-data/config.yaml` | `config.yaml.example` |
+
+### Primer uso (tras clonar el repositorio)
+
+`instalar.sh` **copia automáticamente** cada plantilla `.example` a su fichero real la primera vez que se ejecuta. Si el fichero real ya existe, no lo sobrescribe (para no perder credenciales que ya hayas configurado).
+
+Si prefieres hacerlo manualmente antes de ejecutar `instalar.sh`:
+
+```bash
+# Desde la raíz del proyecto
+cp moodle-matrix-dev/.env.example moodle-matrix-dev/.env
+cp moodle-matrix-dev/synapse-data/homeserver.yaml.example moodle-matrix-dev/synapse-data/homeserver.yaml
+cp moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml.example moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml
+cp moodle-matrix-dev/github-bot-plugin/maubot-data/config.yaml.example moodle-matrix-dev/github-bot-plugin/maubot-data/config.yaml
+```
+
+Después, edita cada fichero y sustituye los valores de ejemplo (`TU_TOKEN_AQUI`, `GENERA_UN_SECRETO_ALEATORIO_AQUI`, etc.) por tus valores reales.

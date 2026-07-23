@@ -26,6 +26,27 @@ echo "--------------------------------------------------------------------------
 echo " INICIANDO ENTORNO MOODLE & MATRIX + PLUGIN GITMETRICS"
 echo "------------------------------------------------------------------------------"
 
+# 0. Crear ficheros de configuración a partir de las plantillas .example
+#    (solo si no existen ya, para no sobrescribir credenciales del usuario)
+echo ""
+echo "[0/8] Comprobando ficheros de configuración..."
+
+copy_if_missing() {
+    local example="$1"
+    local target="${example%.example}"
+    if [ ! -f "$target" ]; then
+        cp "$example" "$target"
+        echo "      Creado: $target (desde $(basename "$example"))"
+    else
+        echo "      Ya existe: $target (no se sobrescribe)"
+    fi
+}
+
+copy_if_missing "$DOCKER_DIR/.env.example"
+copy_if_missing "$DOCKER_DIR/synapse-data/homeserver.yaml.example"
+copy_if_missing "$DOCKER_DIR/github-bot-plugin/github-bot-plugin/base-config.yaml.example"
+copy_if_missing "$DOCKER_DIR/github-bot-plugin/maubot-data/config.yaml.example"
+
 # 1. Levantar contenedores Docker
 echo ""
 echo "[1/8] Levantando contenedores Docker..."

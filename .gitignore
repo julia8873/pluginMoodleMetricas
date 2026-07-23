@@ -6,3 +6,16 @@ scratch/
 .DS_Store
 *.swp
 *.tmp
+
+# ── Ficheros con credenciales y secretos (NUNCA subir al repositorio) ──
+moodle-matrix-dev/.env
+moodle-matrix-dev/synapse-data/homeserver.yaml
+moodle-matrix-dev/synapse-data/*.signing.key
+moodle-matrix-dev/synapse-data/homeserver.db
+moodle-matrix-dev/synapse-data/media_store/
+moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml
+moodle-matrix-dev/github-bot-plugin/maubot-data/config.yaml
+moodle-matrix-dev/github-bot-plugin/maubot-data/maubot.db
+moodle-matrix-dev/github-bot-plugin/maubot-data/plugins/
+moodle-matrix-dev/github-bot-plugin/maubot-data/dbs/
+moodle-matrix-dev/github-bot-plugin/maubot-data/trash/
