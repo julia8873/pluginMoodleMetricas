@@ -7,15 +7,39 @@ $string['gitmetrics:addinstance']      = 'Añadir un bloque de Métricas Git';
 $string['gitmetrics:myaddinstance']    = 'Añadir un bloque de Métricas Git a Mi Moodle';
 $string['gitmetrics:viewmetrics']      = 'Ver Métricas Git';
 
-// Ajustes globales
+// ── Ajustes - Proveedor ───────────────────────────────────────────────────
+$string['default_provider']            = 'Proveedor Git por defecto';
+$string['default_provider_desc']       = 'Elige el proveedor Git usado por defecto al crear una nueva instancia del bloque. Los profesores pueden cambiarlo por bloque.';
+$string['provider_github']             = 'GitHub (github.com)';
+$string['provider_gitlab']             = 'GitLab (OSL / local / gitlab.com)';
+
+// ── Ajustes - Secciones ───────────────────────────────────────────────────
+$string['heading_github']              = 'Ajustes de GitHub';
+$string['heading_gitlab']              = 'Ajustes de GitLab (OSL / local / cloud)';
+$string['heading_general']             = 'Ajustes generales';
+
+// Ajustes - GitHub
 $string['github_token']                = 'Token de API de GitHub';
 $string['github_token_desc']           = 'Token de Acceso Personal opcional (clásico o de grano fino). Sin token, la API de GitHub permite 60 peticiones/hora por IP. Con token, el límite sube a 5.000/hora. Requerido para repositorios privados.';
+
+// Ajustes - GitLab
+$string['gitlab_url']                  = 'URL del servidor GitLab';
+$string['gitlab_url_desc']             = 'URL base del servidor GitLab al que conectarse. Ejemplos: https://gitlab.com (cloud), https://gitlab.osl.ugr.es (OSL), http://localhost:8929 (local). No incluyas barra final.';
+$string['gitlab_token']                = 'Token de acceso GitLab (PRIVATE-TOKEN)';
+$string['gitlab_token_desc']           = 'Token de Acceso Personal o de Proyecto para GitLab. Requerido para repositorios privados y servidores que requieran autenticación. En GitLab ve a Configuración de usuario > Tokens de acceso y crea uno con alcance read_api.';
+
+// Ajustes - General
 $string['cache_ttl']                   = 'TTL de la caché (segundos)';
 $string['cache_ttl_desc']              = 'Tiempo (en segundos) durante el que se reutilizan las métricas calculadas antes de volver a consultar la API. Por defecto: 3600 (1 hora).';
 $string['default_branch']             = 'Rama por defecto';
 $string['default_branch_desc']        = 'Rama de Git que se analizará si no se especifica ninguna en la instancia del bloque (p. ej. main o master).';
 
-// Formulario de instancia
+// ── Formulario de instancia (por bloque) ──────────────────────────────────
+$string['provider']                    = 'Proveedor Git';
+$string['provider_help']               = 'Elige GitHub para conectarte a github.com, o GitLab para conectarte a un servidor GitLab (OSL, local o gitlab.com). La URL del servidor se configura globalmente por el administrador del sitio en los ajustes del plugin.';
+$string['repo_url']                    = 'URL del repositorio';
+$string['repo_url_help']               = "Pega la URL completa del repositorio a analizar.\n\nPara GitHub: https://github.com/propietario/repositorio\nPara GitLab (OSL): https://gitlab.osl.ugr.es/grupo/repositorio\nPara GitLab local: http://localhost:8929/propietario/repositorio";
+// Retrocompatibilidad
 $string['github_url']                  = 'URL del Repositorio GitHub';
 $string['github_url_help']             = 'Pega la URL pública completa del repositorio GitHub a analizar, p. ej. https://github.com/usuario/repositorio';
 $string['branch']                      = 'Rama';
@@ -66,7 +90,7 @@ $string['metric_valid_markdown_rate']  = 'Tasa de Markdown válido';
 $string['frontmatter_errors']          = 'Errores de frontmatter';
 
 // Estado / varios
-$string['no_repo_configured']          = 'No hay ninguna URL de repositorio configurada. Edita este bloque y pega la URL de un repositorio de GitHub.';
+$string['no_repo_configured']          = 'No hay ninguna URL de repositorio configurada. Edita este bloque, elige un proveedor Git (GitHub o GitLab) y pega la URL del repositorio.';
 $string['last_updated']                = 'Última actualización';
 $string['view_repo']                   = 'Ver repositorio';
 $string['refresh_metrics']             = 'Actualizar métricas';
@@ -77,19 +101,19 @@ $string['present']                     = 'Presente';
 $string['missing']                     = 'Ausente';
 
 // Errores
-$string['error_invalid_url']           = 'URL de GitHub no válida. Formato esperado: https://github.com/propietario/repositorio';
-$string['error_api']                   = 'No se pudo conectar a la API de GitHub. Comprueba que el repositorio es público o que hay un token válido configurado.';
-$string['error_json']                  = 'Respuesta inesperada de la API de GitHub (error al parsear JSON).';
+$string['error_invalid_url']           = 'URL de repositorio no válida. Para GitHub: https://github.com/propietario/repositorio — Para GitLab: https://gitlab.ejemplo.com/grupo/repositorio';
+$string['error_api']                   = 'No se pudo conectar a la API Git. Comprueba que el repositorio es accesible y que hay un token válido configurado (si el repositorio es privado).';
+$string['error_json']                  = 'Respuesta inesperada de la API (error al parsear JSON).';
 $string['error_repo']                  = 'Repositorio no encontrado o inaccesible';
 $string['error_branch']                = 'Rama no encontrada. Prueba a cambiar la rama en los ajustes del bloque.';
 
 // Obsidian (opcional) — eliminar este bloque junto con classes/obsidian_exporter.php y cli/export_obsidian.php
-$string['heading_obsidian']            = 'Integracion con Obsidian (opcional)';
-$string['heading_obsidian_desc']       = 'Permite abrir documentos directamente en Obsidian y exportar la base de conocimiento a un vault local. Esta funcion es completamente opcional; si no la necesitas, puedes ignorarla o desactivarla.';
+$string['heading_obsidian']            = 'Integración con Obsidian (opcional)';
+$string['heading_obsidian_desc']       = 'Permite abrir documentos directamente en Obsidian y exportar la base de conocimiento a un vault local. Esta función es completamente opcional; si no la necesitas, puedes ignorarla o desactivarla.';
 $string['obsidian_enabled']            = 'Habilitar integración con Obsidian';
-$string['obsidian_enabled_desc']       = 'Cuando esta activado, aparecera un boton "Obsidian" junto a cada documento que abre la nota directamente en la aplicacion Obsidian instalada en el ordenador del usuario.';
+$string['obsidian_enabled_desc']       = 'Cuando está activado, aparecerá un botón "Obsidian" junto a cada documento que abre la nota directamente en la aplicación Obsidian instalada en el ordenador del usuario.';
 $string['obsidian_vault_path']         = 'Ruta local del vault de Obsidian';
 $string['obsidian_vault_path_desc']    = 'Ruta absoluta en el sistema de archivos del usuario donde se encuentra (o se creará) el vault de Obsidian. Ejemplo: /home/julia/Documents/OKF-Vault o C:\\Users\\julia\\Documents\\OKF-Vault';
 $string['obsidian_vault_name']         = 'Nombre del vault de Obsidian';
 $string['obsidian_vault_name_desc']    = 'Nombre exacto del vault tal y como Obsidian lo registró al crearlo (nombre de la carpeta del vault). Este nombre se usa para construir los enlaces obsidian://.';
-$string['task_sync_obsidian']          = 'Sincronizacion programada del vault de Obsidian';
+$string['task_sync_obsidian']          = 'Sincronización programada del vault de Obsidian';
