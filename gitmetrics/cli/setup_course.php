@@ -369,5 +369,5 @@ foreach ($extra_sections as $es) {
 }
 
 rebuild_course_cache($course->id, true);
-echo "Los temas de la asignatura se han poblado, se han limpiado avisos/secciones sobrantes y la caché del curso se ha reconstruido con éxito.\n";
+echo "Los temas de la asignatura se han preparado, se han limpiado avisos/secciones sobrantes y la caché del curso se ha reconstruido con éxito.\n";
 

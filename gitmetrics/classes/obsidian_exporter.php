@@ -4,16 +4,7 @@
 //
 // Módulo de exportación a Obsidian.
 //
-// Este archivo es completamente independiente del resto del plugin.
-// Para DESACTIVAR la integración con Obsidian:
-//   1. Elimina este archivo.
-//   2. Elimina cli/export_obsidian.php.
-//   3. Elimina la sección "Obsidian" de settings.php (marcada con el comentario
-//      "--- Sección Obsidian".
-//   4. Elimina los botones "Abrir en Obsidian" de cli/setup_course.php
-//      (marcados con el comentario "OBSIDIAN_OPTIONAL").
-//
-// Funcionamiento:
+// FLUJO:
 //   1. Descarga todos los archivos .md del repositorio Git remoto via API
 //      (sin almacenarlos en la base de datos de Moodle).
 //   2. Los escribe en una carpeta local del sistema de archivos que actúa
@@ -34,8 +25,6 @@ defined('MOODLE_INTERNAL') || die();
  * Descarga los documentos Markdown de un repositorio Git remoto y los
  * sincroniza con un vault local de Obsidian en el sistema de archivos.
  *
- * Ver la cabecera de este archivo
- * para instrucciones de eliminación limpia.
  */
 class obsidian_exporter {
 
@@ -93,6 +82,7 @@ class obsidian_exporter {
     public function export(): array {
         $stats = ['written' => 0, 'skipped' => 0, 'errors' => []];
 
+        // [PASO 4 DEL FLUJO] Obtener el "Árbol" (Tree) de archivos remotos conectados a la API
         // Obtener árbol completo del repositorio
         $tree = $this->git_client->get_tree($this->owner, $this->repo, $this->branch);
 
@@ -106,6 +96,7 @@ class obsidian_exporter {
             $filepath = $node['path'];
 
             try {
+                // [PASO 6 DEL FLUJO] Descargar el contenido de los archivos que sean nuevos o hayan cambiado
                 // Descargar contenido raw desde la API (en memoria, sin escribir en Moodle)
                 $raw_content = $this->git_client->get_file_content(
                     $this->owner, $this->repo, $filepath, $this->branch
@@ -124,9 +115,11 @@ class obsidian_exporter {
                     mkdir($target_dir, 0755, true);
                 }
 
+                // [PASO 5 DEL FLUJO] Comprobar si hubo cambios locales comparando el contenido
                 // Escribir solo si el contenido ha cambiado (evita modificar timestamps innecesariamente)
                 $existing = is_file($target_path) ? file_get_contents($target_path) : null;
                 if ($existing !== $obsidian_content) {
+                    // [PASO 7 DEL FLUJO] Enviar los datos a Obsidian guardándolo físicamente en el disco duro
                     file_put_contents($target_path, $obsidian_content, LOCK_EX);
                     $stats['written']++;
                 } else {

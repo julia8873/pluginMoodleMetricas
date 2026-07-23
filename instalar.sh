@@ -50,6 +50,15 @@ copy_if_missing "$DOCKER_DIR/github-bot-plugin/maubot-data/config.yaml.example"
 # 1. Levantar contenedores Docker
 echo ""
 echo "[1/8] Levantando contenedores Docker..."
+
+if ! command -v docker &> /dev/null || ! docker info &> /dev/null; then
+    echo ""
+    echo "❌ ERROR: No se puede conectar con Docker."
+    echo "Por favor, asegúrate de tener abierta la aplicación Docker Desktop."
+    echo "Si usas WSL, verifica que la integración de WSL está activada en Docker Desktop (Settings -> Resources -> WSL Integration)."
+    exit 1
+fi
+
 cd "$DOCKER_DIR"
 docker compose up -d
 
