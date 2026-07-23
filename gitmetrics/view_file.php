@@ -1,5 +1,5 @@
 <?php
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // view_file.php – Visor de archivos Markdown en vivo desde el repositorio Git.
 //
 // Características:
@@ -7,23 +7,23 @@
 //  · Convierte [[wiki-links]] de estilo Obsidian en hipervínculos Moodle
 //  · Renderiza el cuerpo Markdown con format_text
 //  · No almacena ningún archivo en disco — todo en memoria RAM
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/filelib.php');
 
-// ── Parámetros de entrada ────────────────────────────────────────────────────
+// -- Parámetros de entrada ----------------------------------------------------
 $courseid = optional_param('courseid', SITEID, PARAM_INT);
 $blockid  = optional_param('blockid', 0, PARAM_INT);
 $filepath = optional_param('path', '', PARAM_TEXT);
 $repourl  = optional_param('repo_url', '', PARAM_RAW);
 $branch   = optional_param('branch', 'main', PARAM_TEXT);
 
-// ── Autenticación ────────────────────────────────────────────────────────────
+// -- Autenticación ------------------------------------------------------------
 $course = $DB->get_record('course', ['id' => max(1, $courseid)], '*', MUST_EXIST);
 require_login($course);
 
-// ── Mostrar página de error si faltan params esenciales ─────────────────────
+// -- Mostrar página de error si faltan params esenciales ---------------------
 if (empty($filepath) || empty($repourl)) {
     $PAGE->set_url('/blocks/gitmetrics/view_file.php');
     $PAGE->set_title('Error — Parámetros incorrectos');
@@ -41,7 +41,7 @@ if (empty($filepath) || empty($repourl)) {
 
 require_capability('block/gitmetrics:viewmetrics', context_course::instance($course->id));
 
-// ── Determinar proveedor y token ─────────────────────────────────────────────
+// -- Determinar proveedor y token ---------------------------------------------
 if (str_contains($repourl, 'github.com')) {
     $provider   = 'github';
     $token      = get_config('block_gitmetrics', 'github_token') ?: '';
@@ -52,7 +52,7 @@ if (str_contains($repourl, 'github.com')) {
     $gitlab_url = get_config('block_gitmetrics', 'gitlab_url') ?: 'https://gitlab.com';
 }
 
-// ── Extraer owner y repo de la URL del repositorio ──────────────────────────
+// -- Extraer owner y repo de la URL del repositorio --------------------------
 $parsed     = parse_url($repourl);
 $path_parts = array_values(array_filter(explode('/', trim($parsed['path'] ?? '', '/'))));
 if (count($path_parts) < 2) {
@@ -61,14 +61,14 @@ if (count($path_parts) < 2) {
 $owner = $path_parts[0];
 $repo  = $path_parts[1];
 
-// ── URL externa (GitLab / GitHub) para el botón ↗ ───────────────────────────
+// -- URL externa (GitLab / GitHub) para el botón ↗ ---------------------------
 if ($provider === 'github') {
     $external_url = "https://github.com/{$owner}/{$repo}/blob/{$branch}/" . str_replace('%2F', '/', rawurlencode($filepath));
 } else {
     $external_url = rtrim($gitlab_url, '/') . "/{$owner}/{$repo}/-/blob/{$branch}/" . str_replace('%2F', '/', rawurlencode($filepath));
 }
 
-// ── Descargar contenido raw en memoria (sin guardar en disco) ───────────────
+// -- Descargar contenido raw en memoria (sin guardar en disco) ---------------
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/gitlab_client.php');
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/github_client.php');
 
@@ -84,8 +84,6 @@ try {
 } catch (\Exception $e) {
     $fetch_error = $e->getMessage();
 }
-
-// OBSIDIAN_OPTIONAL_START
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/obsidian_exporter.php');
 $obsidian_enabled    = (bool) get_config('block_gitmetrics', 'obsidian_enabled');
 $obsidian_vault_name = get_config('block_gitmetrics', 'obsidian_vault_name') ?: 'OKF-Vault';
@@ -93,7 +91,6 @@ $obsidian_uri        = '';
 if ($obsidian_enabled) {
     $obsidian_uri = \block_gitmetrics\obsidian_exporter::get_obsidian_uri($filepath, $obsidian_vault_name);
 }
-// OBSIDIAN_OPTIONAL_END
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Funciones de procesamiento de Markdown / Frontmatter / Wiki-links
@@ -310,7 +307,7 @@ if ($raw_content !== null) {
     ]);
 }
 
-// ── Título de la página ──────────────────────────────────────────────────────
+// -- Título de la página ------------------------------------------------------
 $doc_title  = !empty($meta['title']) ? $meta['title'] : basename($filepath);
 $page_title = $doc_title . ' — ' . $owner . '/' . $repo;
 
@@ -325,7 +322,7 @@ $PAGE->set_title($page_title);
 $PAGE->set_heading($course->fullname);
 $PAGE->set_pagelayout('report');
 
-// ── URL de vuelta ────────────────────────────────────────────────────────────
+// -- URL de vuelta ------------------------------------------------------------
 $back_url = new moodle_url('/blocks/gitmetrics/view.php', [
     'courseid' => $courseid,
     'blockid'  => $blockid,
@@ -334,7 +331,7 @@ $back_url = new moodle_url('/blocks/gitmetrics/view.php', [
 echo $OUTPUT->header();
 ?>
 <style>
-/* ── Visor Markdown: estilos ────────────────────────────────────────────── */
+/* -- Visor Markdown: estilos ---------------------------------------------- */
 .gmv-wrap {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   max-width: 860px;
@@ -368,10 +365,8 @@ echo $OUTPUT->header();
 .gmv-btn-back:hover { background: #e2e8f0; text-decoration: none; color: #1e293b; }
 .gmv-btn-ext  { background: #2563eb; color: #fff; }
 .gmv-btn-ext:hover  { background: #1d4ed8; text-decoration: none; color: #fff; }
-/* OBSIDIAN_OPTIONAL_START */
 .gmv-btn-obsidian { background: #6d28d9; color: #fff; }
 .gmv-btn-obsidian:hover { background: #5b21b6; text-decoration: none; color: #fff; }
-/* OBSIDIAN_OPTIONAL_END */
 
 /* Tarjeta principal */
 .gmv-card {
@@ -503,13 +498,11 @@ echo $OUTPUT->header();
       <a href="<?php echo s($external_url); ?>" target="_blank" rel="noopener" class="gmv-btn gmv-btn-ext">
         ↗ Ver en <?php echo ($provider === 'github') ? 'GitHub' : 'GitLab'; ?>
       </a>
-      <?php // OBSIDIAN_OPTIONAL_START ?>
       <?php if ($obsidian_enabled && $obsidian_uri !== ''): ?>
         <a href="<?php echo s($obsidian_uri); ?>" class="gmv-btn gmv-btn-obsidian" title="Abrir en Obsidian">
           Obsidian
         </a>
       <?php endif; ?>
-      <?php // OBSIDIAN_OPTIONAL_END ?>
     </div>
   </div>
 
@@ -555,3 +548,4 @@ echo $OUTPUT->header();
 
 <?php
 echo $OUTPUT->footer();
+

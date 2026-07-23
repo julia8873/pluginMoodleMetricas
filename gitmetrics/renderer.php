@@ -469,7 +469,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     public function styles(): string {
         return <<<CSS
 <style>
-/* ── block_gitmetrics: estilos del bloque ──────────────────────── */
+/* -- block_gitmetrics: estilos del bloque ------------------------ */
 .gm-wrap {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;

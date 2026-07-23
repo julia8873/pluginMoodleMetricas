@@ -1,8 +1,8 @@
 <?php
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Pagina completa de visualizacion de metricas de la Base de Conocimiento Git
 // Soporta GitHub, GitLab OSL y GitLab local.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 require_once(__DIR__ . '/../../config.php');
 
@@ -17,7 +17,7 @@ $PAGE->set_title(get_string('pluginname', 'block_gitmetrics'));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_pagelayout('report');
 
-// ── Leer configuracion de la instancia del bloque ─────────────────────────
+// -- Leer configuracion de la instancia del bloque -------------------------
 $repourl  = optional_param('repo_url', '', PARAM_RAW);
 $branch   = optional_param('branch', 'main', PARAM_TEXT);
 $provider = '';
@@ -43,7 +43,7 @@ if ($blockid > 0 && ($instance = $DB->get_record('block_instances', ['id' => $bl
     }
 }
 
-// ── Si se abrio desde la pestana del curso (blockid = 0), buscar en el curso ─
+// -- Si se abrio desde la pestana del curso (blockid = 0), buscar en el curso -
 if (empty($repourl)) {
     $context   = context_course::instance($courseid);
     $instances = $DB->get_records('block_instances', ['blockname' => 'gitmetrics', 'parentcontextid' => $context->id]);
@@ -63,14 +63,14 @@ if (empty($repourl)) {
     }
 }
 
-// ── Repositorio por defecto si no se ha configurado ninguno ──────────────
+// -- Repositorio por defecto si no se ha configurado ninguno --------------
 if (empty($repourl)) {
     $repourl  = 'https://github.com/julia8873/bdc-prueba';
     $branch   = 'main';
     $provider = 'github';
 }
 
-// ── Determinar proveedor ─────────────────────────────────────────────────
+// -- Determinar proveedor -------------------------------------------------
 // Prioridad: configuracion del bloque > ajuste global > auto-deteccion por URL
 if (empty($provider)) {
     $provider = get_config('block_gitmetrics', 'default_provider') ?: 'github';

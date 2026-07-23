@@ -1,6 +1,6 @@
 <?php
-// ─────────────────────────────────────────────────────────────────────────────
-// classes/task/sync_obsidian.php (Módulo opcional Obsidian)
+// -----------------------------------------------------------------------------
+// classes/task/sync_obsidian.php (Módulo Obsidian)
 //
 // Tarea programada de Moodle (Scheduled Task) para sincronizar automáticamente
 // el repositorio Git con el vault local de Obsidian cada hora mediante el
@@ -8,7 +8,7 @@
 //
 // Para desactivar o eliminar este módulo: borra este archivo y su entrada
 // en db/tasks.php.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 namespace block_gitmetrics\task;
 

@@ -1,8 +1,8 @@
 <?php
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // cli/export_obsidian.php
 //
-// Script CLI OPCIONAL para sincronizar el repositorio Git con un vault de Obsidian.
+// Script CLI para sincronizar el repositorio Git con un vault de Obsidian.
 //
 // Uso:
 //   docker exec --user daemon moodle-app \
@@ -16,7 +16,7 @@
 // y classes/obsidian_exporter.php. No hay dependencias en otros ficheros del plugin
 // salvo los bloques marcados con "OBSIDIAN_OPTIONAL" en settings.php y
 // cli/setup_course.php.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 define('CLI_SCRIPT', true);
 
@@ -29,7 +29,7 @@ require_once($CFG->dirroot . '/blocks/gitmetrics/classes/github_client.php');
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/gitlab_client.php');
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/obsidian_exporter.php');
 
-// ── Parámetros CLI ────────────────────────────────────────────────────────────
+// -- Parámetros CLI ------------------------------------------------------------
 $options = getopt('', ['vault:', 'dry-run', 'help']);
 
 if (isset($options['help'])) {
@@ -48,7 +48,7 @@ HELP;
     exit(0);
 }
 
-// ── Leer configuración del plugin ─────────────────────────────────────────────
+// -- Leer configuración del plugin ---------------------------------------------
 // Leer si la integración con Obsidian está habilitada en los ajustes del plugin
 $obsidian_enabled = (bool) get_config('block_gitmetrics', 'obsidian_enabled');
 if (!$obsidian_enabled && !isset($options['vault'])) {
@@ -80,7 +80,7 @@ if (!is_writable($vault_path)) {
     exit(4);
 }
 
-// ── Configuración del repositorio ─────────────────────────────────────────────
+// -- Configuración del repositorio ---------------------------------------------
 $repourl    = get_config('block_gitmetrics', 'repo_url') ?: 'https://gitlab.com/julia8873/BdC';
 $branch     = get_config('block_gitmetrics', 'default_branch') ?: 'main';
 $provider   = get_config('block_gitmetrics', 'default_provider') ?: 'gitlab';
@@ -95,7 +95,7 @@ if ($provider === 'github') {
     $client = new \block_gitmetrics\gitlab_client($gitlab_url, $token);
 }
 
-// ── Dry-run mode ──────────────────────────────────────────────────────────────
+// -- Dry-run mode --------------------------------------------------------------
 $dry_run = isset($options['dry-run']);
 if ($dry_run) {
     echo "[DRY-RUN] No se escribirá nada en disco. Solo se mostraría:\n";
@@ -104,7 +104,7 @@ if ($dry_run) {
     echo "  Rama:        {$branch}\n\n";
 }
 
-// ── Ejecutar exportación ──────────────────────────────────────────────────────
+// -- Ejecutar exportación ------------------------------------------------------
 echo "=== Exportando repositorio a Obsidian ===\n";
 echo "Repositorio: {$repourl} (rama: {$branch})\n";
 echo "Vault:       {$vault_path}\n\n";

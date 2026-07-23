@@ -1,5 +1,5 @@
 <?php
-// ── AJUSTES GLOBALES DEL PLUGIN block_gitmetrics ──────────────────────────
+// -- AJUSTES GLOBALES DEL PLUGIN block_gitmetrics --------------------------
 // El administrador del sitio puede configurar:
 //   - Proveedor Git por defecto (GitHub / GitLab)
 //   - Tokens de autenticacion para cada proveedor
@@ -9,7 +9,7 @@ defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
 
-    // ── Proveedor Git por defecto ─────────────────────────────────────────
+    // -- Proveedor Git por defecto -----------------------------------------
     $settings->add(new admin_setting_configselect(
         'block_gitmetrics/default_provider',
         get_string('default_provider', 'block_gitmetrics'),
@@ -21,7 +21,7 @@ if ($ADMIN->fulltree) {
         ]
     ));
 
-    // ── Seccion GitHub ────────────────────────────────────────────────────
+    // -- Seccion GitHub ----------------------------------------------------
     $settings->add(new admin_setting_heading(
         'block_gitmetrics/heading_github',
         get_string('heading_github', 'block_gitmetrics'),
@@ -36,7 +36,7 @@ if ($ADMIN->fulltree) {
         ''
     ));
 
-    // ── Seccion GitLab ────────────────────────────────────────────────────
+    // -- Seccion GitLab ----------------------------------------------------
     $settings->add(new admin_setting_heading(
         'block_gitmetrics/heading_gitlab',
         get_string('heading_gitlab', 'block_gitmetrics'),
@@ -60,7 +60,7 @@ if ($ADMIN->fulltree) {
         ''
     ));
 
-    // ── Configuracion general ─────────────────────────────────────────────
+    // -- Configuracion general ---------------------------------------------
     $settings->add(new admin_setting_heading(
         'block_gitmetrics/heading_general',
         get_string('heading_general', 'block_gitmetrics'),
@@ -85,8 +85,7 @@ if ($ADMIN->fulltree) {
         PARAM_ALPHANUMEXT
     ));
 
-    // ── Sección Obsidian (opcional, eliminar para desactivar) ─────────────────
-    // OBSIDIAN_OPTIONAL_START
+    // -- Sección Obsidian (opcional, eliminar para desactivar) -----------------
     // Para desactivar: elimina desde OBSIDIAN_OPTIONAL_START hasta OBSIDIAN_OPTIONAL_END
     // y borra los archivos: classes/obsidian_exporter.php y cli/export_obsidian.php
     $settings->add(new admin_setting_heading(
@@ -120,5 +119,5 @@ if ($ADMIN->fulltree) {
         'OKF-Vault',
         PARAM_TEXT
     ));
-    // OBSIDIAN_OPTIONAL_END
 }
+

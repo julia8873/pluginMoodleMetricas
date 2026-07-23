@@ -1,4 +1,4 @@
-# pluginMoodleMetricas — Plataforma de Evaluación de Bases de Conocimiento e Integración con Matrix en Moodle
+# pluginMoodleMetricas - Plataforma de Evaluación de Bases de Conocimiento e Integración con Matrix en Moodle
 
 Entorno integral formado por el plugin de bloque Moodle **`block_gitmetrics`** y un stack de comunicación colaborativa que analiza repositorios de **GitHub y GitLab** bajo el estándar **OKF (Open Knowledge Framework)** e integra salas de chat **Matrix (Synapse + Element)** sincronizadas nativamente con cada asignatura del LMS.
 

@@ -102,7 +102,7 @@ $styles = '<style>
 .gm-tag { display: inline-block; background: #ede9fe; color: #5b21b6; border-radius: 99px; padding: 2px 10px; font-weight: 600; margin: 2px; }
 </style>';
 
-// ── Sección 0: Explorador de documentos ──────────────────────────────────────
+// -- Sección 0: Explorador de documentos --------------------------------------
 // Agrupa todos los archivos .md por directorio y genera enlaces al visor integrado.
 $courseid_for_links = $course->id;
 $branch_link        = 'main';
@@ -168,10 +168,8 @@ $doc_html .= '.gmdb-icon{font-size:14px;flex-shrink:0;}';
 $doc_html .= '.gmdb-ext-link{display:inline-block;padding:2px 9px;border-radius:4px;background:#eff6ff;color:#2563eb;font-size:12px;font-weight:700;text-decoration:none;flex-shrink:0;margin-left:8px;}';
 $doc_html .= '.gmdb-ext-link:hover{background:#2563eb;color:#fff;}';
 $doc_html .= '.gmdb-stats{font-size:11px;color:#64748b;margin-top:12px;text-align:right;}';
-// OBSIDIAN_OPTIONAL_START – estilo del botón obsidian:// (eliminar junto con el bloque de abajo para desactivar)
 $doc_html .= '.gmdb-obsidian-link{display:inline-block;padding:2px 9px;border-radius:4px;background:#f5f0ff;color:#7c3aed;font-size:12px;font-weight:700;text-decoration:none;flex-shrink:0;margin-left:4px;}';
 $doc_html .= '.gmdb-obsidian-link:hover{background:#7c3aed;color:#fff;}';
-// OBSIDIAN_OPTIONAL_END
 $doc_html .= '</style>';
 
 $doc_html .= '<div class="gmdb-wrap">';
@@ -193,12 +191,9 @@ $doc_html .= '<button type="button" onclick="gmdbToggleAll(false)" class="gmdb-b
 $doc_html .= '</div>';
 $doc_html .= '</div>';
 $doc_html .= '<div id="gmdb-search-count" class="gmdb-search-count"></div>';
-
-// OBSIDIAN_OPTIONAL_START – leer configuración de Obsidian (eliminar este bloque para desactivar)
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/obsidian_exporter.php');
 $obsidian_enabled    = (bool) get_config('block_gitmetrics', 'obsidian_enabled');
 $obsidian_vault_name = get_config('block_gitmetrics', 'obsidian_vault_name') ?: 'OKF-Vault';
-// OBSIDIAN_OPTIONAL_END
 
 $total_docs = 0;
 foreach ($md_by_dir as $dir => $files) {
@@ -233,12 +228,10 @@ foreach ($md_by_dir as $dir => $files) {
         $doc_html .= '<span>' . htmlspecialchars($filename) . '</span>';
         $doc_html .= '</a>';
         $doc_html .= '<a href="' . htmlspecialchars($external_url) . '" target="_blank" rel="noopener" class="gmdb-ext-link" title="Ver en GitLab">↗</a>';
-        // OBSIDIAN_OPTIONAL_START – botón obsidian:// por archivo (eliminar líneas hasta OBSIDIAN_OPTIONAL_END para desactivar)
         if ($obsidian_enabled) {
             $obsidian_uri = \block_gitmetrics\obsidian_exporter::get_obsidian_uri($filepath, $obsidian_vault_name);
             $doc_html .= '<a href="' . htmlspecialchars($obsidian_uri) . '" class="gmdb-obsidian-link" title="Abrir en Obsidian">Obsidian</a>';
         }
-        // OBSIDIAN_OPTIONAL_END
         $doc_html .= '</div>';
     }
     $doc_html .= '</div></details>';
@@ -377,3 +370,4 @@ foreach ($extra_sections as $es) {
 
 rebuild_course_cache($course->id, true);
 echo "Los temas de la asignatura se han poblado, se han limpiado avisos/secciones sobrantes y la caché del curso se ha reconstruido con éxito.\n";
+

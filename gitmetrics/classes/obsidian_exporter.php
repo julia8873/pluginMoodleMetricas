@@ -1,15 +1,15 @@
 <?php
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // classes/obsidian_exporter.php
 //
-// Módulo OPCIONAL de exportación a Obsidian.
+// Módulo de exportación a Obsidian.
 //
 // Este archivo es completamente independiente del resto del plugin.
 // Para DESACTIVAR la integración con Obsidian:
 //   1. Elimina este archivo.
 //   2. Elimina cli/export_obsidian.php.
 //   3. Elimina la sección "Obsidian" de settings.php (marcada con el comentario
-//      "── Sección Obsidian (opcional, eliminar para desactivar)".
+//      "--- Sección Obsidian".
 //   4. Elimina los botones "Abrir en Obsidian" de cli/setup_course.php
 //      (marcados con el comentario "OBSIDIAN_OPTIONAL").
 //
@@ -23,7 +23,7 @@
 //   4. Guarda/sobreescribe únicamente los archivos que han cambiado para
 //      no disparar modificaciones innecesarias en el vault.
 //
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 namespace block_gitmetrics;
 
 defined('MOODLE_INTERNAL') || die();
@@ -34,7 +34,7 @@ defined('MOODLE_INTERNAL') || die();
  * Descarga los documentos Markdown de un repositorio Git remoto y los
  * sincroniza con un vault local de Obsidian en el sistema de archivos.
  *
- * El módulo es completamente opcional. Ver la cabecera de este archivo
+ * Ver la cabecera de este archivo
  * para instrucciones de eliminación limpia.
  */
 class obsidian_exporter {

@@ -10,7 +10,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 class block_gitmetrics extends block_base {
 
-    // ── Inicialización ────────────────────────────────────────────────────
+    // -- Inicialización ----------------------------------------------------
 
     public function init() {
         $this->title = get_string('pluginname', 'block_gitmetrics');
@@ -43,7 +43,7 @@ class block_gitmetrics extends block_base {
         return parent::instance_config_save($data, $nolongerused);
     }
 
-    // ── Contenido del bloque ──────────────────────────────────────────────
+    // -- Contenido del bloque ----------------------------------------------
 
     public function get_content() {
         global $DB, $PAGE;
@@ -57,7 +57,7 @@ class block_gitmetrics extends block_base {
 
         $renderer = $this->page->get_renderer('block_gitmetrics');
 
-        // ── 1. Obtener URL del repo y proveedor desde la config de instancia ──
+        // -- 1. Obtener URL del repo y proveedor desde la config de instancia --
         // Nuevo campo unificado: config_repo_url
         // Retrocompatibilidad con el antiguo campo config_github_url
         $repourl  = !empty($this->config->repo_url)
@@ -73,13 +73,13 @@ class block_gitmetrics extends block_base {
             return $this->content;
         }
 
-        // ── 2. Rama (instancia → global → 'main') ───────────────────────
+        // -- 2. Rama (instancia → global → 'main') -----------------------
         $branch = !empty($this->config->branch)
             ? trim($this->config->branch)
             : (get_config('block_gitmetrics', 'default_branch') ?: 'main');
 
         try {
-            // ── 3. Caché ─────────────────────────────────────────────────
+            // -- 3. Caché -------------------------------------------------
             $cache = new \block_gitmetrics\metrics_cache($DB);
 
             // Forzar refresco si el usuario lo ha marcado en la config
@@ -94,7 +94,7 @@ class block_gitmetrics extends block_base {
             $metrics = $cache->get($repourl, $this->instance->id);
 
             if ($metrics === null) {
-                // ── 4. Calcular metricas ──────────────────────────────────
+                // -- 4. Calcular metricas ----------------------------------
                 if (str_contains($repourl, 'github.com')) {
                     $token      = get_config('block_gitmetrics', 'github_token') ?: '';
                     $gitlab_url = 'https://gitlab.com';

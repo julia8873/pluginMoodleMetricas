@@ -1,7 +1,7 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
 
-// ── Permisos del plugin block_gitmetrics ─────────────────────────────────
+// -- Permisos del plugin block_gitmetrics ---------------------------------
 
 $capabilities = [
 

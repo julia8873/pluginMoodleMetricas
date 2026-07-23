@@ -1,5 +1,5 @@
 <?php
-// ── Cadenas de idioma (Ingles) para block_gitmetrics ─────────────────────
+// -- Cadenas de idioma (Ingles) para block_gitmetrics ---------------------
 
 // Plugin
 $string['pluginname']                  = 'Git Knowledge Base Metrics';
@@ -7,13 +7,13 @@ $string['gitmetrics:addinstance']      = 'Add a Git KB Metrics block';
 $string['gitmetrics:myaddinstance']    = 'Add a Git KB Metrics block to My Moodle';
 $string['gitmetrics:viewmetrics']      = 'View Git KB Metrics';
 
-// ── Settings - Proveedor ──────────────────────────────────────────────────
+// -- Settings - Proveedor --------------------------------------------------
 $string['default_provider']            = 'Default Git provider';
 $string['default_provider_desc']       = 'Choose the Git provider used by default when creating a new block instance. Teachers can override this per block.';
 $string['provider_github']             = 'GitHub (github.com)';
 $string['provider_gitlab']             = 'GitLab (OSL / local / gitlab.com)';
 
-// ── Settings - Secciones ──────────────────────────────────────────────────
+// -- Settings - Secciones --------------------------------------------------
 $string['heading_github']              = 'GitHub settings';
 $string['heading_gitlab']              = 'GitLab settings (OSL / local / cloud)';
 $string['heading_general']             = 'General settings';
@@ -34,7 +34,7 @@ $string['cache_ttl_desc']              = 'How long (in seconds) the calculated m
 $string['default_branch']             = 'Default branch';
 $string['default_branch_desc']        = 'Default Git branch to analyse if none is specified per block instance (e.g. main or master).';
 
-// ── Edit form (per-instance) ──────────────────────────────────────────────
+// -- Edit form (per-instance) ----------------------------------------------
 $string['provider']                    = 'Git provider';
 $string['provider_help']               = 'Choose GitHub to connect to github.com, or GitLab to connect to a GitLab server (OSL, local, or gitlab.com). The server URL is configured globally by the site administrator in the plugin settings.';
 $string['repo_url']                    = 'Repository URL';
@@ -107,9 +107,9 @@ $string['error_json']                  = 'Unexpected response from the API (JSON
 $string['error_repo']                  = 'Repository not found or inaccessible';
 $string['error_branch']                = 'Branch not found. Try changing the branch in the block settings.';
 
-// Obsidian (optional) — delete this block together with classes/obsidian_exporter.php and cli/export_obsidian.php
-$string['heading_obsidian']            = 'Obsidian Integration (optional)';
-$string['heading_obsidian_desc']       = 'Allows opening documents directly in Obsidian and exporting the knowledge base to a local vault. This feature is completely optional; you can ignore or disable it if not needed.';
+// Obsidian
+$string['heading_obsidian']            = 'Obsidian Integration';
+$string['heading_obsidian_desc']       = 'Allows opening documents directly in Obsidian and exporting the knowledge base to a local vault.';
 $string['obsidian_enabled']            = 'Enable Obsidian integration';
 $string['obsidian_enabled_desc']       = 'When enabled, an "Obsidian" button will appear next to each document that opens the note directly in the Obsidian desktop application.';
 $string['obsidian_vault_path']         = 'Local Obsidian vault path';

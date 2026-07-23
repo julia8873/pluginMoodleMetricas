@@ -1,5 +1,5 @@
 <?php
-// ── Cadenas de idioma (Español) para block_gitmetrics ────────────────────
+// -- Cadenas de idioma (Español) para block_gitmetrics --------------------
 
 // Plugin
 $string['pluginname']                  = 'Métricas de Base de Conocimiento Git';
@@ -7,13 +7,13 @@ $string['gitmetrics:addinstance']      = 'Añadir un bloque de Métricas Git';
 $string['gitmetrics:myaddinstance']    = 'Añadir un bloque de Métricas Git a Mi Moodle';
 $string['gitmetrics:viewmetrics']      = 'Ver Métricas Git';
 
-// ── Ajustes - Proveedor ───────────────────────────────────────────────────
+// -- Ajustes - Proveedor ---------------------------------------------------
 $string['default_provider']            = 'Proveedor Git por defecto';
 $string['default_provider_desc']       = 'Elige el proveedor Git usado por defecto al crear una nueva instancia del bloque. Los profesores pueden cambiarlo por bloque.';
 $string['provider_github']             = 'GitHub (github.com)';
 $string['provider_gitlab']             = 'GitLab (OSL / local / gitlab.com)';
 
-// ── Ajustes - Secciones ───────────────────────────────────────────────────
+// -- Ajustes - Secciones ---------------------------------------------------
 $string['heading_github']              = 'Ajustes de GitHub';
 $string['heading_gitlab']              = 'Ajustes de GitLab (OSL / local / cloud)';
 $string['heading_general']             = 'Ajustes generales';
@@ -34,7 +34,7 @@ $string['cache_ttl_desc']              = 'Tiempo (en segundos) durante el que se
 $string['default_branch']             = 'Rama por defecto';
 $string['default_branch_desc']        = 'Rama de Git que se analizará si no se especifica ninguna en la instancia del bloque (p. ej. main o master).';
 
-// ── Formulario de instancia (por bloque) ──────────────────────────────────
+// -- Formulario de instancia (por bloque) ----------------------------------
 $string['provider']                    = 'Proveedor Git';
 $string['provider_help']               = 'Elige GitHub para conectarte a github.com, o GitLab para conectarte a un servidor GitLab (OSL, local o gitlab.com). La URL del servidor se configura globalmente por el administrador del sitio en los ajustes del plugin.';
 $string['repo_url']                    = 'URL del repositorio';
@@ -107,9 +107,9 @@ $string['error_json']                  = 'Respuesta inesperada de la API (error 
 $string['error_repo']                  = 'Repositorio no encontrado o inaccesible';
 $string['error_branch']                = 'Rama no encontrada. Prueba a cambiar la rama en los ajustes del bloque.';
 
-// Obsidian (opcional) — eliminar este bloque junto con classes/obsidian_exporter.php y cli/export_obsidian.php
-$string['heading_obsidian']            = 'Integración con Obsidian (opcional)';
-$string['heading_obsidian_desc']       = 'Permite abrir documentos directamente en Obsidian y exportar la base de conocimiento a un vault local. Esta función es completamente opcional; si no la necesitas, puedes ignorarla o desactivarla.';
+// Obsidian
+$string['heading_obsidian']            = 'Integración con Obsidian';
+$string['heading_obsidian_desc']       = 'Permite abrir documentos directamente en Obsidian y exportar la base de conocimiento a un vault local.';
 $string['obsidian_enabled']            = 'Habilitar integración con Obsidian';
 $string['obsidian_enabled_desc']       = 'Cuando está activado, aparecerá un botón "Obsidian" junto a cada documento que abre la nota directamente en la aplicación Obsidian instalada en el ordenador del usuario.';
 $string['obsidian_vault_path']         = 'Ruta local del vault de Obsidian';
