@@ -45,11 +45,13 @@ Entorno integral formado por el plugin de bloque Moodle **`block_gitmetrics`** y
 
 ## 1. Ejecutar la Documentación (MkDocs)
 
-Para ver la documentación técnica completa del proyecto, puedes levantar un servidor local con MkDocs:
+Para ver la documentación técnica completa del proyecto sin necesidad de instalar dependencias locales, puedes levantar un servidor de MkDocs usando Docker:
 
 ```bash
-mkdocs serve
+docker run --rm -it -p 8000:8000 -v ${PWD}:/docs squidfunk/mkdocs-material
 ```
+
+*(Si usas la terminal de Windows en vez de WSL o Linux, usa `-v "%cd%":/docs` en su lugar).*
 
 La documentación estará disponible en: `http://127.0.0.1:8000/`
 

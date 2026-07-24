@@ -16,13 +16,19 @@ from datetime import datetime
 from typing import Optional, Type
 
 import aiohttp
-
+# pyrefly: ignore [missing-import]
 from maubot import Plugin, MessageEvent
+# pyrefly: ignore [missing-import]
 from maubot.handlers import command, event
+# pyrefly: ignore [missing-import]
 from mautrix.crypto.attachments import decrypt_attachment
+# pyrefly: ignore [missing-import]
 from mautrix.errors import DecryptionError
+# pyrefly: ignore [missing-import]
 from mautrix.types import EventType, MessageType
+# pyrefly: ignore [missing-import]
 from mautrix.util.async_db import UpgradeTable
+# pyrefly: ignore [missing-import]
 from mautrix.util.config import BaseProxyConfig, ConfigUpdateHelper
 
 from .db import Tracker, upgrade_table
