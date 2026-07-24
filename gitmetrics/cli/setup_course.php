@@ -41,7 +41,7 @@ if (!$DB->record_exists('block_instances', ['blockname' => 'gitmetrics', 'parent
     $instance->defaultregion = 'side-pre';
     $instance->defaultweight = 0;
     $instance->configdata = base64_encode(serialize((object)[
-        'repo_url' => 'https://gitlab.com/julia8873/BdC',
+        'repo_url' => 'https://gitlab.com/<tu_usuario>/<tu_repo>',
         'provider' => 'gitlab',
         'branch' => 'main'
     ]));
@@ -82,7 +82,7 @@ require_once($CFG->dirroot . '/blocks/gitmetrics/renderer.php');
 $token      = get_config('block_gitmetrics', 'gitlab_token') ?: (get_config('block_gitmetrics', 'github_token') ?: '');
 $provider   = get_config('block_gitmetrics', 'default_provider') ?: 'gitlab';
 $gitlab_url = get_config('block_gitmetrics', 'gitlab_url') ?: 'https://gitlab.com';
-$repourl    = 'https://gitlab.com/julia8873/BdC';
+$repourl    = 'https://gitlab.com/<tu_usuario>/<tu_repo>';
 
 $calculator = new \block_gitmetrics\metrics_calculator($token, $provider, $gitlab_url);
 $metrics    = $calculator->calculate($repourl, 'main');

@@ -125,19 +125,23 @@ Editar `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml`:
 
 ```yaml
 provider: "gitlab"
-repo_url: "https://gitlab.com/julia8873/BdC"
+repo_url: "https://gitlab.com/<tu_usuario>/<tu_repo>"
 gitlab_url: "https://gitlab.com"
 gitlab_token: "glpat-xxxxxxxxxxxxxxxx"
 github_token: ""
-default_owner: "julia8873"
+default_owner: "<tu_usuario>"
 default_repo: "BdC"
 default_branch: "main"
 ```
 
 En Moodle admin → **Plugins → Bloques → Git Knowledge Base Metrics**:
+
 - Proveedor: `GitLab`
+
 - URL Base de GitLab: `https://gitlab.com`
+
 - Token de API: `glpat-...`
+
 
 ### GitHub
 
@@ -147,22 +151,25 @@ Editar `base-config.yaml`:
 
 ```yaml
 provider: "github"
-repo_url: "https://github.com/julia8873/BdC"
+repo_url: "https://github.com/<tu_usuario>/<tu_repo>"
 gitlab_token: ""
 github_token: "ghp_xxxxxxxxxxxxxxxx"
-default_owner: "julia8873"
+default_owner: "<tu_usuario>"
 default_repo: "BdC"
 default_branch: "main"
 ```
 
 En Moodle admin → **Plugins → Bloques → Git Knowledge Base Metrics**:
+
 - Proveedor: `GitHub`
+
 - Token de API: `ghp_...`
+
 
 Tras modificar `base-config.yaml` manualmente, reiniciar el bot:
 
 ```bash
-cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
+cd pluginMoodleMetricas/moodle-matrix-dev
 docker compose restart maubot
 ```
 
@@ -174,7 +181,7 @@ docker compose restart maubot
 ## Gestión de Contenedores Docker
 
 ```bash
-cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
+cd pluginMoodleMetricas/moodle-matrix-dev
 
 # Arrancar todos los servicios
 docker compose up -d

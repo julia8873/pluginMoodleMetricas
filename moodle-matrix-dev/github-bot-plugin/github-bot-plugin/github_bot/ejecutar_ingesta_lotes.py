@@ -51,7 +51,7 @@ async def main():
             config = yaml.load(f)
 
     provider = config.get("default_provider", "gitlab")
-    owner = config.get("default_owner", "julia8873")
+    owner = config.get("default_owner", "<tu_usuario>")
     repo = config.get("default_repo", "BdC")
     branch = config.get("default_branch", "main")
     token = config.get("gitlab_token") if provider == "gitlab" else config.get("github_token")

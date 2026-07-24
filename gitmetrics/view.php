@@ -67,7 +67,7 @@ if (empty($repourl)) {
 
 // -- Repositorio por defecto si no se ha configurado ninguno --------------
 if (empty($repourl)) {
-    $repourl  = 'https://github.com/julia8873/bdc-prueba';
+    $repourl  = 'https://github.com/<tu_usuario>/<tu_repo>';
     $branch   = 'main';
     $provider = 'github';
 }

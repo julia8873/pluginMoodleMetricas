@@ -70,7 +70,7 @@ class sync_obsidian extends \core\task\scheduled_task {
         $provider = get_config('block_gitmetrics', 'default_provider') ?: 'gitlab';
         
         // Leemos la URL del repositorio remoto.
-        $repourl  = get_config('block_gitmetrics', 'repo_url') ?: 'https://gitlab.com/julia8873/BdC';
+        $repourl  = get_config('block_gitmetrics', 'repo_url') ?: 'https://gitlab.com/<tu_usuario>/<tu_repo>';
         
         // Leemos la rama a sincronizar (ej. main o master). Si está vacía, usamos 'main'.
         $branch   = get_config('block_gitmetrics', 'default_branch') ?: 'main';

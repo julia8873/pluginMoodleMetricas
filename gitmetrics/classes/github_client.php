@@ -39,7 +39,7 @@ class github_client implements git_provider_interface {
     /**
      * Obtiene el árbol recursivo de ficheros de un repositorio.
      *
-     * @param  string $owner  Propietario del repo (ej. 'julia8873')
+     * @param  string $owner  Propietario del repo (ej. '<tu_usuario>')
      * @param  string $repo   Nombre del repo (ej. 'bdc-prueba')
      * @param  string $branch Rama (ej. 'main')
      * @return array  Array de nodos [{path, type, size, sha, url}, ...]

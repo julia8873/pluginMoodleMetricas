@@ -129,11 +129,11 @@ class obsidian_exporter {
      * Transforma los [[wiki-links]] del repositorio al formato nativo de Obsidian.
      *
      * Los wiki-links del repositorio OKF tienen la forma:
-     *   [[okf/entities/jose-juan-urrutia-milan|Texto visible]]
+     *   [[okf/entities/juan-perez-ejemplo|Texto visible]]
      *   [[okf/concepts/lema-de-gronwall]]
      *
      * Obsidian los entiende como:
-     *   [[jose-juan-urrutia-milan|Texto visible]]   (solo nombre de archivo base, sin extensión ni ruta)
+     *   [[juan-perez-ejemplo|Texto visible]]   (solo nombre de archivo base, sin extensión ni ruta)
      *   [[lema-de-gronwall]]
      *
      * @param  string $content Contenido Markdown raw del repositorio.
@@ -145,7 +145,7 @@ class obsidian_exporter {
         return preg_replace_callback(
             '/\[\[([^\]|]+)(\|([^\]]+))?\]\]/',
             function (array $m): string {
-                $target_path  = trim($m[1]);          // ej. okf/entities/jose-juan-urrutia-milan
+                $target_path  = trim($m[1]);          // ej. okf/entities/juan-perez-ejemplo
                 $display_text = $m[3] ?? '';           // texto después de | (puede estar vacío)
 
                 // Extraer solo el nombre base del archivo sin extensión (formato Obsidian nativo)

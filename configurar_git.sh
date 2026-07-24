@@ -28,7 +28,7 @@ if [ -z "$URL" ]; then
     echo "======================================================================"
     echo " Configuración Unificada de Repositorio Git (GitLab / GitHub)"
     echo "======================================================================"
-    read -p "URL del repositorio (ej. https://gitlab.com/julia8873/BdC): " URL
+    read -p "URL del repositorio (ej. https://gitlab.com/<tu_usuario>/<tu_repo>): " URL
 fi
 
 if [ -z "$TOKEN" ]; then

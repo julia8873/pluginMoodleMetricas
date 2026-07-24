@@ -35,7 +35,7 @@ if (!is_writable($vault_path)) {
 }
 
 echo "=== 2. Realizando primera sincronización de documentos al vault ===\n";
-$repourl    = get_config('block_gitmetrics', 'repo_url') ?: 'https://gitlab.com/julia8873/BdC';
+$repourl    = get_config('block_gitmetrics', 'repo_url') ?: 'https://gitlab.com/<tu_usuario>/<tu_repo>';
 $branch     = get_config('block_gitmetrics', 'default_branch') ?: 'main';
 $provider   = get_config('block_gitmetrics', 'default_provider') ?: 'gitlab';
 $gitlab_url = get_config('block_gitmetrics', 'gitlab_url') ?: 'https://gitlab.com';

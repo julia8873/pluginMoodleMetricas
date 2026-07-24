@@ -133,7 +133,7 @@ Clona el repositorio y ejecuta el script de instalación desde WSL (Ubuntu) indi
 
 ```bash
 # Acceder al directorio del proyecto en WSL
-cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas
+cd pluginMoodleMetricas
 
 # Despliegue completo con GitLab
 ./instalar.sh --url="https://gitlab.com/tu-usuario/tu-repo" --token="glpat-xxxxxxxxxxxxxxxx"
@@ -172,7 +172,7 @@ Maubot:   http://localhost:29316/_matrix/maubot/
 
 ```bash
 # 1. Levantar contenedores
-cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
+cd pluginMoodleMetricas/moodle-matrix-dev
 docker compose up -d
 
 # 2. Esperar a Moodle (ver logs hasta "** Moodle setup finished! **")
@@ -240,16 +240,16 @@ Después, edita cada fichero y sustituye los valores de ejemplo (`TU_TOKEN_AQUI`
 Para cambiar el repositorio (nueva URL, nuevo token, otra rama o pasar de GitLab a GitHub) sin reinstalar nada:
 
 ```bash
-cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas
+cd pluginMoodleMetricas
 
 # Sintaxis completa
 ./configurar_git.sh --url="<URL>" --token="<TOKEN>" --branch="<RAMA>"
 
 # Ejemplo con GitLab (rama main por defecto)
-./configurar_git.sh --url="https://gitlab.com/julia8873/BdC" --token="glpat-xxxxxxxxxxxxxxxx"
+./configurar_git.sh --url="https://gitlab.com/<tu_usuario>/<tu_repo>" --token="glpat-xxxxxxxxxxxxxxxx"
 
 # Ejemplo con GitHub, rama específica
-./configurar_git.sh --url="https://github.com/julia8873/BdC" --token="ghp_xxxxxxxxxxxxxxxx" --branch="develop"
+./configurar_git.sh --url="https://github.com/<tu_usuario>/<tu_repo>" --token="ghp_xxxxxxxxxxxxxxxx" --branch="develop"
 
 # Modo interactivo (sin argumentos, solicita URL y token)
 ./configurar_git.sh
