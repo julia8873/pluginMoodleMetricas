@@ -25,7 +25,7 @@ Antes de levantar los servicios, crea el fichero de configuración de maubot:
 cp github-bot-plugin/maubot-data/config.yaml.example github-bot-plugin/maubot-data/config.yaml
 ```
 
-Edita `config.yaml` y rellena los campos marcados (`admins`, etc.). El campo `unshared_secret: generate` ya está listo para que maubot genere el secreto automáticamente.
+Edita `config.yaml` para configurar tu usuario y contraseña (en la sección `admins`).
 
 ### 2. Levantar los servicios
 
