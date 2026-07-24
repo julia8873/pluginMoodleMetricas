@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 import asyncio, aiohttp, os, re, base64, logging
 from github_bot.git_client import get_git_client
 from ruamel.yaml import YAML
@@ -52,3 +53,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# --8<-- [end:file_desc]

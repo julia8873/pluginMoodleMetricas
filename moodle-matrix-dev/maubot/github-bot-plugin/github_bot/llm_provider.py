@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 """
 Cliente HTTP genérico compatible con la API de chat completions de OpenAI.
 
@@ -242,3 +243,4 @@ class LLMProvider:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": "Adelante."},
         ])
+# --8<-- [end:file_desc]

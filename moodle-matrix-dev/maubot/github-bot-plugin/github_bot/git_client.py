@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 import asyncio
 import base64
 import time
@@ -767,3 +768,5 @@ def get_git_client(config: dict) -> GitProvider:
         # Por defecto gitlab según preferencia del usuario
         gitlab_url = str(config.get("gitlab_url", "https://gitlab.com")).strip()
         return GitLabClient(base_url=gitlab_url)
+
+# --8<-- [end:file_desc]

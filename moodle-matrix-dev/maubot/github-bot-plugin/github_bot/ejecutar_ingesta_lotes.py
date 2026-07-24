@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 #!/usr/bin/env python3
 """
 Script CLI para ejecutar ingesta por lotes en un archivo largo de raw/
@@ -119,3 +120,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# --8<-- [end:file_desc]

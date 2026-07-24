@@ -124,7 +124,7 @@ docker exec --user root moodle-app chown -R daemon:daemon /bitnami/moodle/blocks
 echo ""
 echo "[9/9] Levantando documentación MkDocs..."
 docker rm -f mkdocs-docs >/dev/null 2>&1 || true
-docker run -d --name mkdocs-docs -p 8001:8000 -v "$SCRIPT_DIR:/docs" squidfunk/mkdocs-material >/dev/null
+docker run -d --name mkdocs-docs -p 8001:8000 -v "$SCRIPT_DIR:/docs" squidfunk/mkdocs-material serve --no-livereload -a 0.0.0.0:8000 >/dev/null
 echo "      MkDocs disponible en http://localhost:8001"
 
 echo ""

@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 import asyncio, aiohttp, os, logging
 from github_bot.git_client import get_git_client
 from ruamel.yaml import YAML
@@ -585,3 +586,5 @@ async def upload_missing():
 
 if __name__ == "__main__":
     asyncio.run(upload_missing())
+
+# --8<-- [end:file_desc]

@@ -318,19 +318,6 @@ async def _listar_carpetas(self, owner: str, repo: str, token: str) -> list:
 ```
 ```
 
-### `_recorrer_carpetas_dirs`
-
-Recorre las carpetas para listar subdirectorios.
-
-```python
-```python
-async def _recorrer_carpetas_dirs(self, session, owner: str, repo: str, headers: dict, path: str, acumulador: list) -> None:
-    """Recorre las carpetas para listar subdirectorios."""
-    pass
-# 
-```
-```
-
 ### `_recorrer_carpeta_con_sha`
 
 Recorre una carpeta del repositorio incluyendo el hash SHA de los archivos.
@@ -945,7 +932,7 @@ async def _ejecutar_ingest_por_lotes(
                 self.log.warning(f"[github_bot] Error append log okf lote {i}: {exc}")
 
     await self.tracker.log_curacion(evt.sender, evt.room_id, "ingest_lotes", ruta_fuente_repo)
-    resumen_partes = [f"✅ Ingesta por lotes completada al 100% para «{nombre_archivo}» ({total_lotes} lotes procesados)."]
+    resumen_partes = [f"Ingesta por lotes completada al 100% para «{nombre_archivo}» ({total_lotes} lotes procesados)."]
     if creados_totales:
         resumen_partes.append(f"**Ficheros nuevos ({len(creados_totales)}):**\n" + "\n".join(f"- `{p}`" for p in sorted(set(creados_totales))[:20]))
     if actualizados_totales:
@@ -1573,7 +1560,7 @@ async def _procesar_confirmacion_borrado_carpeta(self, evt: MessageEvent, estado
     if errores:
         await evt.reply(f"⚠️ Se ha borrado parte de la carpeta «{carpeta}», pero hubo errores en {len(errores)} archivo(s):\n" + "\n".join(f"- {e}" for e in errores[:5]))
     else:
-        await evt.reply(f"✅ Carpeta «{carpeta}» y todos sus contenidos ({len(ficheros)} archivo(s)) borrados de la BdC.")
+        await evt.reply(f"Carpeta «{carpeta}» y todos sus contenidos ({len(ficheros)} archivo(s)) borrados de la BdC.")
     await self.tracker.log_interaccion(evt.sender, evt.room_id, "carpeta_borrada", carpeta)
 # 
 ```
@@ -1764,7 +1751,7 @@ async def carpeta_borrar_handler(self, evt: MessageEvent, ruta: str) -> None:
             except Exception as exc:
                 self.log.warning(f"[github_bot] Error borrando {f['path']}: {exc}")
         self._invalidar_cache()
-        await evt.reply(f"✅ Carpeta vacía «{carpeta}» eliminada de la BdC.")
+        await evt.reply(f"Carpeta vacía «{carpeta}» eliminada de la BdC.")
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "carpeta_borrada", carpeta)
         return
 

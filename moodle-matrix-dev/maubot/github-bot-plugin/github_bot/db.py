@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 """
 Trazabilidad por estudiante.
 
@@ -348,3 +349,4 @@ class Tracker:
             student_id, limite,
         )
         return [dict(f) for f in filas]
+# --8<-- [end:file_desc]

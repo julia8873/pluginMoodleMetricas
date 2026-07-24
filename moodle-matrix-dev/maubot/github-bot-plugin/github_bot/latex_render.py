@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 """
 Renderizado de fórmulas LaTeX como imágenes PNG para enviar en Matrix.
 
@@ -185,3 +186,5 @@ def _escapar_html(texto: str) -> str:
 def _escapar_attr(texto: str) -> str:
     """Escapa texto para usarlo dentro de un atributo HTML (alt, title)."""
     return texto.replace("&", "&amp;").replace('"', "&quot;").replace("'", "&#39;")
+
+# --8<-- [end:file_desc]

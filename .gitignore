@@ -42,4 +42,6 @@ site/
 
 # ── Entornos de Desarrollo (IDEs) ──
 .vscode/
-.idea/
+.idea/moodle-matrix-dev/maubot/maubot-data/*.db
+moodle-matrix-dev/maubot/maubot-data/*.db-wal
+moodle-matrix-dev/maubot/maubot-data/*.db-shm

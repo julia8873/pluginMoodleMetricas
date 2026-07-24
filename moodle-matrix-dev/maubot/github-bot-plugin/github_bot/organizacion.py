@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 """
 Organización de la BdC en carpetas/asignaturas.
 
@@ -89,3 +90,4 @@ def es_respuesta_modo_lote(respuesta: str) -> Optional[bool]:
     if respuesta in ("uno por uno", "uno", "individual", "cada uno", "separado", "u"):
         return False
     return None
+# --8<-- [end:file_desc]

@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 """
 Transcripción de apuntes escritos a mano (fotos, o PDFs que son en realidad
 un escaneo de páginas) para poder incorporarlos a la BdC.
@@ -154,3 +155,4 @@ async def transcribir_pdf_escaneado(
         raise OcrError("No se ha podido transcribir ninguna página del PDF.")
 
     return texto_completo, paginas_fallidas
+# --8<-- [end:file_desc]

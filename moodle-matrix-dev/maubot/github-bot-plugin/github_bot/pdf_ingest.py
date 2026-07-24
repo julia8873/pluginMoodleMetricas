@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 """
 Extracción de texto de ficheros PDF para poder incorporarlos a la BdC.
 
@@ -118,3 +119,4 @@ def extraer_texto_pdf(contenido_binario: bytes, max_caracteres: int = 200_000) -
         texto_completo = texto_completo[:max_caracteres] + "\n\n[...documento truncado...]"
 
     return texto_completo
+# --8<-- [end:file_desc]
