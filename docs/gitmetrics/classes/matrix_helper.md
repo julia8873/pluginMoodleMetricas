@@ -10,13 +10,13 @@ Ubicación: `classes/matrix_helper.php`
 
 ```mermaid
 graph TD
-    A[1. Llamada a ensure_room_and_bot] --> B[2. Validar curso y configurar Moodle]
-    B --> C[3. Generar/Validar token Matrix]
-    C --> D[4. Comprobar instancia de bot Maubot]
-    D --> E[5. Inicializar / Actualizar instancia de comunicación Moodle]
-    E --> F[6. Moodle crea/asocia la sala en Synapse]
-    F --> G[7. Invitar al bot a la sala]
-    G --> H[8. Forzar la unión admin join del bot a la sala]
+    A["1. Llamada a ensure_room_and_bot"] --> B["2. Validar curso y configurar Moodle"]
+    B --> C["3. Generar/Validar token Matrix"]
+    C --> D["4. Comprobar instancia de bot Maubot"]
+    D --> E["5. Inicializar / Actualizar instancia de comunicación Moodle"]
+    E --> F["6. Moodle crea/asocia la sala en Synapse"]
+    F --> G["7. Invitar al bot a la sala"]
+    G --> H["8. Forzar la unión admin join del bot a la sala"]
 ```
 
 ### Detalle de los Pasos del Flujo
@@ -33,7 +33,7 @@ graph TD
 ## Funciones Principales
 
 ### `ensure_room_and_bot`
-El orquestador principal. Valida que el curso tenga una sala de Matrix asociada mediante el subsistema de comunicación de Moodle y realiza las peticiones REST a Synapse para forzar la invitación y entrada del bot.
+El coordinador principal. Valida que el curso tenga una sala de Matrix asociada mediante el subsistema de comunicación de Moodle y realiza las peticiones REST a Synapse para forzar la invitación y entrada del bot.
 
 ```php
 --8<-- "gitmetrics/classes/matrix_helper.php:ensure_room_and_bot"

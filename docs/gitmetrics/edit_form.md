@@ -10,12 +10,12 @@ Ubicación: `edit_form.php`
 
 ```mermaid
 graph TD
-    A[1. Profesor añade/edita bloque] --> B[2. Moodle carga formulario]
-    B --> C[3. Renderizar selector de Proveedor]
-    C --> D[4. Renderizar input de URL]
-    D --> E[5. Renderizar input de Rama]
-    E --> F[6. Renderizar checkbox de forzar refresco]
-    F --> G[7. Moodle guarda config de instancia]
+    A["1. Profesor añade/edita bloque"] --> B["2. Moodle carga formulario"]
+    B --> C["3. Renderizar selector de Proveedor"]
+    C --> D["4. Renderizar input de URL"]
+    D --> E["5. Renderizar input de Rama"]
+    E --> F["6. Renderizar checkbox de forzar refresco"]
+    F --> G["7. Moodle guarda config de instancia"]
 ```
 
 ### Detalle de los Pasos del Flujo

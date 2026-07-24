@@ -10,14 +10,14 @@ Ubicación: `settings.php`
 
 ```mermaid
 graph TD
-    A[1. Administrador accede a Configuración del bloque] --> B[2. Moodle carga settings.php]
-    B --> C{¿Moodle en modo fulltree?}
-    C -->|No| D[3. Abortar carga de variables]
-    C -->|Sí| E[4. Cargar opciones del Proveedor]
-    E --> F[5. Cargar tokens de GitHub/GitLab]
-    F --> G[6. Cargar ajustes de Caché y Rama]
-    G --> H[7. Cargar opciones de Obsidian]
-    H --> I[8. Renderizar formulario en la UI de Moodle]
+    A["1. Administrador accede a Configuración del bloque"] --> B["2. Moodle carga settings.php"]
+    B --> C{"¿Moodle en modo fulltree?"}
+    C -->|"No"| D["3. Abortar carga de variables"]
+    C -->|"Sí"| E["4. Cargar opciones del Proveedor"]
+    E --> F["5. Cargar tokens de GitHub/GitLab"]
+    F --> G["6. Cargar ajustes de Caché y Rama"]
+    G --> H["7. Cargar opciones de Obsidian"]
+    H --> I["8. Renderizar formulario en la UI de Moodle"]
 ```
 
 ### Detalle de los Pasos del Flujo

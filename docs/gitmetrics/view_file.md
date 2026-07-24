@@ -10,16 +10,16 @@ Ubicación: `view_file.php`
 
 ```mermaid
 graph TD
-    A[1. Clic en enlace de archivo desde UI] --> B[2. Validar parámetros y login]
-    B --> C{¿Faltan parámetros URL?}
-    C -->|Sí| D[3. Mostrar pantalla de error]
-    C -->|No| E[4. Cargar credenciales del proveedor Git]
-    E --> F[5. Descargar fichero markdown en memoria RAM]
-    F --> G[6. Parsear Frontmatter YAML]
-    G --> H[7. Reemplazar [[WikiLinks]] por URLs Moodle]
-    H --> I[8. Renderizar cuerpo Markdown a HTML]
-    I --> J[9. Construir y pintar Ficha de Metadatos]
-    J --> K[10. Pintar documento integrado en UI de Moodle]
+    A["1. Clic en enlace de archivo desde UI"] --> B["2. Validar parámetros y login"]
+    B --> C{"¿Faltan parámetros URL?"}
+    C -->|"Sí"| D["3. Mostrar pantalla de error"]
+    C -->|"No"| E["4. Cargar credenciales del proveedor Git"]
+    E --> F["5. Descargar fichero markdown en memoria RAM"]
+    F --> G["6. Parsear Frontmatter YAML"]
+    G --> H["7. Reemplazar [[WikiLinks"]] por URLs Moodle]
+    H --> I["8. Renderizar cuerpo Markdown a HTML"]
+    I --> J["9. Construir y pintar Ficha de Metadatos"]
+    J --> K["10. Pintar documento integrado en UI de Moodle"]
 ```
 
 ### Detalle de los Pasos del Flujo

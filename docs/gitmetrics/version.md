@@ -10,11 +10,11 @@ Ubicación: `version.php`
 
 ```mermaid
 graph TD
-    A[1. Instalación o Actualización] --> B[2. Moodle detecta block_gitmetrics]
-    B --> C[3. Carga version.php]
-    C --> D[4. Compara timestamp de la versión con BBDD]
-    D --> E[5. Determina si requiere Moodle 4.0 o superior]
-    E --> F[6. Muestra plugin como MADURO/ESTABLE]
+    A["1. Instalación o Actualización"] --> B["2. Moodle detecta block_gitmetrics"]
+    B --> C["3. Carga version.php"]
+    C --> D["4. Compara timestamp de la versión con BBDD"]
+    D --> E["5. Determina si requiere Moodle 4.0 o superior"]
+    E --> F["6. Muestra plugin como MADURO/ESTABLE"]
 ```
 
 ### Detalle de los Pasos del Flujo

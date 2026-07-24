@@ -10,11 +10,11 @@ Ubicación: `classes/git_provider_interface.php`
 
 ```mermaid
 graph TD
-    A[1. Cliente que implementa interfaz] --> B{¿Acción requerida?}
-    B -->|Obtener estructura| C[2. Ejecutar get_tree]
-    B -->|Descargar texto| D[3. Ejecutar get_file_content]
-    C --> E[4. Retornar array unificado de nodos]
-    D --> F[5. Retornar string en texto plano]
+    A["1. Cliente que implementa interfaz"] --> B{"¿Acción requerida?"}
+    B -->|"Obtener estructura"| C["2. Ejecutar get_tree"]
+    B -->|"Descargar texto"| D["3. Ejecutar get_file_content"]
+    C --> E["4. Retornar array unificado de nodos"]
+    D --> F["5. Retornar string en texto plano"]
 ```
 
 ### Detalle de los Pasos del Flujo

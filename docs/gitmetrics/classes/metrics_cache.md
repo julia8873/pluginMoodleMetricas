@@ -10,15 +10,15 @@ Ubicación: `classes/metrics_cache.php`
 
 ```mermaid
 graph TD
-    A[1. Operación de Caché solicitada] --> B{¿Acción?}
-    B -->|get| C[2. Validar Hash y TTL de BD]
-    B -->|set| D[3. Serializar a JSON y Guardar/Actualizar]
-    B -->|invalidate| E[4. Eliminar registro específico de la instancia]
-    B -->|purge_expired| F[5. Eliminar registros superados por el TTL]
-    C --> G[6. Retornar Array o Null si caducado]
-    D --> H[7. Registro insertado/actualizado]
-    E --> I[8. Caché del bloque invalidada]
-    F --> J[9. Retornar número de registros borrados]
+    A["1. Operación de Caché solicitada"] --> B{"¿Acción?"}
+    B -->|"get"| C["2. Validar Hash y TTL de BD"]
+    B -->|"set"| D["3. Serializar a JSON y Guardar/Actualizar"]
+    B -->|"invalidate"| E["4. Eliminar registro específico de la instancia"]
+    B -->|"purge_expired"| F["5. Eliminar registros superados por el TTL"]
+    C --> G["6. Retornar Array o Null si caducado"]
+    D --> H["7. Registro insertado/actualizado"]
+    E --> I["8. Caché del bloque invalidada"]
+    F --> J["9. Retornar número de registros borrados"]
 ```
 
 ### Detalle de los Pasos del Flujo

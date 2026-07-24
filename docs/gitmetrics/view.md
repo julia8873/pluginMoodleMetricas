@@ -10,17 +10,17 @@ Ubicación: `view.php`
 
 ```mermaid
 graph TD
-    A[1. Usuario accede a /blocks/gitmetrics/view.php] --> B[2. Moodle valida autenticación y curso]
-    B --> C[3. Cargar configuración de la instancia del bloque]
-    C --> D{¿Hay URL del repositorio configurada?}
-    D -->|No| E[4. Buscar otra instancia en el curso]
-    D -->|Sí| F[5. Determinar Proveedor y Tokens]
+    A["1. Usuario accede a /blocks/gitmetrics/view.php"] --> B["2. Moodle valida autenticación y curso"]
+    B --> C["3. Cargar configuración de la instancia del bloque"]
+    C --> D{"¿Hay URL del repositorio configurada?"}
+    D -->|"No"| E["4. Buscar otra instancia en el curso"]
+    D -->|"Sí"| F["5. Determinar Proveedor y Tokens"]
     E --> F
-    F --> G[6. Consultar Caché de Métricas]
-    G -->|Caché inválida o vacía| H[7. Instanciar metrics_calculator]
-    G -->|Caché válida| I[8. Renderizar Vista Completa]
+    F --> G["6. Consultar Caché de Métricas"]
+    G -->|"Caché inválida o vacía"| H["7. Instanciar metrics_calculator"]
+    G -->|"Caché válida"| I["8. Renderizar Vista Completa"]
     H --> I
-    I --> J[9. Imprimir Footer y terminar]
+    I --> J["9. Imprimir Footer y terminar"]
 ```
 
 ### Detalle de los Pasos del Flujo
@@ -38,7 +38,7 @@ graph TD
 ## Funciones Principales
 
 ### `Lógica de Renderizado y Caché`
-Script procedural ejecutado bajo el contexto de Moodle que orquesta el pintado del *header*, delegación del renderizado, y pintado del *footer*.
+Script procedural ejecutado bajo el contexto de Moodle que coordina el pintado del *header*, delegación del renderizado, y pintado del *footer*.
 
 ```php
 --8<-- "gitmetrics/view.php:view_logic"

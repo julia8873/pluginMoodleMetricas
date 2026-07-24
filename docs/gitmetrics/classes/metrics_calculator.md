@@ -8,16 +8,16 @@ Ubicación: `classes/metrics_calculator.php`
 
 ```mermaid
 graph TD
-    A[1. Iniciar cálculo de métricas] --> B[2. Autodetectar Proveedor e inicializar cliente]
-    B --> C[3. Extraer owner y repo de la URL]
-    C --> D[4. Descargar árbol completo del repositorio]
-    D --> E[5. Separar carpetas y ficheros Markdown]
-    E --> F[6. Descargar y parsear cada documento .md]
-    F --> G[7. Calcular Volumen y Estructura]
-    F --> H[8. Calcular Red y Conectividad]
-    F --> I[9. Calcular Etiquetas y Taxonomía]
-    F --> J[10. Calcular Validación de Formato]
-    G --> K[11. Agrupar resultados y devolver array global]
+    A["1. Iniciar cálculo de métricas"] --> B["2. Autodetectar Proveedor e inicializar cliente"]
+    B --> C["3. Extraer owner y repo de la URL"]
+    C --> D["4. Descargar árbol completo del repositorio"]
+    D --> E["5. Separar carpetas y ficheros Markdown"]
+    E --> F["6. Descargar y parsear cada documento .md"]
+    F --> G["7. Calcular Volumen y Estructura"]
+    F --> H["8. Calcular Red y Conectividad"]
+    F --> I["9. Calcular Etiquetas y Taxonomía"]
+    F --> J["10. Calcular Validación de Formato"]
+    G --> K["11. Agrupar resultados y devolver array global"]
     H --> K
     I --> K
     J --> K

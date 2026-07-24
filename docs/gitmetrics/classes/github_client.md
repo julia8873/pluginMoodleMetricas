@@ -10,12 +10,12 @@ Ubicación: `classes/github_client.php`
 
 ```mermaid
 graph TD
-    A[1. Iniciar petición] --> B{¿Tipo de petición?}
-    B -->|Árbol del repositorio| C[2. Llamar API get_tree]
-    B -->|Contenido de fichero| D[3. Llamar RAW get_file_content]
-    C --> E[4. Comprobar truncamiento y errores JSON]
-    D --> F[5. Descargar texto sin parsear]
-    E --> G[6. Devolver array de nodos]
+    A["1. Iniciar petición"] --> B{"¿Tipo de petición?"}
+    B -->|"Árbol del repositorio"| C["2. Llamar API get_tree"]
+    B -->|"Contenido de fichero"| D["3. Llamar RAW get_file_content"]
+    C --> E["4. Comprobar truncamiento y errores JSON"]
+    D --> F["5. Descargar texto sin parsear"]
+    E --> G["6. Devolver array de nodos"]
     F --> G
 ```
 
@@ -26,7 +26,7 @@ graph TD
 3. **[PASO 3] Llamar RAW get_file_content:** Para descargar el contenido de un fichero Markdown se hace una petición HTTP a `raw.githubusercontent.com`.
 4. **[PASO 4] Comprobar truncamiento:** En la petición REST se decodifica el JSON y se verifica que GitHub no haya truncado la respuesta por ser un repositorio demasiado masivo.
 5. **[PASO 5] Descargar texto:** En las peticiones RAW simplemente se extrae el texto plano del documento sin procesamiento adicional.
-6. **[PASO 6] Devolver array/texto:** Se retorna el resultado esperado a la clase orquestadora (`metrics_calculator`).
+6. **[PASO 6] Devolver array/texto:** Se retorna el resultado esperado a la clase coordinadora (`metrics_calculator`).
 
 ## Funciones Principales
 

@@ -10,12 +10,12 @@ Ubicación: `lib.php`
 
 ```mermaid
 graph TD
-    A[1. Moodle renderiza navegación del curso] --> B[2. Llama al hook de extensión del bloque]
-    B --> C{¿El usuario tiene permisos?}
-    C -->|No| D[3. Abortar creación de pestaña]
-    C -->|Sí| E[4. Generar URL hacia view.php]
-    E --> F[5. Añadir nodo de navegación setting]
-    F --> G[6. Marcar como showinflatnavigation para pestaña visual]
+    A["1. Moodle renderiza navegación del curso"] --> B["2. Llama al hook de extensión del bloque"]
+    B --> C{"¿El usuario tiene permisos?"}
+    C -->|"No"| D["3. Abortar creación de pestaña"]
+    C -->|"Sí"| E["4. Generar URL hacia view.php"]
+    E --> F["5. Añadir nodo de navegación setting"]
+    F --> G["6. Marcar como showinflatnavigation para pestaña visual"]
 ```
 
 ### Detalle de los Pasos del Flujo

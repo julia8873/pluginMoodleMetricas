@@ -10,14 +10,14 @@ Ubicación: `renderer.php`
 
 ```mermaid
 graph TD
-    A[1. Llamada a render_metrics o render_fullpage_metrics] --> B[2. Establecer contexto Repo/Course/Block]
-    B --> C[3. Cargar CSS inline styles]
-    C --> D[4. Construir Cabecera con enlace al repositorio]
-    D --> E[5. Invocar render_volume]
-    E --> F[6. Invocar render_network]
-    F --> G[7. Invocar render_tags]
-    G --> H[8. Invocar render_format]
-    H --> I[9. Retornar bloque HTML consolidado a Moodle]
+    A["1. Llamada a render_metrics o render_fullpage_metrics"] --> B["2. Establecer contexto Repo/Course/Block"]
+    B --> C["3. Cargar CSS inline styles"]
+    C --> D["4. Construir Cabecera con enlace al repositorio"]
+    D --> E["5. Invocar render_volume"]
+    E --> F["6. Invocar render_network"]
+    F --> G["7. Invocar render_tags"]
+    G --> H["8. Invocar render_format"]
+    H --> I["9. Retornar bloque HTML consolidado a Moodle"]
 ```
 
 ### Detalle de los Pasos del Flujo

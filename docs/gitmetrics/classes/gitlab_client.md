@@ -10,12 +10,12 @@ Ubicación: `classes/gitlab_client.php`
 
 ```mermaid
 graph TD
-    A[1. Iniciar petición a GitLab] --> B{¿Tipo de petición?}
-    B -->|Árbol del repositorio| C[2. Llamar API get_tree iterando páginas]
-    B -->|Contenido de fichero| D[3. Llamar RAW get_file_content]
-    C --> E[4. Normalizar campos al formato interno]
-    D --> F[5. Descargar texto sin parsear]
-    E --> G[6. Devolver array de nodos]
+    A["1. Iniciar petición a GitLab"] --> B{"¿Tipo de petición?"}
+    B -->|"Árbol del repositorio"| C["2. Llamar API get_tree iterando páginas"]
+    B -->|"Contenido de fichero"| D["3. Llamar RAW get_file_content"]
+    C --> E["4. Normalizar campos al formato interno"]
+    D --> F["5. Descargar texto sin parsear"]
+    E --> G["6. Devolver array de nodos"]
     F --> G
 ```
 
@@ -26,7 +26,7 @@ graph TD
 3. **[PASO 3] Llamar RAW get_file_content:** Para descargar el contenido de un fichero Markdown se hace una petición HTTP directa al endpoint `/raw` de ese fichero en la API.
 4. **[PASO 4] Normalizar campos:** Como GitLab devuelve una estructura distinta a GitHub, se mapean y normalizan los campos (como `id` a `sha`, o `type`) para que la calculadora de métricas trabaje siempre con un array homogéneo independiente del proveedor.
 5. **[PASO 5] Descargar texto:** Las peticiones RAW extraen el texto plano del documento directamente.
-6. **[PASO 6] Devolver array/texto:** Se retorna el resultado esperado unificado a la clase orquestadora (`metrics_calculator`).
+6. **[PASO 6] Devolver array/texto:** Se retorna el resultado esperado unificado a la clase coordinadora (`metrics_calculator`).
 
 ## Funciones Principales
 

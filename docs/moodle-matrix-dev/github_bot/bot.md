@@ -2,7 +2,7 @@
 
 Ubicación: `github-bot-plugin/github-bot-plugin/github_bot/bot.py`
 
-El archivo `bot.py` orquesta la interacción entre el usuario (vía Matrix), la base de conocimientos (vía GitHub) y el motor de estudio.
+El archivo `bot.py` coordina la interacción entre el usuario (vía Matrix), la base de conocimientos (vía GitHub) y el motor de estudio.
 
 ## Descripción General
 
@@ -14,15 +14,15 @@ El archivo `bot.py` orquesta la interacción entre el usuario (vía Matrix), la 
 
 ```mermaid
 graph TD
-    A[Mensaje entrante en Matrix] --> B{¿Es un adjunto?}
-    B -->|Sí (Imagen / PDF)| C[Proceso de Ingesta]
-    C --> D[OCR / PyPDF / Gemini Vision]
-    D --> E[Subir a GitHub raw/ y okf/]
-    B -->|No| F{¿Es un comando ! ?}
-    F -->|Sí| G[Delegar a handlers estudio.py / bd.py]
-    F -->|No| H{¿Hay estado pendiente?}
-    H -->|Sí| I[Responder a flashcard / Ejercicio]
-    H -->|No| J[Ignorar]
+    A["Mensaje entrante en Matrix"] --> B{"¿Es un adjunto?"}
+    B -->|"Sí (Imagen / PDF)"| C["Proceso de Ingesta"]
+    C --> D["OCR / PyPDF / Gemini Vision"]
+    D --> E["Subir a GitHub raw/ y okf/"]
+    B -->|"No"| F{"¿Es un comando ! ?"}
+    F -->|"Sí"| G["Delegar a handlers estudio.py / bd.py"]
+    F -->|"No"| H{"¿Hay estado pendiente?"}
+    H -->|"Sí"| I["Responder a flashcard / Ejercicio"]
+    H -->|"No"| J["Ignorar"]
 ```
 
 ## Ciclo de Vida y Concurrencia

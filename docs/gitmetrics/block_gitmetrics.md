@@ -10,17 +10,17 @@ Ubicación: `block_gitmetrics.php`
 
 ```mermaid
 graph TD
-    A[1. Moodle instancia el bloque] --> B[2. ¿Creación o Guardado?]
-    B -->|Sí| C[3. Verificar y conectar sala de Matrix]
-    B -->|No| D[4. Mostrar contenido get_content]
+    A["1. Moodle instancia el bloque"] --> B["2. ¿Creación o Guardado?"]
+    B -->|"Sí"| C["3. Verificar y conectar sala de Matrix"]
+    B -->|"No"| D["4. Mostrar contenido get_content"]
     C --> D
-    D --> E[5. Cargar configuración de instancia / global]
-    E --> F[6. Verificar caché de métricas]
-    F -->|Caché caducada o vacía| G[7. Instanciar metrics_calculator]
-    F -->|Caché válida| H[8. Renderizar salida visual]
-    G --> I[9. Cachear nuevos resultados]
+    D --> E["5. Cargar configuración de instancia / global"]
+    E --> F["6. Verificar caché de métricas"]
+    F -->|"Caché caducada o vacía"| G["7. Instanciar metrics_calculator"]
+    F -->|"Caché válida"| H["8. Renderizar salida visual"]
+    G --> I["9. Cachear nuevos resultados"]
     I --> H
-    H --> J[10. Retornar HTML a Moodle]
+    H --> J["10. Retornar HTML a Moodle"]
 ```
 
 ### Detalle de los Pasos del Flujo
@@ -60,7 +60,7 @@ Hook de Moodle. Se dispara cada vez que el usuario guarda cambios en el formular
 ```
 
 ### `get_content`
-Corazón lógico del bloque de interfaz gráfica. Orquesta la recolección de los parámetros, el refresco de cachés, llama al calculador de métricas y finalmente delega el pintado visual en el renderizador.
+Corazón lógico del bloque de interfaz gráfica. Coordina la recolección de los parámetros, el refresco de cachés, llama al calculador de métricas y finalmente delega el pintado visual en el renderizador.
 
 ```php
 --8<-- "gitmetrics/block_gitmetrics.php:get_content"

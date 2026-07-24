@@ -8,16 +8,16 @@ Ubicación: `classes/obsidian_exporter.php`
 
 ```mermaid
 graph TD
-    A[1. Iniciar Exportación] --> B[2. Obtener árbol remoto completo]
-    B --> C[3. Filtrar archivos .md]
-    C --> D{¿Quedan archivos?}
-    D -- No --> E[Fin: Devolver estadísticas]
-    D -- Sí --> F[4. Descargar contenido raw]
-    F --> G[5. Resolver wiki-links a Obsidian]
-    G --> H[6. Generar ruta destino local]
-    H --> I{¿Ha cambiado el contenido?}
-    I -- Sí --> J[7. Escribir/Sobrescribir archivo en disco]
-    I -- No --> K[8. Saltar archivo]
+    A["1. Iniciar Exportación"] --> B["2. Obtener árbol remoto completo"]
+    B --> C["3. Filtrar archivos .md"]
+    C --> D{"¿Quedan archivos?"}
+    D -- No --> E["Fin: Devolver estadísticas"]
+    D -- Sí --> F["4. Descargar contenido raw"]
+    F --> G["5. Resolver wiki-links a Obsidian"]
+    G --> H["6. Generar ruta destino local"]
+    H --> I{"¿Ha cambiado el contenido?"}
+    I -- Sí --> J["7. Escribir/Sobrescribir archivo en disco"]
+    I -- No --> K["8. Saltar archivo"]
     J --> D
     K --> D
 ```

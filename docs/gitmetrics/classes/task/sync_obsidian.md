@@ -8,17 +8,17 @@ Ubicación: `classes/task/sync_obsidian.php`
 
 ```mermaid
 graph TD
-    A[1. Comprobar integración activada] --> B{¿Activada?}
-    B -- Sí --> C[2. Leer ruta del Vault]
-    B -- No --> D[Fin: Finalizar tarea]
-    C --> E{¿Ruta válida?}
+    A["1. Comprobar integración activada"] --> B{"¿Activada?"}
+    B -- Sí --> C["2. Leer ruta del Vault"]
+    B -- No --> D["Fin: Finalizar tarea"]
+    C --> E{"¿Ruta válida?"}
     E -- No --> D
-    E -- Sí --> F[3. Cargar cliente Git]
-    F --> G[4. Obtener árbol de archivos remotos]
-    G --> H[5. Comparar SHA de los archivos]
-    H --> I[6. Descargar contenido nuevo/modificado]
-    I --> J[7. Escribir ficheros localmente para Obsidian]
-    J --> K[8. Revisar y borrar nodos fantasma]
+    E -- Sí --> F["3. Cargar cliente Git"]
+    F --> G["4. Obtener árbol de archivos remotos"]
+    G --> H["5. Comparar SHA de los archivos"]
+    H --> I["6. Descargar contenido nuevo/modificado"]
+    I --> J["7. Escribir ficheros localmente para Obsidian"]
+    J --> K["8. Revisar y borrar nodos fantasma"]
 ```
 
 ### Detalle de los Pasos del Flujo

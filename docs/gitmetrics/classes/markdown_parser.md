@@ -10,15 +10,15 @@ Ubicación: `classes/markdown_parser.php`
 
 ```mermaid
 graph TD
-    A[1. Iniciar parseo de documento] --> B[2. Extraer bloque YAML Frontmatter]
-    B --> C{¿Tiene frontmatter?}
-    C -->|Sí| D[3. Parsear YAML y extraer Tags]
-    C -->|No| E[4. Continuar análisis del cuerpo]
+    A["1. Iniciar parseo de documento"] --> B["2. Extraer bloque YAML Frontmatter"]
+    B --> C{"¿Tiene frontmatter?"}
+    C -->|"Sí"| D["3. Parsear YAML y extraer Tags"]
+    C -->|"No"| E["4. Continuar análisis del cuerpo"]
     D --> E
-    E --> F[5. Extraer Enlaces Internos]
-    F --> G[6. Calcular número de palabras]
-    G --> H[7. Validar sintaxis Markdown básica]
-    H --> I[8. Devolver array con todas las métricas]
+    E --> F["5. Extraer Enlaces Internos"]
+    F --> G["6. Calcular número de palabras"]
+    G --> H["7. Validar sintaxis Markdown básica"]
+    H --> I["8. Devolver array con todas las métricas"]
 ```
 
 ### Detalle de los Pasos del Flujo
@@ -30,7 +30,7 @@ graph TD
 5. **[PASO 5] Extraer Enlaces Internos:** Mediante Regex se detectan tanto los enlaces nativos de Markdown como los Wikilinks (`[[enlace]]`), excluyendo deliberadamente cualquier enlace externo HTTP/HTTPS.
 6. **[PASO 6] Calcular palabras:** Se realiza una limpieza exhaustiva (borrando bloques de código, URLs, etiquetas HTML y formato Markdown) para contar únicamente las palabras de texto real.
 7. **[PASO 7] Validar sintaxis:** Se comprueban errores comunes, como bloques de código sin cerrar, negritas incompletas o HTML anidado roto.
-8. **[PASO 8] Devolver array:** Todas las métricas calculadas se consolidan en un único diccionario y se devuelven al orquestador.
+8. **[PASO 8] Devolver array:** Todas las métricas calculadas se consolidan en un único diccionario y se devuelven al coordinador.
 
 ## Funciones Principales
 
