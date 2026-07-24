@@ -38,7 +38,7 @@ docker compose up -d
 <a id="matrix"></a>
 ## Integración con Matrix y el Bot Git
 
-> **Nota:** Los pasos **8a** y **8b** se realizan automáticamente al ejecutar `instalar.sh`. Solo necesitas ejecutarlos manualmente si realizas la instalación paso a paso (Opción B) o si necesitas reconfigurar el entorno.
+> **Nota:** La creación del usuario administrador y la conexión entre Moodle y Matrix (explicadas a continuación) se realizan automáticamente al ejecutar `instalar.sh`. Solo necesitas ejecutar estos pasos manualmente si realizas la instalación paso a paso (Opción B) o si necesitas reconfigurar el entorno.
 
 ---
 
