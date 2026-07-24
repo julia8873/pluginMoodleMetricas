@@ -129,7 +129,7 @@ echo "      MkDocs disponible en http://localhost:8001"
 
 echo ""
 echo "------------------------------------------------------------------------------"
-echo " ¡TODO LISTO! EL ENTORNO, EL PLUGIN Y LA DOCUMENTACIÓN ESTÁN OPERATIVOS"
+echo " ¡TODO LISTO! EL ENTORNO, EL PLUGIN Y LA DOCUMENTACIÓN FUNCIONAN"
 echo "------------------------------------------------------------------------------"
 echo ""
 echo " Moodle URL  : http://localhost:8000"

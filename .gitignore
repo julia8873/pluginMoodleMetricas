@@ -42,6 +42,9 @@ site/
 
 # ── Entornos de Desarrollo (IDEs) ──
 .vscode/
-.idea/moodle-matrix-dev/maubot/maubot-data/*.db
-moodle-matrix-dev/maubot/maubot-data/*.db-wal
-moodle-matrix-dev/maubot/maubot-data/*.db-shm
+.idea/
+
+# Ignore all SQLite database files recursively
+**/*.db
+**/*.db-shm
+**/*.db-wal
