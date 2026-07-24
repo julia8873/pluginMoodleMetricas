@@ -18,31 +18,44 @@ Entorno integral formado por el plugin de bloque Moodle **`block_gitmetrics`** y
 
 ## Índice de Contenidos
 
-1. [Credenciales del Entorno](#1-credenciales-del-entorno)
-2. [Arquitectura General](#2-arquitectura-general)
-3. [Inventario Completo de Ficheros](#3-información-sobre-cada-directorio)
+1. [Ejecutar la Documentación (MkDocs)](#1-ejecutar-la-documentación-mkdocs)
+2. [Credenciales del Entorno](#2-credenciales-del-entorno)
+3. [Arquitectura General](#3-arquitectura-general)
+4. [Inventario Completo de Ficheros](#4-información-sobre-cada-directorio)
     - [Raíz del Proyecto](#raíz-del-proyecto)
     - [gitmetrics/ — Plugin Moodle block_gitmetrics](#gitmetrics--plugin-moodle-block_gitmetrics)
     - [moodle-matrix-dev/ — Stack Docker](#moodle-matrix-dev--stack-docker)
-4. [Requisitos Previos](#4-requisitos-previos)
-5. [Instalación](#5-instalación)
+5. [Requisitos Previos](#5-requisitos-previos)
+6. [Instalación](#6-instalación)
     - [Opción A: Instalación Automática (Recomendada)](#opción-a-instalación-automática-recomendada)
     - [Opción B: Instalación Manual Paso a Paso](#opción-b-instalación-manual-paso-a-paso)
-6. [Seguridad: Gestión de Credenciales](#6-seguridad-gestión-de-credenciales)
-7. [Cambiar o Reconectar el Repositorio Git](#7-cambiar-o-reconectar-el-repositorio-git)
-8. [Guía de Uso: Secciones de Métricas](#8-guía-de-uso-secciones-de-métricas)
-9. [Integración con Matrix y el Bot Git](#9-integración-con-matrix-y-el-bot-git)
+7. [Seguridad: Gestión de Credenciales](#7-seguridad-gestión-de-credenciales)
+8. [Cambiar o Reconectar el Repositorio Git](#8-cambiar-o-reconectar-el-repositorio-git)
+9. [Guía de Uso: Secciones de Métricas](#9-guía-de-uso-secciones-de-métricas)
+10. [Integración con Matrix y el Bot Git](#10-integración-con-matrix-y-el-bot-git)
     - [Crear el usuario administrador de Matrix](#crear-el-usuario-administrador-de-matrix)
     - [Conectar Moodle con Matrix](#conectar-moodle-con-matrix)
     - [Las salas de chat (Automatización y Desactivación)](#las-salas-de-chat-automatización-y-desactivación)
     - [Comandos del bot en la sala Matrix](#comandos-del-bot-en-la-sala-matrix)
-10. [Integración con Obsidian](#10-integración-con-obsidian)
-11. [Configuración de Proveedores Git](#11-configuración-de-proveedores-git)
-12. [Gestión de Contenedores Docker](#12-gestión-de-contenedores-docker)
+11. [Integración con Obsidian](#11-integración-con-obsidian)
+12. [Configuración de Proveedores Git](#12-configuración-de-proveedores-git)
+13. [Gestión de Contenedores Docker](#13-gestión-de-contenedores-docker)
 
 ---
 
-## 1. Credenciales del Entorno
+## 1. Ejecutar la Documentación (MkDocs)
+
+Para ver la documentación técnica completa del proyecto, puedes levantar un servidor local con MkDocs:
+
+```bash
+mkdocs serve
+```
+
+La documentación estará disponible en: `http://127.0.0.1:8000/`
+
+---
+
+## 2. Credenciales del Entorno
 
 | Servicio | URL | Usuario | Contraseña |
 |:---|:---|:---|:---|
@@ -57,7 +70,7 @@ Entorno integral formado por el plugin de bloque Moodle **`block_gitmetrics`** y
 
 ---
 
-## 2. Arquitectura General
+## 3. Arquitectura General
 
 ```
 pluginMoodleMetricas/
@@ -87,7 +100,7 @@ pluginMoodleMetricas/
 
 ---
 
-## 3. Información sobre cada directorio
+## 4. Información sobre cada directorio
 
 - **`Raíz del proyecto (/)`**: Contiene los scripts principales de despliegue (`instalar.sh` y `configurar_git.sh`). Son los encargados de levantar toda la infraestructura de contenedores, configurar las conexiones de repositorios e inicializar los servicios.
 - **`gitmetrics/`**: Es el código fuente del plugin de Moodle (`block_gitmetrics`). Aquí se aloja la lógica en PHP para extraer métricas de GitHub/GitLab, procesar los documentos Markdown bajo el estándar OKF y mostrar las estadísticas.
@@ -96,7 +109,7 @@ pluginMoodleMetricas/
   - **`github-bot-plugin/`**: Contiene el código y la configuración del bot Maubot.
   - **`usuarios/`**: Para gestionar usuarios de Moodle usando la línea de comandos.
 ---
-## 4. Requisitos Previos
+## 5. Requisitos Previos
 
 | Requisito | Versión mínima | Notas |
 |:---|:---|:---|
@@ -110,7 +123,7 @@ pluginMoodleMetricas/
 
 ---
 
-## 5. Instalación
+## 6. Instalación
 
 ### Opción A: Instalación Automática (Recomendada)
 
@@ -187,7 +200,7 @@ docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/purge_caches.
 
 ---
 
-## 6. Seguridad: Gestión de Credenciales
+## 7. Seguridad: Gestión de Credenciales
 
 Este proyecto utiliza un sistema de **ficheros plantilla (`.example`)** para evitar que contraseñas, tokens y claves criptográficas se suban al repositorio Git.
 
@@ -220,7 +233,7 @@ Después, edita cada fichero y sustituye los valores de ejemplo (`TU_TOKEN_AQUI`
 
 ---
 
-## 7. Cambiar o Reconectar el Repositorio Git
+## 8. Cambiar o Reconectar el Repositorio Git
 
 Para cambiar el repositorio (nueva URL, nuevo token, otra rama o pasar de GitLab a GitHub) sin reinstalar nada:
 
@@ -249,30 +262,30 @@ Este único comando actualiza simultáneamente:
 
 ---
 
-## 8. Guía de Uso: Secciones de Métricas
+## 9. Guía de Uso: Secciones de Métricas
 
 [Ver la Guía de Uso detallada de las Métricas en la documentación del plugin](./gitmetrics/#uso)
 
 ---
 
-## 9. Integración con Matrix y el Bot Git
+## 10. Integración con Matrix y el Bot Git
 
 [Ver los pasos de Integración con Matrix y Bot Git en la documentación del entorno](./moodle-matrix-dev/#matrix)
 
 ---
 
-## 10. Integración con Obsidian
+## 11. Integración con Obsidian
 
 [Ver la configuración de Integración con Obsidian en la documentación del plugin](./gitmetrics/#obsidian)
 
 ---
 
-## 11. Configuración de Proveedores Git
+## 12. Configuración de Proveedores Git
 
 [Ver la Configuración de Proveedores Git en la documentación del entorno](./moodle-matrix-dev/#git)
 
 ---
 
-## 12. Gestión de Contenedores Docker
+## 13. Gestión de Contenedores Docker
 
 [Ver los comandos de Gestión de Contenedores Docker en la documentación del entorno](./moodle-matrix-dev/#docker)
