@@ -117,6 +117,11 @@ echo "[OK] Caché de Moodle y de métricas limpiada.\n";
 // 5. Disparar sincronización inicial hacia la carpeta del vault de Obsidian
 echo "[i] Sincronizando archivos .md con el vault de Obsidian...\n";
 try {
+    // 1. Actualizar configuración global en la tabla config_plugins
+    set_config('repo_url', $url, 'block_gitmetrics');
+    set_config('default_provider', $provider, 'block_gitmetrics');
+    set_config('default_branch', $branch, 'block_gitmetrics');
+    
     if ($provider === 'github') {
         $client = new \block_gitmetrics\github_client($token);
     } else {

@@ -33,9 +33,22 @@ nav:
     - Scripts de Usuarios: moodle-matrix-dev/usuarios.md
     - Github Bot (Maubot):
       - Configuración Base: moodle-matrix-dev/github_bot_config.md
-      - Core Bot: moodle-matrix-dev/github_bot/bot.md
-      - Herramientas de Estudio: moodle-matrix-dev/github_bot/estudio.md
-      - Ingesta Automática: moodle-matrix-dev/github_bot/ingest.md
+      - Archivos (github_bot):
+        - __init__.py: moodle-matrix-dev/github_bot/__init__.md
+        - bot.py: moodle-matrix-dev/github_bot/bot.md
+        - check_empty.py: moodle-matrix-dev/github_bot/check_empty.md
+        - check_missing_links.py: moodle-matrix-dev/github_bot/check_missing_links.md
+        - crear_conceptos_faltantes.py: moodle-matrix-dev/github_bot/crear_conceptos_faltantes.md
+        - db.py: moodle-matrix-dev/github_bot/db.md
+        - ejecutar_ingesta_lotes.py: moodle-matrix-dev/github_bot/ejecutar_ingesta_lotes.md
+        - estudio.py: moodle-matrix-dev/github_bot/estudio.md
+        - git_client.py: moodle-matrix-dev/github_bot/git_client.md
+        - image_ocr.py: moodle-matrix-dev/github_bot/image_ocr.md
+        - latex_render.py: moodle-matrix-dev/github_bot/latex_render.md
+        - llm_provider.py: moodle-matrix-dev/github_bot/llm_provider.md
+        - okf_ingest.py: moodle-matrix-dev/github_bot/okf_ingest.md
+        - organizacion.py: moodle-matrix-dev/github_bot/organizacion.md
+        - pdf_ingest.py: moodle-matrix-dev/github_bot/pdf_ingest.md
   - Plugin Gitmetrics:
     - General: gitmetrics/index.md
     - Estructura: gitmetrics/estructura.md
@@ -65,6 +78,8 @@ plugins:
   - search
 
 markdown_extensions:
+  - admonition
+  - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -77,7 +92,7 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets:
       base_path: .
-      dedent_subsections: true
+      dedent_subsections: false
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid

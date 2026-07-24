@@ -40,9 +40,10 @@ if (!$DB->record_exists('block_instances', ['blockname' => 'gitmetrics', 'parent
     $instance->subpagepattern = null;
     $instance->defaultregion = 'side-pre';
     $instance->defaultweight = 0;
+    $configured_repo = get_config('block_gitmetrics', 'repo_url');
     $instance->configdata = base64_encode(serialize((object)[
-        'repo_url' => 'https://gitlab.com/<tu_usuario>/<tu_repo>',
-        'provider' => 'gitlab',
+        'repo_url' => $configured_repo ?: 'https://gitlab.com/<tu_usuario>/<tu_repo>',
+        'provider' => get_config('block_gitmetrics', 'default_provider') ?: 'gitlab',
         'branch' => 'main'
     ]));
     $instance->timecreated = time();
@@ -82,7 +83,20 @@ require_once($CFG->dirroot . '/blocks/gitmetrics/renderer.php');
 $token      = get_config('block_gitmetrics', 'gitlab_token') ?: (get_config('block_gitmetrics', 'github_token') ?: '');
 $provider   = get_config('block_gitmetrics', 'default_provider') ?: 'gitlab';
 $gitlab_url = get_config('block_gitmetrics', 'gitlab_url') ?: 'https://gitlab.com';
-$repourl    = 'https://gitlab.com/<tu_usuario>/<tu_repo>';
+$repourl = get_config('block_gitmetrics', 'repo_url');
+
+if (empty($repourl) || strpos($repourl, '<tu_usuario>') !== false) {
+    echo "Aviso: repo_url no está configurado todavía (aún es el placeholder). Saltando cálculo de métricas.\n";
+    $metrics = [
+        'volume'  => [],
+        'network' => [],
+        'tags'    => [],
+        'format'  => [],
+    ];
+} else {
+    $calculator = new \block_gitmetrics\metrics_calculator($token, $provider, $gitlab_url);
+    $metrics    = $calculator->calculate($repourl, 'main');
+}
 
 $calculator = new \block_gitmetrics\metrics_calculator($token, $provider, $gitlab_url);
 $metrics    = $calculator->calculate($repourl, 'main');

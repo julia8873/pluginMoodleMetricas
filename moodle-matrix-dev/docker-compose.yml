@@ -59,13 +59,13 @@ services:
 
   maubot:
     build:
-      context: ./github-bot-plugin
+      context: ./maubot
       dockerfile: Dockerfile.maubot
     container_name: maubot
     restart: unless-stopped
     volumes:
-      - ./github-bot-plugin/maubot-data:/data
-      - ./github-bot-plugin/github-bot-plugin:/plugin-src:ro
+      - ./maubot/maubot-data:/data
+      - ./maubot/github-bot-plugin:/plugin-src:ro
     ports:
       - "29316:29316"
     depends_on:

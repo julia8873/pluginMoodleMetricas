@@ -1,14 +1,28 @@
 # Herramientas de Estudio (`estudio.py`)
 
-Ubicación: `github-bot-plugin/github-bot-plugin/github_bot/estudio.py`
+Ubicación: `maubot/github-bot-plugin/github_bot/estudio.py`
 
 Este módulo desacopla por completo la lógica cognitiva y los prompts (las peticiones al LLM) de las mecánicas de chat. 
 
 ## Arquitectura
 
 ```python
---8<-- "moodle-matrix-dev/github-bot-plugin/github-bot-plugin/github_bot/estudio.py:file_desc"
+"""
+Herramientas de estudio: flashcards, ejercicios, técnica Feynman, preguntas de
+concepto, búsqueda de ejercicios por técnica y resumen de sesión.
+
+Se mantiene aparte de bot.py por lo mismo que pdf_ingest.py e image_ocr.py:
+aquí solo hay "qué preguntarle al LLM y cómo interpretar su respuesta", sin
+nada de Matrix/GitHub, para poder cambiar los prompts sin tocar el resto del bot.
+"""
+
+import asyncio
+import math
+import re
+
+from .llm_provider import LLMProvider
 ```
+
 
 ## Funciones Principales
 1. **Generación de Flashcards**: Transforma fragmentos documentales aleatorios en preguntas directas de memorización activa.

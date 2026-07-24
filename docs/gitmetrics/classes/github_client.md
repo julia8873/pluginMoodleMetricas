@@ -4,7 +4,18 @@ Crear archivo en: `docs/gitmetrics/classes/github_client.md`
 
 Ubicación: `classes/github_client.php`
 
---8<-- "gitmetrics/classes/github_client.php:class_desc"
+```python
+Cliente HTTP para la API de GitHub y raw.githubusercontent.com.
+
+Usa la clase curl de Moodle (lib/filelib.php) para respetar la
+configuración de proxy del servidor y las restricciones de red.
+
+Endpoints utilizados:
+  - GET /repos/{owner}/{repo}/git/trees/{branch}?recursive=1
+    → árbol completo de ficheros y directorios.
+  - GET https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}
+    → contenido raw de cada fichero Markdown.
+```
 
 ## Diagrama de Flujo Principal
 
@@ -34,12 +45,38 @@ graph TD
 Obtiene el árbol recursivo de ficheros de un repositorio a través de la API oficial de GitHub.
 
 ```php
---8<-- "gitmetrics/classes/github_client.php:get_tree"
+```python
+public function get_tree(string $owner, string $repo, string $branch): array {
+    $url      = self::API_BASE . "/repos/{$owner}/{$repo}/git/trees/{$branch}?recursive=1";
+    $response = $this->api_request($url);
+
+    if (!isset($response['tree'])) {
+        throw new \Exception(get_string('error_branch', 'block_gitmetrics'));
+    }
+
+    // GitHub trunca árboles muy grandes; informar al caller
+    if (!empty($response['truncated'])) {
+        debugging('block_gitmetrics: el árbol del repo fue truncado por la API (> 100 000 elementos).', DEBUG_DEVELOPER);
+    }
+
+    return $response['tree'];
+}
+// 
 ```
+
 
 ### `get_file_content`
 Descarga el contenido raw (texto puro) de un fichero Markdown específico utilizando el subdominio rawusercontent de GitHub.
 
 ```php
---8<-- "gitmetrics/classes/github_client.php:get_file_content"
+```python
+public function get_file_content(string $owner, string $repo, string $path, string $branch): string {
+    // Codificamos cada segmento del path por separado para no romper las '/'
+    $encoded_path = implode('/', array_map('rawurlencode', explode('/', $path)));
+    $url = self::RAW_BASE . "/{$owner}/{$repo}/{$branch}/{$encoded_path}";
+
+    return $this->raw_request($url);
+}
+// 
 ```
+

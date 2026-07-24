@@ -2,6 +2,39 @@
 
 Stack Docker Compose para desarrollo y pruebas local de la integración de Moodle con Matrix, incluyendo un bot inteligente de GitHub.
 
+## Estructura del Entorno
+
+```text
+moodle-matrix-dev/
+├-- docker-compose.yml          Define y coordina todos los contenedores (Moodle, Matrix, Maubot, Ollama).
+├-- .env.example                Plantilla de variables de entorno generales para Docker.
+├-- default.conf.template       Plantilla de configuración de Nginx para Element Web.
+├-- element-config.json         Archivo de configuración principal del cliente Element.
+├-- maubot/                     Código fuente, configuración y Dockerfile del bot inteligente (Maubot).
+│   ├-- Dockerfile.maubot       Archivo de construcción de la imagen del bot (basada en Alpine Linux).
+│   ├-- entrypoint.sh           Script que compila el código fuente del bot al iniciar el contenedor.
+│   ├-- maubot-data/            Archivos de configuración y datos internos de la plataforma Maubot.
+│   │   ├-- config.yaml         Configuración principal del servidor Maubot (administradores, secretos).
+│   │   └-- maubot.db           Base de datos SQLite del núcleo de Maubot.
+│   └-- github-bot-plugin/      Carpeta principal con el código fuente en Python del plugin.
+│       ├-- base-config.yaml    Fichero donde se configuran el repositorio Git y las claves de IA.
+│       ├-- maubot.yaml         Manifiesto de dependencias y definición del plugin para Maubot.
+│       └-- github_bot/         Código fuente modular del asistente virtual.
+│           ├-- bot.py          Coordina las conversaciones, comandos y el flujo general.
+│           ├-- git_client.py   Cliente para leer y escribir ficheros en la API de GitHub/GitLab.
+│           ├-- llm_provider.py Abstracción para conectar con distintos modelos de IA (Gemini, Ollama).
+│           ├-- estudio.py      Lógica de enseñanza: flashcards, autoevaluaciones y gamificación.
+│           ├-- okf_ingest.py   Orquestador para estructurar adjuntos (PDFs/Imágenes) en formato OKF.
+│           ├-- pdf_ingest.py   Módulo para procesar y extraer texto de documentos PDF.
+│           ├-- image_ocr.py    Módulo para procesar fotografías de esquemas apuntes con IA visual.
+│           ├-- db.py           Gestión de base de datos para guardar el progreso de los alumnos.
+│           ├-- latex_render.py Renderización de matemáticas complejas pasadas por el bot.
+│           └-- organizacion.py Funciones de estructuración y renombrado dentro del grafo de conocimiento.
+├-- synapse-data/               Almacenamiento persistente del servidor de mensajería (Synapse).
+├-- ollama-data/                Almacenamiento de los modelos locales de Inteligencia Artificial.
+├-- usuarios/                   Scripts automatizados para la gestión masiva de usuarios en Moodle.
+```
+
 ## Servicios
 
 | Servicio | URL local | Descripción |
@@ -22,7 +55,7 @@ Stack Docker Compose para desarrollo y pruebas local de la integración de Moodl
 Antes de levantar los servicios, crea el fichero de configuración de maubot:
 
 ```bash
-cp github-bot-plugin/maubot-data/config.yaml.example github-bot-plugin/maubot-data/config.yaml
+cp maubot/maubot-data/config.yaml.example github-bot-plugin/maubot-data/config.yaml
 ```
 
 Edita `config.yaml` para configurar tu usuario y contraseña (en la sección `admins`).
@@ -112,8 +145,6 @@ docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/cron.php
 
 ---
 
----
-
 <a id="git"></a>
 ## Configuración de Proveedores Git
 
@@ -121,7 +152,7 @@ docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/cron.php
 
 **Token necesario**: Personal Access Token con permiso `api` (o `read_api` + `write_repository`).
 
-Editar `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml`:
+Editar `moodle-matrix-dev/maubot/github-bot-plugin/base-config.yaml`:
 
 ```yaml
 provider: "gitlab"
@@ -172,8 +203,6 @@ Tras modificar `base-config.yaml` manualmente, reiniciar el bot:
 cd pluginMoodleMetricas/moodle-matrix-dev
 docker compose restart maubot
 ```
-
----
 
 ---
 

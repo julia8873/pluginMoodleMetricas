@@ -45,6 +45,10 @@ Entorno integral formado por el plugin de bloque Moodle **`block_gitmetrics`** y
 
 ## 1. Ejecutar la Documentación (MkDocs)
 
+Se levantará automáticamente usando `instalar.sh`.
+
+No obstante, también se puede levantar manualmente:
+
 Para ver la documentación técnica completa del proyecto sin necesidad de instalar dependencias locales, puedes levantar un servidor de MkDocs usando Docker:
 
 ```bash
@@ -53,7 +57,7 @@ docker run --rm -it -p 8000:8000 -v ${PWD}:/docs squidfunk/mkdocs-material
 
 *(Si usas la terminal de Windows en vez de WSL o Linux, usa `-v "%cd%":/docs` en su lugar).*
 
-La documentación estará disponible en: `http://127.0.0.1:8000/`
+La documentación estará disponible en: `http://127.0.0.1:8001/`
 
 ---
 
@@ -84,7 +88,7 @@ pluginMoodleMetricas/
 └── moodle-matrix-dev/       ← Stack Docker con servicios
     ├── docker-compose.yml   ← Define los contenedores
     ├── synapse-data/        ← Datos persistentes
-    ├── github-bot-plugin/   ← Bot de Matrix (Maubot)
+    ├── maubot/              ← Bot de Matrix (Maubot)
     └── usuarios/            ← Scripts CLI de gestión de 
                                  usuarios Moodle
 ```
@@ -108,7 +112,7 @@ pluginMoodleMetricas/
 - **`gitmetrics/`**: Es el código fuente del plugin de Moodle (`block_gitmetrics`). Aquí se aloja la lógica en PHP para extraer métricas de GitHub/GitLab, procesar los documentos Markdown bajo el estándar OKF y mostrar las estadísticas.
 - **`moodle-matrix-dev/`**: Contiene el fichero de Docker Compose que enlaza Moodle con el servidor de chat, además de los siguientes subdirectorios:
   - **`synapse-data/`**: Carpeta donde se guardan de forma permanente los datos, archivos y base de datos del servidor Matrix.
-  - **`github-bot-plugin/`**: Contiene el código y la configuración del bot Maubot.
+  - **`maubot/`**: Contiene el código y la configuración del bot Maubot.
   - **`usuarios/`**: Para gestionar usuarios de Moodle usando la línea de comandos.
 ---
 ## 5. Requisitos Previos
@@ -214,8 +218,8 @@ Cada fichero que contiene credenciales tiene una versión `.example` con valores
 |:---|:---|
 | `moodle-matrix-dev/.env` | `.env.example` |
 | `moodle-matrix-dev/synapse-data/homeserver.yaml` | `homeserver.yaml.example` |
-| `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml` | `base-config.yaml.example` |
-| `moodle-matrix-dev/github-bot-plugin/maubot-data/config.yaml` | `config.yaml.example` |
+| `moodle-matrix-dev/maubot/github-bot-plugin/base-config.yaml` | `base-config.yaml.example` |
+| `moodle-matrix-dev/maubot/maubot-data/config.yaml` | `config.yaml.example` |
 
 ### Primer uso (tras clonar el repositorio)
 
@@ -227,8 +231,8 @@ Si prefieres hacerlo manualmente antes de ejecutar `instalar.sh`:
 # Desde la raíz del proyecto
 cp moodle-matrix-dev/.env.example moodle-matrix-dev/.env
 cp moodle-matrix-dev/synapse-data/homeserver.yaml.example moodle-matrix-dev/synapse-data/homeserver.yaml
-cp moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml.example moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml
-cp moodle-matrix-dev/github-bot-plugin/maubot-data/config.yaml.example moodle-matrix-dev/github-bot-plugin/maubot-data/config.yaml
+cp moodle-matrix-dev/maubot/github-bot-plugin/base-config.yaml.example moodle-matrix-dev/maubot/github-bot-plugin/base-config.yaml
+cp moodle-matrix-dev/maubot/maubot-data/config.yaml.example moodle-matrix-dev/maubot/maubot-data/config.yaml
 ```
 
 Después, edita cada fichero y sustituye los valores de ejemplo (`TU_TOKEN_AQUI`, `GENERA_UN_SECRETO_ALEATORIO_AQUI`, etc.) por tus valores reales.

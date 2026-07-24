@@ -4,7 +4,22 @@ Crear archivo en: `docs/gitmetrics/classes/gitlab_client.md`
 
 Ubicación: `classes/gitlab_client.php`
 
---8<-- "gitmetrics/classes/gitlab_client.php:class_desc"
+```python
+Cliente HTTP para la API v4 de GitLab (auto-alojado u OSL).
+
+Compatible con cualquier instancia GitLab: la OSL de tu universidad,
+un servidor GitLab en red local o el propio gitlab.com.
+
+Endpoints utilizados:
+  - GET /api/v4/projects/{id_encoded}/repository/tree?recursive=true&ref={branch}
+    → arbol completo de ficheros y directorios.
+  - GET /api/v4/projects/{id_encoded}/repository/files/{path_encoded}/raw?ref={branch}
+    → contenido raw de cada fichero Markdown.
+
+Autenticacion:
+  - Token personal (PRIVATE-TOKEN) o token de acceso de proyecto.
+  - Sin token funciona para repositorios publicos.
+```
 
 ## Diagrama de Flujo Principal
 
@@ -34,12 +49,62 @@ graph TD
 Obtiene el árbol recursivo de ficheros de un repositorio. Gestiona internamente la paginación de la API de GitLab (que devuelve de 100 en 100).
 
 ```php
---8<-- "gitmetrics/classes/gitlab_client.php:get_tree"
+```python
+public function get_tree(string $owner, string $repo, string $branch): array {
+    $project_id = rawurlencode("{$owner}/{$repo}");
+    $nodes      = [];
+    $page       = 1;
+    $per_page   = 100;
+
+    do {
+        $url      = $this->base_url
+                  . "/api/v4/projects/{$project_id}/repository/tree"
+                  . "?recursive=true&ref=" . rawurlencode($branch)
+                  . "&per_page={$per_page}&page={$page}";
+        $response = $this->api_request($url);
+
+        if (!is_array($response)) {
+            throw new \Exception(get_string('error_branch', 'block_gitmetrics'));
+        }
+
+        foreach ($response as $item) {
+            // Normalizar al mismo esquema que usa github_client
+            $nodes[] = [
+                'path' => $item['path']    ?? '',
+                'type' => ($item['type'] === 'blob') ? 'blob' : 'tree',
+                'size' => $item['id'] ? 0 : 0, // size no viene en el arbol; se recupera en get_file_content
+                'sha'  => $item['id']      ?? '',
+                'mode' => $item['mode']    ?? '',
+            ];
+        }
+
+        $page++;
+    } while (count($response) === $per_page);
+
+    if (empty($nodes)) {
+        throw new \Exception(get_string('error_branch', 'block_gitmetrics'));
+    }
+
+    return $nodes;
+}
+// 
 ```
+
 
 ### `get_file_content`
 Descarga el contenido raw de un fichero Markdown específico utilizando la API de GitLab (`/files/path/raw`).
 
 ```php
---8<-- "gitmetrics/classes/gitlab_client.php:get_file_content"
+```python
+public function get_file_content(string $owner, string $repo, string $path, string $branch): string {
+    $project_id   = rawurlencode("{$owner}/{$repo}");
+    $encoded_path = rawurlencode($path);
+    $url = $this->base_url
+         . "/api/v4/projects/{$project_id}/repository/files/{$encoded_path}/raw"
+         . "?ref=" . rawurlencode($branch);
+
+    return $this->raw_request($url);
+}
+// 
 ```
+

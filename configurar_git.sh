@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# configurar_git.sh — Conexión unificada automática para Moodle, Maubot y Obsidian
+# configurar_git.sh - Conexión unificada automática para Moodle, Maubot y Obsidian
 # ==============================================================================
 
 set -e
@@ -73,7 +73,7 @@ echo " Proveedor: $PROVIDER | Repo: $OWNER/$REPO | Rama: $BRANCH"
 echo "======================================================================"
 
 # 1. Configurar Maubot (base-config.yaml)
-BOT_CONFIG_FILE="moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml"
+BOT_CONFIG_FILE="moodle-matrix-dev/maubot/github-bot-plugin/base-config.yaml"
 
 if [ -f "$BOT_CONFIG_FILE" ]; then
     python3 -c '

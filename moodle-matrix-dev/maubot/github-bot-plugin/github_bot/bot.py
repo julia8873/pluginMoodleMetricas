@@ -135,6 +135,7 @@ def _extraer_modificadores(texto: str) -> tuple:
 
 class Config(BaseProxyConfig):
     def do_update(self, helper: ConfigUpdateHelper) -> None:
+        """Actualiza la configuración interna del plugin."""
         helper.copy("provider")         # Proveedor Git principal ('gitlab' o 'github')
         helper.copy("repo_url")         # URL completa de tu repositorio Git
         helper.copy("gitlab_url")       # URL base del servidor GitLab
@@ -154,14 +155,17 @@ class Config(BaseProxyConfig):
         helper.copy("ingest_automatico")     # Si True, estructura automáticamente cada fuente subida en okf/
 
 
+# --8<-- [end:file_desc]
+
 # --------------------------------------------------------------------
 # Clase principal GithubBot
 # --------------------------------------------------------------------
 
 class GithubBot(Plugin):
-# --8<-- [end:file_desc]
 
+    # --8<-- [start:start]
     async def start(self) -> None:
+        """Punto de entrada de Maubot. Inicializa el bot y la conexión a la base de datos."""
         self.config.load_and_update()
         self.git = get_git_client(self.config)
         self.tracker = Tracker(self.database)
@@ -183,7 +187,9 @@ class GithubBot(Plugin):
         self._cache_carpetas = {}  # (owner, repo) -> (timestamp, lista_carpetas)
         self._cache_agents_md = {} # (owner, repo) -> (timestamp, contenido_agents_md)
         self._semaforo_github = asyncio.Semaphore(MAX_CONCURRENCIA_GITHUB)
+    # --8<-- [end:start]
 
+    # --8<-- [start:_obtener_git_token]
     def _obtener_git_token(self) -> str:
         """Obtiene el token adecuado según el proveedor (GitLab o GitHub)."""
         prov = str(self.config.get("provider", "")).strip().lower()
@@ -193,22 +199,32 @@ class GithubBot(Plugin):
         elif prov == "github" or "github.com" in url:
             return self.config.get("github_token", "") or self.config.get("gitlab_token", "") or ""
         return self.config.get("gitlab_token", "") or self.config.get("github_token", "") or ""
+    # --8<-- [end:_obtener_git_token]
 
+    # --8<-- [start:get_config_class]
     @classmethod
     def get_config_class(cls) -> Type[BaseProxyConfig]:
+        """Devuelve la clase de configuración asociada al plugin."""
         return Config
+    # --8<-- [end:get_config_class]
 
+    # --8<-- [start:get_db_upgrade_table]
     @classmethod
     def get_db_upgrade_table(cls) -> Optional[UpgradeTable]:
+        """Devuelve la tabla de migraciones de base de datos."""
         return upgrade_table
+    # --8<-- [end:get_db_upgrade_table]
 
+    # --8<-- [start:_get_user_lock]
     def _get_user_lock(self, room_id: str, sender: str) -> asyncio.Lock:
         """Obtiene o crea el cerrojo de concurrencia para el estudiante en la sala."""
         clave = (room_id, sender)
         if clave not in self._user_locks:
             self._user_locks[clave] = asyncio.Lock()
         return self._user_locks[clave]
+    # --8<-- [end:_get_user_lock]
 
+    # --8<-- [start:_invalidar_cache]
     def _invalidar_cache(self) -> None:
         """Invalida toda la caché en memoria tras operaciones de escritura en GitHub."""
         self._cache_docs.clear()
@@ -216,20 +232,28 @@ class GithubBot(Plugin):
         self._cache_carpetas.clear()
         self._cache_agents_md.clear()
         self.log.info("[github_bot] Caché en memoria de la BdC invalidada.")
+    # --8<-- [end:_invalidar_cache]
 
+    # --8<-- [start:_crear_llm]
     def _crear_llm(self) -> LLMProvider:
+        """Crea e inicializa la instancia del modelo de lenguaje."""
         return LLMProvider(self.config["llm_base_url"], self.config["llm_api_key"], self.config["llm_model"])
+    # --8<-- [end:_crear_llm]
 
+    # --8<-- [start:_crear_llm_vision]
     def _crear_llm_vision(self) -> LLMProvider:
+        """Crea e inicializa la instancia del modelo de lenguaje con capacidades de visión."""
         base_url = self.config["llm_vision_base_url"] or self.config["llm_base_url"]
         api_key = self.config["llm_vision_api_key"] or self.config["llm_api_key"]
         modelo_vision = self.config["llm_vision_model"] or self.config["llm_model"]
         return LLMProvider(base_url, api_key, modelo_vision)
+    # --8<-- [end:_crear_llm_vision]
 
     # --------------------------------------------------------------------
     # T6: Renderizado y envío con LaTeX a imágenes PNG
     # --------------------------------------------------------------------
 
+    # --8<-- [start:_responder_con_latex]
     async def _responder_con_latex(self, evt: MessageEvent, texto_md: str) -> None:
         """
         Envia una respuesta por Matrix procesando previamente cualquier fórmula LaTeX
@@ -256,50 +280,74 @@ class GithubBot(Plugin):
                 "formatted_body": html_formatted,
             }
             await evt.respond(content)
+    # --8<-- [end:_responder_con_latex]
 
     # --------------------------------------------------------------------
     # T4: Descarga y caché del árbol y contenido de GitHub
     # --------------------------------------------------------------------
 
+    # --8<-- [start:_obtener_documentacion]
     async def _obtener_documentacion(self, owner: str, repo: str, token: str, filtro: str = "") -> str:
+        """Obtiene la documentación o apuntes del repositorio Git."""
         ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
         async with aiohttp.ClientSession() as session:
             return await self.git.obtener_documentacion(
                 session, owner, repo, token, filtro, self._cache_docs, ttl_segundos, self._semaforo_github, self.log
             )
+    # --8<-- [end:_obtener_documentacion]
 
+    # --8<-- [start:_recorrer_carpeta]
     async def _recorrer_carpeta(self, session, owner: str, repo: str, headers: dict, path: str, filtro: str = "") -> list:
+        """Recorre una carpeta del repositorio y lista sus archivos."""
         # Mantener compatibilidad interna si se invoca directo
         token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
         res = await self.git.obtener_documentacion(session, owner, repo, token, filtro, self._cache_docs, 0, self._semaforo_github, self.log)
         return [res] if res else []
+    # --8<-- [end:_recorrer_carpeta]
 
+    # --8<-- [start:_descargar_contenido_fichero]
     async def _descargar_contenido_fichero(self, session, path: str, download_url: str, headers: dict) -> str:
+        """Descarga el contenido de un fichero específico del repositorio."""
         # Compatibilidad heredada
         return ""
+    # --8<-- [end:_descargar_contenido_fichero]
 
+    # --8<-- [start:_listar_rutas]
     async def _listar_rutas(self, session, owner: str, repo: str, headers: dict, path: str) -> list:
+        """Lista las rutas disponibles en el repositorio."""
         ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
         token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
         return await self.git.listar_rutas(session, owner, repo, token, path, self._cache_rutas, ttl_segundos, self._semaforo_github)
+    # --8<-- [end:_listar_rutas]
 
+    # --8<-- [start:_listar_carpetas]
     async def _listar_carpetas(self, owner: str, repo: str, token: str) -> list:
+        """Lista las carpetas disponibles en una ruta específica."""
         ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
         return await self.git.listar_carpetas(owner, repo, token, self._cache_carpetas, ttl_segundos, self._semaforo_github)
+    # --8<-- [end:_listar_carpetas]
 
+    # --8<-- [start:_recorrer_carpetas_dirs]
     async def _recorrer_carpetas_dirs(self, session, owner: str, repo: str, headers: dict, path: str, acumulador: list) -> None:
+        """Recorre las carpetas para listar subdirectorios."""
         pass
+    # --8<-- [end:_recorrer_carpetas_dirs]
 
+    # --8<-- [start:_recorrer_carpeta_con_sha]
     async def _recorrer_carpeta_con_sha(self, session, owner: str, repo: str, headers: dict, path: str) -> list:
+        """Recorre una carpeta del repositorio incluyendo el hash SHA de los archivos."""
         token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
         return await self.git.recorrer_carpeta_con_sha(session, owner, repo, token, path, self._semaforo_github)
+    # --8<-- [end:_recorrer_carpeta_con_sha]
 
     # --------------------------------------------------------------------
     # Ingesta de fuentes (PDFs, imágenes y apuntes manuscritos)
     # --------------------------------------------------------------------
 
+    # --8<-- [start:on_message]
     @event.on(EventType.ROOM_MESSAGE)
     async def on_message(self, evt: MessageEvent) -> None:
+        """Manejador principal de eventos de mensaje. Procesa todos los mensajes entrantes de la sala."""
         if evt.sender == self.client.mxid:
             return
 
@@ -417,7 +465,9 @@ class GithubBot(Plugin):
             # Solo llega aqui el camino de imagenes (es_foto_apuntes=True),
             # ya que el camino PDF hace return despues de guardar pendientes_ocr.
             await self._encolar_para_lote(evt, nombre_archivo, texto_extraido, tipo_interaccion)
+    # --8<-- [end:on_message]
 
+    # --8<-- [start:_procesar_confirmacion_ocr]
     async def _procesar_confirmacion_ocr(self, evt: MessageEvent, estado: dict) -> None:
         """
         Procesa la respuesta del usuario a la pregunta de si quiere OCR visual.
@@ -458,11 +508,14 @@ class GithubBot(Plugin):
             tipo_interaccion = "pdf_subido"
 
         await self._encolar_para_lote(evt, nombre_archivo, texto_extraido, tipo_interaccion)
+    # --8<-- [end:_procesar_confirmacion_ocr]
 
 
+    # --8<-- [start:_encolar_para_lote]
     async def _encolar_para_lote(
         self, evt: MessageEvent, nombre_archivo: str, texto_extraido: str, tipo_interaccion: str
     ) -> None:
+        """Encola un archivo para ser procesado posteriormente en lote."""
         clave = (evt.room_id, evt.sender)
         self.lotes_subida.setdefault(clave, []).append({
             "nombre_archivo": nombre_archivo,
@@ -475,15 +528,21 @@ class GithubBot(Plugin):
             tarea_anterior.cancel()
 
         self.tareas_lote[clave] = asyncio.create_task(self._debounce_lote(evt.room_id, evt.sender))
+    # --8<-- [end:_encolar_para_lote]
 
+    # --8<-- [start:_vista_previa_transcripcion]
     @staticmethod
     def _vista_previa_transcripcion(texto: str, longitud: int = 350) -> str:
+        """Genera una vista previa de la transcripción de un documento."""
         vista = (texto or "").strip()
         if len(vista) > longitud:
             vista = vista[:longitud] + "..."
         return vista
+    # --8<-- [end:_vista_previa_transcripcion]
 
+    # --8<-- [start:_debounce_lote]
     async def _debounce_lote(self, room_id, sender) -> None:
+        """Implementa un mecanismo de debounce para el procesamiento por lotes."""
         try:
             await asyncio.sleep(VENTANA_LOTE_SEGUNDOS)
         except asyncio.CancelledError:
@@ -543,8 +602,11 @@ class GithubBot(Plugin):
                 )
             except Exception:
                 pass
+    # --8<-- [end:_debounce_lote]
 
+    # --8<-- [start:_procesar_respuesta_destino]
     async def _procesar_respuesta_destino(self, evt: MessageEvent, estado: dict) -> None:
+        """Procesa la respuesta del usuario sobre la carpeta de destino de un archivo."""
         clave = (evt.room_id, evt.sender)
         respuesta = (evt.content.body or "").strip()
 
@@ -621,8 +683,11 @@ class GithubBot(Plugin):
                 "Responde con el número, escribe una carpeta nueva, o '0' para la raíz."
             )
             return
+    # --8<-- [end:_procesar_respuesta_destino]
 
+    # --8<-- [start:_procesar_renombrado]
     async def _procesar_renombrado(self, evt: MessageEvent, estado: dict, nuevo_nombre: str) -> None:
+        """Procesa la respuesta del usuario para renombrar un archivo."""
         clave = (evt.room_id, evt.sender)
 
         if not nuevo_nombre:
@@ -651,8 +716,11 @@ class GithubBot(Plugin):
             f"Hecho, lo guardaré como «{fichero['nombre_archivo']}» (antes «{nombre_anterior}»). "
             "Dime ahora dónde lo guardo."
         )
+    # --8<-- [end:_procesar_renombrado]
 
+    # --8<-- [start:_guardar_ficheros_en_carpeta]
     async def _guardar_ficheros_en_carpeta(self, evt: MessageEvent, ficheros: list, carpeta: Optional[str]) -> None:
+        """Guarda múltiples archivos en una carpeta de destino."""
         token = self._obtener_git_token()
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
@@ -691,8 +759,11 @@ class GithubBot(Plugin):
                 await self._ejecutar_ingest_automatico(
                     evt, owner, repo, token, branch, ruta_repo, fichero["nombre_archivo"],
                 )
+    # --8<-- [end:_guardar_ficheros_en_carpeta]
 
+    # --8<-- [start:_descargar_adjunto]
     async def _descargar_adjunto(self, evt: MessageEvent) -> bytes:
+        """Descarga un archivo adjunto enviado a la sala de Matrix."""
         if evt.content.file is not None:
             contenido_cifrado = await self.client.download_media(evt.content.file.url)
             return decrypt_attachment(
@@ -702,10 +773,13 @@ class GithubBot(Plugin):
                 evt.content.file.iv,
             )
         return await self.client.download_media(evt.content.url)
+    # --8<-- [end:_descargar_adjunto]
 
+    # --8<-- [start:_resolver_ruta_unica]
     async def _resolver_ruta_unica(
         self, evt: MessageEvent, nombre: str, owner: str, repo: str, headers: dict
     ) -> Optional[str]:
+        """Resuelve la ruta única para guardar un archivo en el repositorio."""
         async with aiohttp.ClientSession() as session:
             rutas = await self._listar_rutas(session, owner, repo, headers, "")
 
@@ -721,29 +795,41 @@ class GithubBot(Plugin):
             return None
 
         return coincidencias[0]
+    # --8<-- [end:_resolver_ruta_unica]
 
     # --------------------------------------------------------------------
     # API de Git (escritura) delegada en self.git
     # --------------------------------------------------------------------
 
+    # --8<-- [start:_obtener_sha_y_contenido_github]
     async def _obtener_sha_y_contenido_github(
         self, session, owner: str, repo: str, headers: dict, path: str
     ) -> Optional[dict]:
+        """Obtiene el SHA y el contenido de un archivo en GitHub."""
         token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
         return await self.git.obtener_info_y_contenido(session, owner, repo, token, path, self._semaforo_github)
+    # --8<-- [end:_obtener_sha_y_contenido_github]
 
+    # --8<-- [start:_subir_o_actualizar_archivo_github]
     async def _subir_o_actualizar_archivo_github(
         self, owner: str, repo: str, token: str, path: str, contenido: str, branch: str, mensaje_commit: str
     ) -> bool:
+        """Sube un archivo nuevo o actualiza uno existente en GitHub."""
         return await self.git.subir_o_actualizar_archivo(owner, repo, token, path, contenido, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
+    # --8<-- [end:_subir_o_actualizar_archivo_github]
 
+    # --8<-- [start:_append_log_okf]
     async def _append_log_okf(
         self, owner: str, repo: str, token: str, branch: str, entrada: str, mensaje_commit: str
     ) -> None:
+        """Añade un registro al log de operaciones del formato OKF."""
         await self.git.append_log_okf(owner, repo, token, branch, entrada, mensaje_commit, self._semaforo_github)
         self._invalidar_cache()
+    # --8<-- [end:_append_log_okf]
 
+    # --8<-- [start:_obtener_agents_md]
     async def _obtener_agents_md(self, owner: str, repo: str, token: str) -> Optional[str]:
+        """Obtiene el contenido del archivo de reglas AGENTS.md."""
         ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
         ahora = time.time()
         clave_cache = (owner, repo)
@@ -761,11 +847,13 @@ class GithubBot(Plugin):
         contenido = base64.b64decode(info["content"]).decode("utf-8") if info.get("content") else ""
         self._cache_agents_md[clave_cache] = (ahora, contenido)
         return contenido
+    # --8<-- [end:_obtener_agents_md]
 
     # --------------------------------------------------------------------
     # Ingesta automática OKF (raw/ -> okf/concepts, okf/entities, okf/sources)
     # --------------------------------------------------------------------
 
+    # --8<-- [start:_ejecutar_ingest_automatico]
     async def _ejecutar_ingest_automatico(
         self, evt: MessageEvent, owner: str, repo: str, token: str, branch: str,
         ruta_fuente_repo: str, nombre_archivo: str,
@@ -856,11 +944,14 @@ class GithubBot(Plugin):
             partes.append("**Preguntas de seguimiento:**\n" + "\n".join(f"- {p}" for p in resultado["preguntas_seguimiento"]))
 
         await evt.reply("\n\n".join(partes))
+    # --8<-- [end:_ejecutar_ingest_automatico]
 
+    # --8<-- [start:_ejecutar_ingest_por_lotes]
     async def _ejecutar_ingest_por_lotes(
         self, evt: MessageEvent, owner: str, repo: str, token: str, branch: str,
         ruta_fuente_repo: str, nombre_archivo: str, contenido_fuente: str, agents_md: str
     ) -> None:
+        """Ejecuta el proceso de ingesta de archivos en lotes."""
         lotes = dividir_en_lotes(contenido_fuente, max_lineas=250, solapamiento=30)
         total_lotes = len(lotes)
         await evt.reply(f"El documento «{nombre_archivo}» es extenso ({len(contenido_fuente.splitlines())} líneas). Iniciando extracción exhaustiva por {total_lotes} lotes en okf/...")
@@ -908,13 +999,16 @@ class GithubBot(Plugin):
         if actualizados_totales:
             resumen_partes.append(f"**Ficheros actualizados ({len(actualizados_totales)}):**\n" + "\n".join(f"- `{p}`" for p in sorted(set(actualizados_totales))[:20]))
         await evt.reply("\n\n".join(resumen_partes))
+    # --8<-- [end:_ejecutar_ingest_por_lotes]
 
+    # --8<-- [start:ingest_lotes_handler]
     @command.new(
         name="ingest_lotes",
         help="Extrae el 100% de conceptos por lotes de un fichero largo de raw/: !ingest_lotes [tema:<...>]",
     )
     @command.argument("texto", pass_raw=True, required=False)
     async def ingest_lotes_handler(self, evt: MessageEvent, texto: str = "") -> None:
+        """Comando para iniciar manualmente la ingesta por lotes."""
         token = self._obtener_git_token()
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
@@ -944,32 +1038,44 @@ class GithubBot(Plugin):
 
         nombre_archivo = tema.split("/")[-1]
         await self._ejecutar_ingest_por_lotes(evt, owner, repo, token, branch, tema, nombre_archivo, contenido_fuente, agents_md)
+    # --8<-- [end:ingest_lotes_handler]
 
+    # --8<-- [start:_borrar_archivo_github]
     async def _borrar_archivo_github(
         self, owner: str, repo: str, token: str, path: str, branch: str, sha: str = "", mensaje_commit: str = ""
     ) -> None:
+        """Elimina un archivo del repositorio de GitHub."""
         await self.git.borrar_archivo(owner, repo, token, path, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
+    # --8<-- [end:_borrar_archivo_github]
 
+    # --8<-- [start:_mover_archivo_github]
     async def _mover_archivo_github(
         self, owner: str, repo: str, token: str, ruta_antigua: str, ruta_nueva: str, branch: str, sender: str
     ) -> None:
+        """Mueve un archivo a una nueva ruta dentro del repositorio de GitHub."""
         await self.git.mover_archivo(owner, repo, token, ruta_antigua, ruta_nueva, branch, sender, self._semaforo_github, self._invalidar_cache)
+    # --8<-- [end:_mover_archivo_github]
 
+    # --8<-- [start:_subir_archivo_github]
     async def _subir_archivo_github(
         self, owner: str, repo: str, token: str, path: str, contenido: str, branch: str, mensaje_commit: str
     ) -> None:
+        """Sube un archivo al repositorio de GitHub."""
         await self.git.subir_archivo(owner, repo, token, path, contenido, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
+    # --8<-- [end:_subir_archivo_github]
 
     # --------------------------------------------------------------------
     # Comandos de información y estadísticas
     # --------------------------------------------------------------------
 
+    # --8<-- [start:pregunta_handler]
     @command.new(
         name="pregunta",
         help="Pregunta sobre la documentación del repo: !pregunta [tema:<carpeta/fichero>] <texto>",
     )
     @command.argument("texto", pass_raw=True, required=True)
     async def pregunta_handler(self, evt: MessageEvent, texto: str) -> None:
+        """Manejador del comando !pregunta para resolver dudas sobre los apuntes."""
         token = self._obtener_git_token()
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
@@ -1000,9 +1106,12 @@ class GithubBot(Plugin):
         await self._responder_con_latex(evt, respuesta)
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "pregunta", texto)
         await self.tracker.log_qa(evt.sender, evt.room_id, "pregunta", texto, respuesta, "informativo")
+    # --8<-- [end:pregunta_handler]
 
+    # --8<-- [start:ficheros_handler]
     @command.new(name="ficheros", help="Lista los archivos .md/.txt encontrados en el repo de la BdC")
     async def ficheros_handler(self, evt: MessageEvent) -> None:
+        """Manejador del comando !ficheros para listar los archivos del repositorio."""
         token = self._obtener_git_token()
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
@@ -1023,9 +1132,12 @@ class GithubBot(Plugin):
 
         lista = "\n".join(f"- {r}" for r in sorted(rutas))
         await evt.reply(f"Archivos encontrados en {owner}/{repo}:\n{lista}")
+    # --8<-- [end:ficheros_handler]
 
+    # --8<-- [start:estadisticas_handler]
     @command.new(name="misestadisticas", help="Muestra tus métricas de trazabilidad en la BdC")
     async def estadisticas_handler(self, evt: MessageEvent) -> None:
+        """Manejador del comando !estadisticas para mostrar estadísticas de estudio."""
         try:
             stats = await self.tracker.obtener_estadisticas(evt.sender)
         except Exception as exc:
@@ -1052,9 +1164,12 @@ class GithubBot(Plugin):
             f"{linea_ejercicios}"
         )
         await evt.reply(mensaje)
+    # --8<-- [end:estadisticas_handler]
 
+    # --8<-- [start:trazabilidad_handler]
     @command.new(name="trazabilidad", help="Consulta tu historial de aprendizaje y curación", require_subcommand=False)
     async def trazabilidad_handler(self, evt: MessageEvent) -> None:
+        """Manejador del comando de trazabilidad general."""
         stats = await self.tracker.obtener_estadisticas(evt.sender)
         qa_list = await self.tracker.obtener_todas_qa(evt.sender, limite=1000)
         texto = (
@@ -1069,10 +1184,13 @@ class GithubBot(Plugin):
             "- `!trazabilidad exportar` — Genera y descarga un informe completo en Markdown con todo tu historial."
         )
         await evt.reply(texto)
+    # --8<-- [end:trazabilidad_handler]
 
+    # --8<-- [start:trazabilidad_qa_handler]
     @trazabilidad_handler.subcommand("qa", help="Muestra el historial completo de preguntas, respuestas y evaluations")
     @command.argument("limite", pass_raw=True, required=False)
     async def trazabilidad_qa_handler(self, evt: MessageEvent, limite: str = "15") -> None:
+        """Manejador del comando de trazabilidad de QA."""
         try:
             lim_int = min(int((limite or "15").strip()), 50)
         except ValueError:
@@ -1093,10 +1211,13 @@ class GithubBot(Plugin):
                 f"{eval_txt}"
             )
         await self._responder_con_latex(evt, "\n".join(partes))
+    # --8<-- [end:trazabilidad_qa_handler]
 
+    # --8<-- [start:trazabilidad_interacciones_handler]
     @trazabilidad_handler.subcommand("interacciones", help="Muestra el listado cronológico de interacciones con el bot")
     @command.argument("limite", pass_raw=True, required=False)
     async def trazabilidad_interacciones_handler(self, evt: MessageEvent, limite: str = "20") -> None:
+        """Manejador del comando de trazabilidad de interacciones."""
         try:
             lim_int = min(int((limite or "20").strip()), 50)
         except ValueError:
@@ -1112,10 +1233,13 @@ class GithubBot(Plugin):
             cont = f" — `{item['contenido']}`" if item["contenido"] else ""
             partes.append(f"{idx}. `[{fecha}]` **{item['tipo']}**{cont}")
         await evt.reply("\n".join(partes))
+    # --8<-- [end:trazabilidad_interacciones_handler]
 
+    # --8<-- [start:trazabilidad_curacion_handler]
     @trazabilidad_handler.subcommand("curacion", help="Muestra el historial de subidas, movidos y borrados de la BdC")
     @command.argument("limite", pass_raw=True, required=False)
     async def trazabilidad_curacion_handler(self, evt: MessageEvent, limite: str = "20") -> None:
+        """Manejador del comando de trazabilidad de curación."""
         try:
             lim_int = min(int((limite or "20").strip()), 50)
         except ValueError:
@@ -1130,9 +1254,12 @@ class GithubBot(Plugin):
             fecha = time.strftime("%Y-%m-%d %H:%M", time.localtime(item["timestamp"]))
             partes.append(f"{idx}. `[{fecha}]` **{item['tipo'].upper()}**: `{item['ruta']}`")
         await evt.reply("\n".join(partes))
+    # --8<-- [end:trazabilidad_curacion_handler]
 
+    # --8<-- [start:trazabilidad_exportar_handler]
     @trazabilidad_handler.subcommand("exportar", help="Genera y envía un informe completo en Markdown de tu trazabilidad")
     async def trazabilidad_exportar_handler(self, evt: MessageEvent) -> None:
+        """Manejador del comando para exportar datos de trazabilidad."""
         await evt.reply("Generando tu informe de trazabilidad en Markdown...")
         stats = await self.tracker.obtener_estadisticas(evt.sender)
         qa_list = await self.tracker.obtener_todas_qa(evt.sender, limite=1000)
@@ -1189,14 +1316,17 @@ class GithubBot(Plugin):
         except Exception as exc:
             self.log.warning(f"[github_bot] Error subiendo informe de trazabilidad: {exc}")
             await evt.reply("No pude adjuntar el archivo, envío el resumen aquí:\n\n" + "\n".join(lineas[:40]))
+    # --8<-- [end:trazabilidad_exportar_handler]
 
     # --------------------------------------------------------------------
     # Comandos de curación explícita (!documento, !borrar, !mover, !carpeta)
     # --------------------------------------------------------------------
 
+    # --8<-- [start:documento_handler]
     @command.new(name="documento", help="Información de un documento concreto: !documento <nombre>")
     @command.argument("nombre", pass_raw=True, required=True)
     async def documento_handler(self, evt: MessageEvent, nombre: str) -> None:
+        """Manejador del comando !documento para obtener información de un archivo."""
         nombre = nombre.strip()
         if not nombre:
             await evt.reply("Indica el nombre del documento: `!documento <nombre>`.")
@@ -1270,10 +1400,13 @@ class GithubBot(Plugin):
 
         await evt.reply("\n".join(partes))
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "documento", ruta)
+    # --8<-- [end:documento_handler]
 
+    # --8<-- [start:borrar_handler]
     @command.new(name="borrar", help="Borra un documento de la BdC (pide confirmación): !borrar <nombre>")
     @command.argument("nombre", pass_raw=True, required=True)
     async def borrar_handler(self, evt: MessageEvent, nombre: str) -> None:
+        """Manejador del comando !borrar para eliminar un archivo."""
         nombre = nombre.strip()
         if not nombre:
             await evt.reply("Indica el nombre del documento a borrar: `!borrar <nombre>`.")
@@ -1305,8 +1438,11 @@ class GithubBot(Plugin):
             f"Vas a borrar «{ruta}» de la BdC permanentemente. "
             f"Escribe `confirmar` en los próximos {CONFIRMACION_BORRADO_TTL_SEGUNDOS // 60} minutos para continuar."
         )
+    # --8<-- [end:borrar_handler]
 
+    # --8<-- [start:_procesar_confirmacion_borrado]
     async def _procesar_confirmacion_borrado(self, evt: MessageEvent, estado: dict) -> None:
+        """Procesa la confirmación del usuario para borrar un archivo."""
         clave = (evt.room_id, evt.sender)
         self.pendientes_borrado.pop(clave, None)
 
@@ -1339,8 +1475,11 @@ class GithubBot(Plugin):
         # T3: Registro en curaciones
         await self.tracker.log_curacion(evt.sender, evt.room_id, "borrado", ruta)
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "documento_borrado", ruta)
+    # --8<-- [end:_procesar_confirmacion_borrado]
 
+    # --8<-- [start:_procesar_confirmacion_borrado_carpeta]
     async def _procesar_confirmacion_borrado_carpeta(self, evt: MessageEvent, estado: dict) -> None:
+        """Procesa la confirmación del usuario para borrar una carpeta completa."""
         clave = (evt.room_id, evt.sender)
         self.pendientes_borrado_carpeta.pop(clave, None)
 
@@ -1380,10 +1519,13 @@ class GithubBot(Plugin):
         else:
             await evt.reply(f"✅ Carpeta «{carpeta}» y todos sus contenidos ({len(ficheros)} archivo(s)) borrados de la BdC.")
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "carpeta_borrada", carpeta)
+    # --8<-- [end:_procesar_confirmacion_borrado_carpeta]
 
+    # --8<-- [start:mover_handler]
     @command.new(name="mover", help="Mueve un documento de carpeta: !mover <nombre> -> <carpeta_destino|raiz>")
     @command.argument("texto", pass_raw=True, required=True)
     async def mover_handler(self, evt: MessageEvent, texto: str) -> None:
+        """Manejador del comando !mover para cambiar la ubicación de un archivo."""
         if "->" not in texto:
             await evt.reply("Formato: `!mover <nombre_documento> -> <carpeta_destino|raiz>`")
             return
@@ -1432,14 +1574,20 @@ class GithubBot(Plugin):
         # T3: Registro en curaciones
         await self.tracker.log_curacion(evt.sender, evt.room_id, "movido", f"{ruta_antigua} -> {ruta_nueva}")
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "documento_movido", f"{ruta_antigua} -> {ruta_nueva}")
+    # --8<-- [end:mover_handler]
 
+    # --8<-- [start:carpeta_handler]
     @command.new(name="carpeta", help="Gestiona las carpetas/asignaturas de la BdC", require_subcommand=False)
     async def carpeta_handler(self, evt: MessageEvent) -> None:
+        """Manejador del comando !carpeta para gestionar carpetas."""
         await evt.reply("Usa `!carpeta crear <ruta>`, `!carpeta borrar <ruta>` o `!carpeta listar`.")
+    # --8<-- [end:carpeta_handler]
 
+    # --8<-- [start:carpeta_crear_handler]
     @carpeta_handler.subcommand("crear", help="Crea una carpeta nueva: !carpeta crear <ruta>")
     @command.argument("ruta", pass_raw=True, required=True)
     async def carpeta_crear_handler(self, evt: MessageEvent, ruta: str) -> None:
+        """Manejador del comando para crear una nueva carpeta."""
         carpeta = sanitizar_carpeta(ruta)
         if not carpeta:
             await evt.reply("Nombre de carpeta inválido. Prueba p.ej. `Calculo/Tema3`.")
@@ -1466,9 +1614,12 @@ class GithubBot(Plugin):
 
         await evt.reply(f"Carpeta «{carpeta}» creada.")
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "carpeta_creada", carpeta)
+    # --8<-- [end:carpeta_crear_handler]
 
+    # --8<-- [start:carpeta_listar_handler]
     @carpeta_handler.subcommand("listar", help="Lista las carpetas existentes en la BdC")
     async def carpeta_listar_handler(self, evt: MessageEvent) -> None:
+        """Manejador del comando para listar carpetas."""
         owner = self.config["default_owner"]
         repo = self.config["default_repo"]
         token = self._obtener_git_token()
@@ -1479,10 +1630,13 @@ class GithubBot(Plugin):
             return
 
         await evt.reply("Carpetas en la BdC:\n" + "\n".join(f"- {c}" for c in carpetas))
+    # --8<-- [end:carpeta_listar_handler]
 
+    # --8<-- [start:carpeta_borrar_handler]
     @carpeta_handler.subcommand("borrar", help="Borra una carpeta de la BdC: !carpeta borrar <ruta>")
     @command.argument("ruta", pass_raw=True, required=True)
     async def carpeta_borrar_handler(self, evt: MessageEvent, ruta: str) -> None:
+        """Manejador del comando para borrar una carpeta."""
         carpeta = sanitizar_carpeta(ruta)
         if not carpeta:
             await evt.reply("Nombre de carpeta inválido. Prueba p.ej. `Calculo/Tema3`.")
@@ -1535,14 +1689,17 @@ class GithubBot(Plugin):
             f"Vas a borrar la carpeta y **todo su contenido** de forma permanente. "
             f"Escribe `confirmar` en los próximos {CONFIRMACION_BORRADO_TTL_SEGUNDOS // 60} minutos para continuar, o ignora este mensaje para cancelar."
         )
+    # --8<-- [end:carpeta_borrar_handler]
 
     # --------------------------------------------------------------------
     # Herramientas de estudio interactivas
     # --------------------------------------------------------------------
 
+    # --8<-- [start:_plantear_pregunta]
     async def _plantear_pregunta(
         self, evt: MessageEvent, tipo: str, generador, tema: str = "", tipo_contenido: str = ""
     ) -> None:
+        """Plantea una pregunta de estudio al usuario."""
         owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
         contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
         if not contenido_docs and tema:
@@ -1569,8 +1726,11 @@ class GithubBot(Plugin):
         # T6: Renderizar fórmulas LaTeX en la pregunta
         texto_md = f"**{generada['concepto']}**\n\n{generada['pregunta']}"
         await self._responder_con_latex(evt, texto_md)
+    # --8<-- [end:_plantear_pregunta]
 
+    # --8<-- [start:_evaluar_pendiente]
     async def _evaluar_pendiente(self, evt: MessageEvent, pendiente: dict) -> None:
+        """Evalúa una respuesta pendiente de una pregunta anterior."""
         clave = (evt.room_id, evt.sender)
         contenido_docs = pendiente.get("contenido_docs")
         if contenido_docs is None:
@@ -1611,8 +1771,11 @@ class GithubBot(Plugin):
 
         if pendiente["tipo"] == "repaso_tema":
             await self._avanzar_repaso_tema(evt, pendiente, resultado["correcto"])
+    # --8<-- [end:_evaluar_pendiente]
 
+    # --8<-- [start:_avanzar_repaso_tema]
     async def _avanzar_repaso_tema(self, evt: MessageEvent, pendiente: dict, acierto: bool) -> None:
+        """Avanza a la siguiente pregunta en el repaso de un tema."""
         clave = (evt.room_id, evt.sender)
         total = pendiente["total"]
         correctos = pendiente["correctos"] + (1 if acierto else 0)
@@ -1641,24 +1804,30 @@ class GithubBot(Plugin):
         }
         texto_md = f"**({avanzado}/{total}) {siguiente['concepto']}**\n\n{siguiente['pregunta']}"
         await self._responder_con_latex(evt, texto_md)
+    # --8<-- [end:_avanzar_repaso_tema]
 
+    # --8<-- [start:flashcard_handler]
     @command.new(
         name="flashcard",
         help="Pregunta de repaso sobre un concepto: !flashcard [tema:<...>] [tipo:<...>]",
     )
     @command.argument("texto", pass_raw=True, required=False)
     async def flashcard_handler(self, evt: MessageEvent, texto: str = "") -> None:
+        """Manejador del comando !flashcard para practicar conceptos."""
         _, tema, tipo_contenido = _extraer_modificadores(texto)
         await self._plantear_pregunta(
             evt, tipo="flashcard", generador=generar_flashcard, tema=tema, tipo_contenido=tipo_contenido
         )
+    # --8<-- [end:flashcard_handler]
 
+    # --8<-- [start:ejercicio_handler]
     @command.new(
         name="ejercicio",
         help="Repaso con ejercicios: !ejercicio [tema:<...>] [tipo:<...>] o !ejercicio <tu ejercicio/solución>",
     )
     @command.argument("texto", pass_raw=True, required=False)
     async def ejercicio_handler(self, evt: MessageEvent, texto: str = "") -> None:
+        """Manejador del comando !ejercicio para generar ejercicios prácticos."""
         resto, tema, tipo_contenido = _extraer_modificadores(texto)
         if not resto:
             await self._plantear_pregunta(
@@ -1691,32 +1860,41 @@ class GithubBot(Plugin):
         resultado_txt = "correcto" if resultado["correcto"] else "incorrecto"
         await self.tracker.log_ejercicio(evt.sender, evt.room_id, resultado_txt, tipo="ejercicio")
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "ejercicio", resto)
+    # --8<-- [end:ejercicio_handler]
 
+    # --8<-- [start:concepto_handler]
     @command.new(
         name="concepto",
         help="Pregunta la definición de un concepto: !concepto [nombre] [tema:<...>] [tipo:<...>]",
     )
     @command.argument("nombre", pass_raw=True, required=False)
     async def concepto_handler(self, evt: MessageEvent, nombre: str = "") -> None:
+        """Manejador del comando !concepto para explicar un concepto específico."""
         await self._plantear_pregunta_concepto(
             evt, tipo="concepto", nombre=nombre,
             plantilla_pregunta="¿Cuál es la definición de «{concepto}»?",
         )
+    # --8<-- [end:concepto_handler]
 
+    # --8<-- [start:feynman_handler]
     @command.new(
         name="feynman",
         help="Técnica Feynman (explícamelo con tus palabras): !feynman [concepto] [tema:<...>] [tipo:<...>]",
     )
     @command.argument("nombre", pass_raw=True, required=False)
     async def feynman_handler(self, evt: MessageEvent, nombre: str = "") -> None:
+        """Manejador del comando !feynman para practicar la Técnica de Feynman."""
         await self._plantear_pregunta_concepto(
             evt, tipo="feynman", nombre=nombre,
             plantilla_pregunta="Explícame con tus propias palabras qué es «{concepto}» (sin copiarlo de los apuntes).",
         )
+    # --8<-- [end:feynman_handler]
 
+    # --8<-- [start:_plantear_pregunta_concepto]
     async def _plantear_pregunta_concepto(
         self, evt: MessageEvent, tipo: str, nombre: str, plantilla_pregunta: str
     ) -> None:
+        """Plantea una pregunta específica sobre un concepto."""
         concepto, tema, tipo_contenido = _extraer_modificadores(nombre)
 
         owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
@@ -1742,13 +1920,16 @@ class GithubBot(Plugin):
             "tema": tema,
         }
         await self._responder_con_latex(evt, pregunta)
+    # --8<-- [end:_plantear_pregunta_concepto]
 
+    # --8<-- [start:repasartema_handler]
     @command.new(
         name="repasartema",
         help="Repasa TODOS los conceptos de un tema, uno a uno: !repasartema [tema:<...>] [tipo:<...>]",
     )
     @command.argument("texto", pass_raw=True, required=False)
     async def repasartema_handler(self, evt: MessageEvent, texto: str = "") -> None:
+        """Manejador del comando !repasartema para estudiar un tema completo."""
         _, tema, tipo_contenido = _extraer_modificadores(texto)
 
         owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
@@ -1804,17 +1985,20 @@ class GithubBot(Plugin):
         )
         await self._responder_con_latex(evt, texto_md)
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "repaso_tema", f"sesión iniciada: {total} conceptos")
+    # --8<-- [end:repasartema_handler]
 
     # --------------------------------------------------------------------
     # T5: Nuevo comando !ejerciciostema
     # --------------------------------------------------------------------
 
+    # --8<-- [start:ejerciciostema_handler]
     @command.new(
         name="ejerciciostema",
         help="Busca ejercicios o problemas en la BdC que apliquen una técnica/teorema: !ejerciciostema <técnica>",
     )
     @command.argument("tecnica", pass_raw=True, required=True)
     async def ejerciciostema_handler(self, evt: MessageEvent, tecnica: str) -> None:
+        """Manejador del comando !ejerciciostema para ejercicios de un tema."""
         tecnica = (tecnica or "").strip()
         if not tecnica:
             await evt.reply("Indica qué técnica, teorema o herramienta quieres buscar en los ejercicios de la BdC. Ejemplo: `!ejerciciostema integración por partes`")
@@ -1853,9 +2037,12 @@ class GithubBot(Plugin):
         await self._responder_con_latex(evt, texto_md)
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "ejerciciostema", tecnica)
         await self.tracker.log_qa(evt.sender, evt.room_id, "ejerciciostema", tecnica, texto_md, "búsqueda de ejercicios")
+    # --8<-- [end:ejerciciostema_handler]
 
+    # --8<-- [start:resumen_handler]
     @command.new(name="resumen", help="Resumen de lo que has repasado en esta sesión")
     async def resumen_handler(self, evt: MessageEvent) -> None:
+        """Manejador del comando !resumen para generar un resumen de los apuntes."""
         desde = int(time.time()) - SESION_VENTANA_SEGUNDOS
         interacciones = await self.tracker.obtener_interacciones_recientes(evt.sender, desde)
         if not interacciones:
@@ -1874,9 +2061,12 @@ class GithubBot(Plugin):
 
         await self._responder_con_latex(evt, resumen)
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "resumen", "")
+    # --8<-- [end:resumen_handler]
 
+    # --8<-- [start:mapa_handler]
     @command.new(name="mapa", help="Qué conceptos dominas y cuáles tienes que repasar")
     async def mapa_handler(self, evt: MessageEvent) -> None:
+        """Manejador del comando !mapa para generar un mapa conceptual."""
         conceptos = await self.tracker.obtener_mapa_conceptos(evt.sender)
         if not conceptos:
             await evt.reply("Todavía no tienes conceptos registrados. Prueba con !concepto, !flashcard o !feynman.")
@@ -1895,6 +2085,7 @@ class GithubBot(Plugin):
 
         await self._responder_con_latex(evt, "\n\n".join(partes))
         await self.tracker.log_interaccion(evt.sender, evt.room_id, "mapa", "")
+    # --8<-- [end:mapa_handler]
 
     # --------------------------------------------------------------------
     # Comando !ayuda
@@ -1928,6 +2119,10 @@ class GithubBot(Plugin):
         "automáticamente (OCR/multimodal) y te preguntaré dónde guardarlos en la BdC."
     )
 
+    # --8<-- [start:ayuda_handler]
     @command.new(name="ayuda", help="Lista todos los comandos disponibles")
     async def ayuda_handler(self, evt: MessageEvent) -> None:
+        """Manejador del comando !ayuda para mostrar los comandos disponibles."""
         await evt.reply(self.AYUDA_TEXTO)
+    # --8<-- [end:ayuda_handler]
+

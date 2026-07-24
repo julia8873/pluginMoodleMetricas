@@ -4,7 +4,10 @@ Crear archivo en: `docs/gitmetrics/view.md`
 
 Ubicación: `view.php`
 
---8<-- "gitmetrics/view.php:file_desc"
+```python
+Pagina completa de visualizacion de metricas de la Base de Conocimiento Git.
+Soporta GitHub, GitLab OSL y GitLab local. Se ejecuta en un layout 'report'.
+```
 
 ## Diagrama de Flujo Principal
 
@@ -41,5 +44,25 @@ graph TD
 Script procedural ejecutado bajo el contexto de Moodle que coordina el pintado del *header*, delegación del renderizado, y pintado del *footer*.
 
 ```php
---8<-- "gitmetrics/view.php:view_logic"
+```python
+echo $OUTPUT->header();
+
+$cache   = new \block_gitmetrics\metrics_cache($DB);
+$metrics = $cache->get($repourl, $blockid);
+
+if ($metrics === null) {
+    $calculator = new \block_gitmetrics\metrics_calculator($token, $provider, $gitlab_url);
+    $metrics    = $calculator->calculate($repourl, $branch);
+    $cache->set($repourl, $blockid, $metrics);
+}
+
+$renderer = $PAGE->get_renderer('block_gitmetrics');
+
+echo '<div class="container-fluid" style="max-width: 1300px; margin: 0 auto; padding: 20px 0;">';
+echo $renderer->render_fullpage_metrics($metrics);
+echo '</div>';
+
+echo $OUTPUT->footer();
+// 
 ```
+
