@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 """
 Herramientas de estudio: flashcards, ejercicios, técnica Feynman, preguntas de
 concepto, búsqueda de ejercicios por técnica y resumen de sesión.
@@ -12,6 +13,7 @@ import math
 import re
 
 from .llm_provider import LLMProvider
+# --8<-- [end:file_desc]
 
 
 class EstudioError(Exception):

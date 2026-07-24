@@ -1,4 +1,5 @@
 <?php
+// --8<-- [start:file_desc]
 define('CLI_SCRIPT', true);
 require(__DIR__ . '/config.php');
 require_once($CFG->dirroot . '/enrol/manual/locallib.php');
@@ -20,3 +21,4 @@ foreach ($mapa as $username => $rolshortname) {
     $enrol->enrol_user($instance, $user->id, $role->id);
     echo "{$username} matriculado como {$rolshortname}\n";
 }
+// --8<-- [end:file_desc]

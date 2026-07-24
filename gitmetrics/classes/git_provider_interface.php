@@ -3,12 +3,14 @@ namespace block_gitmetrics;
 
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * Interfaz comun para clientes de proveedores Git (GitHub, GitLab...).
- *
- * Cualquier proveedor debe implementar estos dos metodos para ser
- * compatible con metrics_calculator.
- */
+/*
+--8<-- [start:class_desc]
+Interfaz comun para clientes de proveedores Git (GitHub, GitLab...).
+
+Cualquier proveedor debe implementar estos dos metodos para ser
+compatible con metrics_calculator.
+--8<-- [end:class_desc]
+*/
 interface git_provider_interface {
 
     /**
@@ -25,7 +27,9 @@ interface git_provider_interface {
      * @return array  Lista de nodos
      * @throws \Exception Si la API devuelve error
      */
+    // --8<-- [start:get_tree]
     public function get_tree(string $owner, string $repo, string $branch): array;
+    // --8<-- [end:get_tree]
 
     /**
      * Descarga el contenido raw (texto plano) de un fichero del repositorio.
@@ -36,5 +40,7 @@ interface git_provider_interface {
      * @param  string $branch
      * @return string Contenido del fichero (puede estar vacio si es inaccesible)
      */
+    // --8<-- [start:get_file_content]
     public function get_file_content(string $owner, string $repo, string $path, string $branch): string;
+    // --8<-- [end:get_file_content]
 }

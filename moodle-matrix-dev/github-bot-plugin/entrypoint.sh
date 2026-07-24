@@ -1,4 +1,5 @@
 #!/bin/sh
+# --8<-- [start:file_desc]
 # entrypoint.sh – Compila el plugin de maubot desde el código fuente
 # y arranca el servidor maubot.
 #
@@ -49,3 +50,4 @@ echo "[entrypoint] Plugin construido: $MBP_FILE"
 
 # Arrancar el servidor maubot
 exec python -m maubot -c /data/config.yaml "$@"
+# --8<-- [end:file_desc]

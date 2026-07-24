@@ -1,0 +1,19 @@
+/* Mejor contraste para el resaltado de código en modo claro */
+[data-md-color-scheme="default"] {
+  --md-code-hl-comment-color: #008000; /* Verde oscuro para comentarios */
+  --md-code-hl-variable-color: #C0392B; /* Rojo oscuro para variables */
+  --md-code-hl-keyword-color: #2980B9; /* Azul fuerte para palabras clave */
+  --md-code-hl-string-color: #D35400; /* Naranja oscuro para strings */
+  --md-code-hl-number-color: #8E44AD; /* Morado para números */
+  --md-code-hl-function-color: #27AE60; /* Verde esmeralda para funciones */
+}
+
+/* Mejor contraste para el resaltado de código en modo oscuro (Slate) */
+[data-md-color-scheme="slate"] {
+  --md-code-hl-comment-color: #A6E22E; /* Verde neón para comentarios (estilo Monokai) */
+  --md-code-hl-variable-color: #F92672; /* Rosa fucsia para variables */
+  --md-code-hl-keyword-color: #66D9EF; /* Azul cian para palabras clave */
+  --md-code-hl-string-color: #E6DB74; /* Amarillo para strings */
+  --md-code-hl-number-color: #AE81FF; /* Violeta brillante para números */
+  --md-code-hl-function-color: #FD971F; /* Naranja para funciones */
+}

@@ -4,28 +4,19 @@
 //
 // Módulo de exportación a Obsidian.
 //
-// FLUJO:
-//   1. Descarga todos los archivos .md del repositorio Git remoto via API
-//      (sin almacenarlos en la base de datos de Moodle).
-//   2. Los escribe en una carpeta local del sistema de archivos que actúa
-//      como vault de Obsidian (configurada en Ajustes del plugin).
-//   3. Resuelve los [[wiki-links]] internos del repo a la notación nativa
-//      de Obsidian (sin extensión, usando nombre de archivo base).
-//   4. Guarda/sobreescribe únicamente los archivos que han cambiado para
-//      no disparar modificaciones innecesarias en el vault.
-//
 // -----------------------------------------------------------------------------
 namespace block_gitmetrics;
 
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * obsidian_exporter
- *
- * Descarga los documentos Markdown de un repositorio Git remoto y los
- * sincroniza con un vault local de Obsidian en el sistema de archivos.
- *
- */
+/*
+--8<-- [start:class_desc]
+Descarga los documentos Markdown de un repositorio Git remoto y los
+sincroniza con un vault local de Obsidian en el sistema de archivos,
+resolviendo además los enlaces internos (`[[wiki-links]]`) para que
+sean compatibles con el cliente nativo de Obsidian.
+--8<-- [end:class_desc]
+*/
 class obsidian_exporter {
 
     /** @var string Ruta absoluta local del vault de Obsidian donde se escribirán los archivos */
@@ -51,6 +42,7 @@ class obsidian_exporter {
      * @param string                 $vault_path  Ruta absoluta en el sistema de archivos local donde vive el vault de Obsidian.
      * @param string                 $branch      Rama Git a exportar (default: 'main').
      */
+    // --8<-- [start:construct]
     public function __construct(
         git_provider_interface $git_client,
         string $repourl,
@@ -70,6 +62,7 @@ class obsidian_exporter {
         $this->owner = $path_parts[0];
         $this->repo  = $path_parts[1];
     }
+    // --8<-- [end:construct]
 
     /**
      * Ejecuta la exportación completa del repositorio al vault de Obsidian.
@@ -79,10 +72,10 @@ class obsidian_exporter {
      *
      * @return array Estadísticas de la exportación: ['written' => int, 'skipped' => int, 'errors' => string[]]
      */
+    // --8<-- [start:export]
     public function export(): array {
         $stats = ['written' => 0, 'skipped' => 0, 'errors' => []];
 
-        // [PASO 4 DEL FLUJO] Obtener el "Árbol" (Tree) de archivos remotos conectados a la API
         // Obtener árbol completo del repositorio
         $tree = $this->git_client->get_tree($this->owner, $this->repo, $this->branch);
 
@@ -96,7 +89,6 @@ class obsidian_exporter {
             $filepath = $node['path'];
 
             try {
-                // [PASO 6 DEL FLUJO] Descargar el contenido de los archivos que sean nuevos o hayan cambiado
                 // Descargar contenido raw desde la API (en memoria, sin escribir en Moodle)
                 $raw_content = $this->git_client->get_file_content(
                     $this->owner, $this->repo, $filepath, $this->branch
@@ -115,11 +107,9 @@ class obsidian_exporter {
                     mkdir($target_dir, 0755, true);
                 }
 
-                // [PASO 5 DEL FLUJO] Comprobar si hubo cambios locales comparando el contenido
                 // Escribir solo si el contenido ha cambiado (evita modificar timestamps innecesariamente)
                 $existing = is_file($target_path) ? file_get_contents($target_path) : null;
                 if ($existing !== $obsidian_content) {
-                    // [PASO 7 DEL FLUJO] Enviar los datos a Obsidian guardándolo físicamente en el disco duro
                     file_put_contents($target_path, $obsidian_content, LOCK_EX);
                     $stats['written']++;
                 } else {
@@ -133,6 +123,7 @@ class obsidian_exporter {
 
         return $stats;
     }
+    // --8<-- [end:export]
 
     /**
      * Transforma los [[wiki-links]] del repositorio al formato nativo de Obsidian.
@@ -148,6 +139,7 @@ class obsidian_exporter {
      * @param  string $content Contenido Markdown raw del repositorio.
      * @return string          Contenido con wiki-links resueltos al formato Obsidian.
      */
+    // --8<-- [start:resolve_wikilinks]
     private function resolve_wikilinks(string $content): string {
         // Patrón: [[ruta/completa/al-archivo|Texto opcional]]
         return preg_replace_callback(
@@ -172,6 +164,7 @@ class obsidian_exporter {
             $content
         );
     }
+    // --8<-- [end:resolve_wikilinks]
 
     /**
      * Genera la URI de protocolo obsidian:// para abrir un archivo específico
@@ -184,6 +177,7 @@ class obsidian_exporter {
      * @param  string $vault_name   Nombre del vault tal y como Obsidian lo conoce (nombre de la carpeta).
      * @return string               URI de protocolo obsidian:// lista para usar en un enlace HTML.
      */
+    // --8<-- [start:get_obsidian_uri]
     public static function get_obsidian_uri(string $filepath, string $vault_name): string {
         // Eliminar extensión .md porque Obsidian la infiere automáticamente
         $file_without_ext = preg_replace('/\.md$/i', '', $filepath);
@@ -191,4 +185,5 @@ class obsidian_exporter {
         return 'obsidian://open?vault=' . rawurlencode($vault_name)
              . '&file='  . rawurlencode($file_without_ext);
     }
+    // --8<-- [end:get_obsidian_uri]
 }

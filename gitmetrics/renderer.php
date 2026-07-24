@@ -1,13 +1,15 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * Renderer HTML para block_gitmetrics.
- *
- * Genera la interfaz visual completa del bloque: cuatro secciones con
- * tarjetas de métricas, indicadores de estado, tablas de detalle y
- * estilos inline para que funcione sin necesidad de un CSS externo.
- */
+/*
+--8<-- [start:file_desc]
+Renderer HTML para block_gitmetrics.
+
+Genera la interfaz visual completa del bloque: cuatro secciones con
+tarjetas de métricas, indicadores de estado, tablas de detalle y
+estilos inline para que funcione sin necesidad de un CSS externo.
+--8<-- [end:file_desc]
+*/
 class block_gitmetrics_renderer extends plugin_renderer_base {
 
     // Contexto del repositorio (se establece en render_metrics / render_fullpage_metrics)
@@ -56,6 +58,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     // Punto de entrada principal
     // -------------------------------------------------------------------------
 
+    // --8<-- [start:render_metrics]
     public function render_metrics(array $m, int $courseid = 1, int $blockid = 0): string {
         $this->set_repo_context($m, $courseid, $blockid);
         $html  = $this->styles();
@@ -80,7 +83,9 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
         $html .= '</div>';
         return $html;
     }
+    // --8<-- [end:render_metrics]
 
+    // --8<-- [start:render_fullpage_metrics]
     public function render_fullpage_metrics(array $m, int $courseid = 1, int $blockid = 0): string {
         $this->set_repo_context($m, $courseid, $blockid);
         $html  = $this->styles();
@@ -122,6 +127,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
         $html .= '</div>';
         return $html;
     }
+    // --8<-- [end:render_fullpage_metrics]
 
     public function render_no_repo(): string {
         $html  = $this->styles();
@@ -163,6 +169,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     // 1. Volumen y estructura
     // ═════════════════════════════════════════════════════════════════════
 
+    // --8<-- [start:render_volume]
     public function render_volume(array $v): string {
         $html  = $this->section_open('[vol]', 'section_volume', 'gm-section-vol');
 
@@ -206,11 +213,13 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
         $html .= $this->section_close();
         return $html;
     }
+    // --8<-- [end:render_volume]
 
     // ═════════════════════════════════════════════════════════════════════
     // 2. Red y conectividad
     // ═════════════════════════════════════════════════════════════════════
 
+    // --8<-- [start:render_network]
     public function render_network(array $net): string {
         $html  = $this->section_open('[net]', 'section_network', 'gm-section-net');
 
@@ -254,11 +263,13 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
         $html .= $this->section_close();
         return $html;
     }
+    // --8<-- [end:render_network]
 
     // ═════════════════════════════════════════════════════════════════════
     // 3. Etiquetas (tags)
     // ═════════════════════════════════════════════════════════════════════
 
+    // --8<-- [start:render_tags]
     public function render_tags(array $tags): string {
         $html  = $this->section_open('[tags]', 'section_tags', 'gm-section-tags');
 
@@ -294,11 +305,13 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
         $html .= $this->section_close();
         return $html;
     }
+    // --8<-- [end:render_tags]
 
     // ═════════════════════════════════════════════════════════════════════
     // 4. Validación de formato
     // ═════════════════════════════════════════════════════════════════════
 
+    // --8<-- [start:render_format]
     public function render_format(array $fmt): string {
         $html  = $this->section_open('[fmt]', 'section_format', 'gm-section-fmt');
 
@@ -352,6 +365,7 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
         $html .= $this->section_close();
         return $html;
     }
+    // --8<-- [end:render_format]
 
     // ═════════════════════════════════════════════════════════════════════
     // Componentes de UI reutilizables

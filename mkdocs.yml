@@ -1,0 +1,93 @@
+site_name: Documentacion Moodle Matrix Plugin
+site_description: Sincronización de Moodle, Matrix y Obsidian.
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Cambiar a modo claro
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Cambiar a modo oscuro
+
+nav:
+  - Proyecto Principal: index.md
+  - Entorno Docker y Matrix:
+    - General: moodle-matrix-dev.md
+    - Docker y Configuración: moodle-matrix-dev/docker.md
+    - Scripts de Usuarios: moodle-matrix-dev/usuarios.md
+    - Github Bot (Maubot):
+      - Configuración Base: moodle-matrix-dev/github_bot_config.md
+      - Core Bot: moodle-matrix-dev/github_bot/bot.md
+      - Herramientas de Estudio: moodle-matrix-dev/github_bot/estudio.md
+      - Ingesta Automática: moodle-matrix-dev/github_bot/ingest.md
+  - Plugin Gitmetrics:
+    - General: gitmetrics/index.md
+    - Estructura: gitmetrics/estructura.md
+    - Scripts CLI: gitmetrics/cli.md
+    - Archivos Base:
+      - block_gitmetrics: gitmetrics/block_gitmetrics.md
+      - edit_form: gitmetrics/edit_form.md
+      - lib: gitmetrics/lib.md
+      - renderer: gitmetrics/renderer.md
+      - settings: gitmetrics/settings.md
+      - version: gitmetrics/version.md
+      - view: gitmetrics/view.md
+      - view_file: gitmetrics/view_file.md
+    - Clases y Flujos:
+      - metrics_calculator: gitmetrics/classes/metrics_calculator.md
+      - obsidian_exporter: gitmetrics/classes/obsidian_exporter.md
+      - Tarea sync_obsidian: gitmetrics/classes/task/sync_obsidian.md
+      - github_client: gitmetrics/classes/github_client.md
+      - gitlab_client: gitmetrics/classes/gitlab_client.md
+      - git_provider_interface: gitmetrics/classes/git_provider_interface.md
+      - markdown_parser: gitmetrics/classes/markdown_parser.md
+      - matrix_helper: gitmetrics/classes/matrix_helper.md
+      - metrics_cache: gitmetrics/classes/metrics_cache.md
+
+# Aquí puedes incluir plugins para generar documentación desde el código
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+      extend_pygments_lang:
+        - name: php
+          lang: php
+          options:
+            startinline: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path: .
+      dedent_subsections: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+extra_css:
+  - stylesheets/extra.css
+
+watch:
+  - README.md
+  - gitmetrics
+  - moodle-matrix-dev

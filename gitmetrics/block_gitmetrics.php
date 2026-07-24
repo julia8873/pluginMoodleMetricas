@@ -1,20 +1,24 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * Bloque principal: block_gitmetrics
- *
- * Analiza un repositorio GitHub o GitLab (OSL / local / cloud) con
- * estructura OKF y muestra las metricas cuantitativas de la Base
- * de Conocimiento en el bloque de Moodle.
- */
+/*
+--8<-- [start:file_desc]
+Bloque principal: block_gitmetrics
+
+Analiza un repositorio GitHub o GitLab (OSL / local / cloud) con
+estructura OKF y muestra las metricas cuantitativas de la Base
+de Conocimiento en el bloque de Moodle.
+--8<-- [end:file_desc]
+*/
 class block_gitmetrics extends block_base {
 
     // -- Inicialización ----------------------------------------------------
 
+    // --8<-- [start:init]
     public function init() {
         $this->title = get_string('pluginname', 'block_gitmetrics');
     }
+    // --8<-- [end:init]
 
     public function has_config() {
         return true;
@@ -25,6 +29,7 @@ class block_gitmetrics extends block_base {
         return true;
     }
 
+    // --8<-- [start:instance_create]
     public function instance_create() {
         if (!empty($this->page->course->id) && $this->page->course->id > 1) {
             if (class_exists('\block_gitmetrics\matrix_helper')) {
@@ -33,7 +38,9 @@ class block_gitmetrics extends block_base {
         }
         return parent::instance_create();
     }
+    // --8<-- [end:instance_create]
 
+    // --8<-- [start:instance_config_save]
     public function instance_config_save($data, $nolongerused = false) {
         if (!empty($this->page->course->id) && $this->page->course->id > 1) {
             if (class_exists('\block_gitmetrics\matrix_helper')) {
@@ -42,9 +49,11 @@ class block_gitmetrics extends block_base {
         }
         return parent::instance_config_save($data, $nolongerused);
     }
+    // --8<-- [end:instance_config_save]
 
     // -- Contenido del bloque ----------------------------------------------
 
+    // --8<-- [start:get_content]
     public function get_content() {
         global $DB, $PAGE;
 
@@ -126,4 +135,5 @@ class block_gitmetrics extends block_base {
 
         return $this->content;
     }
+    // --8<-- [end:get_content]
 }

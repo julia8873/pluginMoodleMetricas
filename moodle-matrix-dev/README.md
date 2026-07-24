@@ -35,7 +35,16 @@ docker compose up -d
 
 > **Nota:** El primer arranque de Moodle puede tardar 1–2 minutos mientras inicializa la base de datos. El contenedor `maubot` compilará automáticamente el plugin (`.mbp`) desde el código fuente en cada inicio.
 
-### 3. Crear la cuenta de administrador de Matrix
+<a id="matrix"></a>
+## Integración con Matrix y el Bot Git
+
+> **Nota:** Los pasos **8a** y **8b** se realizan automáticamente al ejecutar `instalar.sh`. Solo necesitas ejecutarlos manualmente si realizas la instalación paso a paso (Opción B) o si necesitas reconfigurar el entorno.
+
+---
+
+### Crear el usuario administrador de Matrix
+
+Crear la cuenta de administrador en el servidor Synapse. **`instalar.sh` lo ejecuta automáticamente** como parte del despliegue. Para hacerlo manualmente:
 
 ```bash
 docker exec -it matrix-synapse register_new_matrix_user \
@@ -44,107 +53,152 @@ docker exec -it matrix-synapse register_new_matrix_user \
   http://localhost:8008
 ```
 
-Luego inicia sesión en Element Web (`http://localhost:8081`) con `admin` / `adminpass123`.
+---
 
-### 4. Obtener el Access Token de Matrix
+### Conectar Moodle con Matrix
 
-1. En Element Web, ve a tu perfil → **All settings**
-2. Pestaña **Help & About** → sección **Advanced**
-3. Copia el campo **Access Token**
+Conectar el plugin de Moodle con el servidor Synapse para permitir la comunicación entre ambos. Existen dos formas de hacerlo:
 
-### 5. Activar la comunicación en Moodle
+#### Alternativa 1: Configuración automática (script)
 
-1. Accede a Moodle (`http://localhost:8000`) con `adminMoodle` / `test1234`
-2. Navega a: **Site Administration → Development → Experimental → Experimental settings**
-3. Activa **Enable communication providers** (`enablecommunication`) y guarda.
+Activa el subsistema de comunicaciones, desbloquea los puertos internos Docker en las reglas cURL de Moodle, obtiene el Access Token de Synapse automáticamente y guarda todo en la base de datos. **`instalar.sh` lo ejecuta automáticamente.** Para lanzarlo de forma aislada:
 
-### 6. Configurar el proveedor Matrix en Moodle
+```bash
+docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_matrix.php
+```
 
-1. Navega a: **Site Administration → Plugins → Communication → Matrix**
-2. Configura:
-   - **Matrix Homeserver URL:** `http://matrix-synapse:8008` *(nombre interno de Docker)*
-   - **Access Token:** el token copiado en el paso 4
-   - **Element Web URL:** `http://localhost:8081`
-3. Guarda.
+#### Alternativa 2: Configuración manual (web)
 
-### 7. Activar Matrix en un curso
+Configurar manualmente desde la interfaz web de Moodle:
 
-1. Entra en un curso → **Settings** → sección **Communication**
-2. Establece el **Communication provider** a **Matrix** y pon un nombre de sala
-3. Guarda. Moodle creará la sala vía tareas cron en segundo plano.
+1. **Administración del sitio → Desarrollo → Características experimentales** → activar **Habilitar proveedores de comunicación**.
+2. **Administración del sitio → Seguridad → Seguridad HTTP** → añadir puertos `80`, `443`, `8008`, `8081` a la lista de puertos permitidos y vaciar la lista de hosts bloqueados.
+3. **Administración del sitio → Plugins → Comunicación → Matrix** y configurar:
+   - **URL del servidor**: `http://matrix-synapse:8008` *(nombre interno Docker, no `localhost`)*
+   - **Access Token**: copiar desde Element Web (`http://localhost:8081`) → Configuración → Help & About → Advanced
+   - **URL de Element Web**: `http://localhost:8081`
 
 ---
 
-## Bot de Matrix Multi-Proveedor (Maubot: GitLab y GitHub)
+### Las salas de chat (Automatización y Desactivación)
 
-El bot se compila automáticamente desde el código fuente al levantar el contenedor. El código fuente está en `github-bot-plugin/github-bot-plugin/`. El bot cuenta con una arquitectura modular (`GitProvider`) que soporta indistintamente repositorios en **GitLab** o **GitHub**.
+Cada vez que creas una asignatura nueva en Moodle, se genera y vincula automáticamente una sala de chat en Matrix (con el bot).
 
-### Paso 1: Configurar el bot tras el primer arranque
+Si un profesor no desea tener el chat activo para su asignatura, puede **deshabilitarlo manualmente** (Opt-out):
+1. En la asignatura, ve a la barra superior → **Más... → Comunicación**.
+2. Selecciona **Ninguno** en el proveedor de comunicación y pulsa guardar.
 
-1. Accede a la interfaz de Maubot: `http://localhost:29316/_matrix/maubot/`
-2. Inicia sesión con las credenciales definidas en `config.yaml` (`admins`)
-3. Crea un **Client** (cuenta de Matrix que usará el bot para unirse a las salas)
-4. Crea una **Instance** del plugin `dev.julia.githubbot` vinculada a tu cliente.
+*Nota: Si acabas de crear el curso y el chat aún no aparece en Element, puedes ejecutar el cron para que se genere:* 
 
-### Paso 2: Elegir Proveedor Git y Configurar (`base-config.yaml`)
+```bash
+docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/cron.php
+```
 
-Puedes definir el comportamiento del bot directamente editando el archivo `github-bot-plugin/github-bot-plugin/base-config.yaml` o en el panel de configuración de tu instancia en Maubot:
+---
 
-#### Opción A: Ejecución en GitLab
+### Comandos del bot en la sala Matrix
+
+| Comando | Descripción |
+|:---|:---|
+| `!ficheros` | Lista el árbol completo del repositorio |
+| `!documento <nombre>` | Muestra el contenido y el historial de commits de un fichero |
+| `!estudio` | Inicia una sesión de estudio guiado por LLM con preguntas de comprensión |
+| `!repaso` | Repaso de conceptos previamente estudiados |
+| `!organizacion` | Analiza y propone reorganizaciones de la estructura OKF |
+| Adjuntar `.md` / PDF / imagen | Ingesta automática en OKF (si `ingest_automatico: true` en `base-config.yaml`) |
+
+---
+
+---
+
+<a id="git"></a>
+## Configuración de Proveedores Git
+
+### GitLab
+
+**Token necesario**: Personal Access Token con permiso `api` (o `read_api` + `write_repository`).
+
+Editar `moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml`:
+
 ```yaml
 provider: "gitlab"
 repo_url: "https://gitlab.com/julia8873/BdC"
 gitlab_url: "https://gitlab.com"
 gitlab_token: "glpat-xxxxxxxxxxxxxxxx"
+github_token: ""
 default_owner: "julia8873"
 default_repo: "BdC"
 default_branch: "main"
 ```
-*(El bot utilizará `GitLabClient` con llamadas a la API v4 de GitLab, resolviendo rutas codificadas y transacciones multi-acción para commits).*
 
-#### Opción B: Ejecución en GitHub
+En Moodle admin → **Plugins → Bloques → Git Knowledge Base Metrics**:
+- Proveedor: `GitLab`
+- URL Base de GitLab: `https://gitlab.com`
+- Token de API: `glpat-...`
+
+### GitHub
+
+**Token necesario**: Personal Access Token (classic) con permiso `repo`.
+
+Editar `base-config.yaml`:
+
 ```yaml
 provider: "github"
 repo_url: "https://github.com/julia8873/BdC"
+gitlab_token: ""
 github_token: "ghp_xxxxxxxxxxxxxxxx"
 default_owner: "julia8873"
 default_repo: "BdC"
 default_branch: "main"
 ```
-*(El bot utilizará `GitHubClient` conectándose a `api.github.com`).*
 
-### Paso 3: Reiniciar y Probar
+En Moodle admin → **Plugins → Bloques → Git Knowledge Base Metrics**:
+- Proveedor: `GitHub`
+- Token de API: `ghp_...`
 
-Cada vez que modifiques el archivo de configuración o el código Python, el plugin se recompila y recarga automáticamente al reiniciar el contenedor:
+Tras modificar `base-config.yaml` manualmente, reiniciar el bot:
 
 ```bash
+cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
 docker compose restart maubot
-```
-
-O bien, reconstruye la imagen si cambiaron las dependencias:
-
-```bash
-docker compose up -d --build maubot
 ```
 
 ---
 
-## Utilidades de desarrollo
+---
 
-### Ver logs
-
-```bash
-docker compose logs -f moodle
-docker compose logs -f synapse
-docker compose logs -f maubot
-```
-
-### Parar el entorno
+<a id="docker"></a>
+## Gestión de Contenedores Docker
 
 ```bash
-# Parar y conservar datos
+cd /mnt/c/Users/julia/Desktop/PracticasCEPRUD/pluginMoodleMetricas/moodle-matrix-dev
+
+# Arrancar todos los servicios
+docker compose up -d
+
+# Detener todos los servicios (conserva los datos)
 docker compose down
 
-# Parar y borrar todos los datos (reset limpio)
+# Ver estado de los contenedores
+docker compose ps
+
+# Ver logs de un servicio concreto
+docker compose logs -f moodle
+docker compose logs -f maubot
+docker compose logs -f synapse
+
+# Reiniciar un servicio individual
+docker compose restart maubot
+
+# Actualizar el plugin sin reinstalar el entorno
+docker cp ../gitmetrics/. moodle-app:/bitnami/moodle/blocks/gitmetrics/
+docker exec --user root moodle-app chown -R daemon:daemon /bitnami/moodle/blocks/gitmetrics
+docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/upgrade.php --non-interactive
+docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/purge_caches.php
+
+# Acceder a la shell del contenedor Moodle
+docker exec -it --user daemon moodle-app bash
+
+# Resetear completamente el entorno (borra todos los datos)
 docker compose down -v
 ```

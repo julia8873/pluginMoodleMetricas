@@ -1,0 +1,1 @@
+--8<-- "gitmetrics/README.md"

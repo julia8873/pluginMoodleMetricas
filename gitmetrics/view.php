@@ -1,8 +1,10 @@
 <?php
-// -----------------------------------------------------------------------------
-// Pagina completa de visualizacion de metricas de la Base de Conocimiento Git
-// Soporta GitHub, GitLab OSL y GitLab local.
-// -----------------------------------------------------------------------------
+/*
+--8<-- [start:file_desc]
+Pagina completa de visualizacion de metricas de la Base de Conocimiento Git.
+Soporta GitHub, GitLab OSL y GitLab local. Se ejecuta en un layout 'report'.
+--8<-- [end:file_desc]
+*/
 
 require_once(__DIR__ . '/../../config.php');
 
@@ -90,6 +92,7 @@ if (str_contains($repourl, 'github.com')) {
     $gitlab_url = 'https://gitlab.com';
 }
 
+// --8<-- [start:view_logic]
 echo $OUTPUT->header();
 
 $cache   = new \block_gitmetrics\metrics_cache($DB);
@@ -108,3 +111,4 @@ echo $renderer->render_fullpage_metrics($metrics);
 echo '</div>';
 
 echo $OUTPUT->footer();
+// --8<-- [end:view_logic]

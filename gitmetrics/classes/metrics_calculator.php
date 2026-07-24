@@ -3,17 +3,15 @@ namespace block_gitmetrics;
 
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * Calculadora de métricas de la Base de Conocimiento.
- *
- * Orquesta la descarga del árbol del repositorio GitHub, el parseo
- * de cada archivo Markdown y el cálculo de las cuatro categorías
- * de métricas:
- *   1. Volumen y estructura de archivos
- *   2. Red y conectividad
- *   3. Etiquetas (tags)
- *   4. Validación de formato
- */
+/*
+--8<-- [start:class_desc]
+Calculadora de métricas de la Base de Conocimiento.
+
+Orquesta la descarga del árbol del repositorio GitHub, el parseo
+de cada archivo Markdown y el cálculo de las cuatro categorías
+de métricas: Volumen, Red, Etiquetas y Formato.
+--8<-- [end:class_desc]
+*/
 class metrics_calculator {
 
     /** @var git_provider_interface Cliente activo (GitHub o GitLab) */
@@ -29,6 +27,7 @@ class metrics_calculator {
      * @param string $gitlab_url URL base del servidor GitLab (solo para proveedor gitlab).
      *                           Ej: 'https://gitlab.osl.ugr.es' o 'http://localhost:8929'
      */
+    // --8<-- [start:construct]
     public function __construct(string $token = '', string $provider = 'auto', string $gitlab_url = 'https://gitlab.com') {
         $this->token      = $token;
         $this->provider   = $provider;
@@ -36,6 +35,7 @@ class metrics_calculator {
         $this->client     = self::make_client($provider, $token, $gitlab_url);
         $this->parser     = new markdown_parser();
     }
+    // --8<-- [end:construct]
 
     /**
      * Factoria de clientes: devuelve el cliente correcto segun el proveedor.
@@ -46,6 +46,7 @@ class metrics_calculator {
      * @param string $gitlab_url URL base del servidor GitLab
      * @param string $repo_url   URL del repositorio (necesario solo para 'auto')
      */
+    // --8<-- [start:make_client]
     public static function make_client(
         string $provider,
         string $token,
@@ -74,6 +75,7 @@ class metrics_calculator {
         }
         return new github_client($token);
     }
+    // --8<-- [end:make_client]
 
     // ---------------------------------------------------------------------
     // API pública
@@ -86,6 +88,7 @@ class metrics_calculator {
      * @param  string $branch   Rama a analizar
      * @return array  Todas las métricas agrupadas por categoría
      */
+    // --8<-- [start:calculate]
     public function calculate(string $repo_url, string $branch = 'main'): array {
         // Asegurar detección del proveedor según la URL al ejecutar el cálculo
         if ($this->provider === 'auto' || str_contains($repo_url, 'gitlab') || str_contains($repo_url, 'github.com')) {
@@ -133,11 +136,13 @@ class metrics_calculator {
             'format'       => $this->calc_format($files_data),
         ];
     }
+    // --8<-- [end:calculate]
 
     // ---------------------------------------------------------------------
     // Paso previo: descargar y parsear archivos
     // ---------------------------------------------------------------------
 
+    // --8<-- [start:fetch_and_parse]
     private function fetch_and_parse(
         string $owner,
         string $repo,
@@ -154,11 +159,13 @@ class metrics_calculator {
         }
         return $files_data;
     }
+    // --8<-- [end:fetch_and_parse]
 
     // ---------------------------------------------------------------------
     // 1. Volumen y estructura
     // ---------------------------------------------------------------------
 
+    // --8<-- [start:calc_volume]
     private function calc_volume(
         array $files_data,
         array $all_blobs,
@@ -222,11 +229,13 @@ class metrics_calculator {
             'files_detail'     => $files_detail,
         ];
     }
+    // --8<-- [end:calc_volume]
 
     // ---------------------------------------------------------------------
     // 2. Red y conectividad
     // ---------------------------------------------------------------------
 
+    // --8<-- [start:calc_network]
     private function calc_network(array $files_data): array {
         $n = count($files_data);
 
@@ -311,11 +320,13 @@ class metrics_calculator {
             'connectivity_detail'  => $detail,
         ];
     }
+    // --8<-- [end:calc_network]
 
     // ---------------------------------------------------------------------
     // 3. Etiquetas (tags)
     // ---------------------------------------------------------------------
 
+    // --8<-- [start:calc_tags]
     private function calc_tags(array $files_data): array {
         $tag_frequency = [];  // tag => número de archivos que lo usan
         $tag_sets      = [];  // [ [tags del archivo 0], [tags del archivo 1], ... ]
@@ -354,6 +365,7 @@ class metrics_calculator {
             'all_tags'           => $tag_frequency,
         ];
     }
+    // --8<-- [end:calc_tags]
 
     /**
      * Distancia de Hamming media entre todos los pares de documentos.
@@ -407,6 +419,7 @@ class metrics_calculator {
     // 4. Validación de formato
     // ---------------------------------------------------------------------
 
+    // --8<-- [start:calc_format]
     private function calc_format(array $files_data): array {
         $total = count($files_data);
 
@@ -450,6 +463,7 @@ class metrics_calculator {
             'markdown_errors'         => $md_errors,
         ];
     }
+    // --8<-- [end:calc_format]
 
     // ---------------------------------------------------------------------
     // Utilidades
@@ -471,6 +485,7 @@ class metrics_calculator {
      *   - https://gitlab.osl.ugr.es/grupo/subgrupo/repo  (namespaces anidados de GitLab)
      *   - http://localhost:8929/owner/repo
      */
+    // --8<-- [start:parse_repo_url]
     private function parse_repo_url(string $url): array {
         $url = rtrim(trim($url), '/');
         $url = preg_replace('/\.git$/i', '', $url);
@@ -488,4 +503,5 @@ class metrics_calculator {
 
         throw new \Exception(get_string('error_invalid_url', 'block_gitmetrics'));
     }
+    // --8<-- [end:parse_repo_url]
 }

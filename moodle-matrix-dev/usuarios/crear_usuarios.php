@@ -1,4 +1,5 @@
 <?php
+// --8<-- [start:file_desc]
 // create_users.php
 define('CLI_SCRIPT', true);
 require(__DIR__ . '/config.php');
@@ -24,3 +25,4 @@ foreach ($usuarios as $u) {
     $id = user_create_user($data, false, false);
     echo "Usuario {$u['username']} creado con id {$id}\n";
 }
+// --8<-- [end:file_desc]

@@ -3,16 +3,18 @@ namespace block_gitmetrics;
 
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * Parser de archivos Markdown para la Base de Conocimiento OKF.
- *
- * Extrae:
- *  - Frontmatter YAML (entre delimitadores ---)
- *  - Tags del frontmatter
- *  - Enlaces internos a otros archivos .md
- *  - Recuento de palabras
- *  - Validación básica de formato Markdown
- */
+/*
+--8<-- [start:class_desc]
+Parser de archivos Markdown para la Base de Conocimiento OKF.
+
+Extrae:
+ - Frontmatter YAML (entre delimitadores ---)
+ - Tags del frontmatter
+ - Enlaces internos a otros archivos .md
+ - Recuento de palabras
+ - Validación básica de formato Markdown
+--8<-- [end:class_desc]
+*/
 class markdown_parser {
 
     // ---------------------------------------------------------------------
@@ -40,6 +42,7 @@ class markdown_parser {
      *   size_bytes: int
      * }
      */
+    // --8<-- [start:parse]
     public function parse(string $content, string $filepath = ''): array {
         $result = [
             'path'                 => $filepath,
@@ -72,11 +75,13 @@ class markdown_parser {
 
         return $result;
     }
+    // --8<-- [end:parse]
 
     // ---------------------------------------------------------------------
     // Extracción de frontmatter
     // ---------------------------------------------------------------------
 
+    // --8<-- [start:extract_frontmatter]
     private function extract_frontmatter(string $content, array $result): array {
         // El frontmatter debe estar al principio del fichero, entre dos '---'
         // Aceptamos también espacios en blanco iniciales.
@@ -108,6 +113,7 @@ class markdown_parser {
 
         return $result;
     }
+    // --8<-- [end:extract_frontmatter]
 
     // ---------------------------------------------------------------------
     // Parser YAML simplificado (sin dependencias externas)
@@ -124,6 +130,7 @@ class markdown_parser {
      *
      * @return array [parsed_array|null, errors[]]
      */
+    // --8<-- [start:parse_yaml]
     private function parse_yaml(string $yaml): array {
         $result       = [];
         $errors       = [];
@@ -184,6 +191,7 @@ class markdown_parser {
 
         return [$result, $errors];
     }
+    // --8<-- [end:parse_yaml]
 
     /** Convierte un escalar YAML a su tipo PHP equivalente. */
     private function cast_yaml_value(string $v): mixed {
@@ -199,6 +207,7 @@ class markdown_parser {
     }
 
     /** Extrae el array de tags de un frontmatter ya parseado. */
+    // --8<-- [start:extract_tags]
     private function extract_tags(array $fm): array {
         foreach (['tags', 'tag', 'etiquetas', 'keywords'] as $key) {
             if (!isset($fm[$key])) continue;
@@ -213,6 +222,7 @@ class markdown_parser {
         }
         return [];
     }
+    // --8<-- [end:extract_tags]
 
     // ---------------------------------------------------------------------
     // Extracción de enlaces internos
@@ -225,6 +235,7 @@ class markdown_parser {
      *   [texto](./ruta/archivo.md)    ← con ruta relativa
      *   [[archivo]]                   ← Wikilinks (Obsidian, etc.)
      */
+    // --8<-- [start:extract_internal_links]
     private function extract_internal_links(string $body): array {
         $links = [];
 
@@ -252,11 +263,13 @@ class markdown_parser {
 
         return array_unique($links);
     }
+    // --8<-- [end:extract_internal_links]
 
     // ---------------------------------------------------------------------
     // Recuento de palabras
     // ---------------------------------------------------------------------
 
+    // --8<-- [start:count_words]
     private function count_words(string $body): int {
         // Eliminar bloques de código
         $text = preg_replace('/```[\s\S]*?```/', ' ', $body);
@@ -274,6 +287,7 @@ class markdown_parser {
 
         return str_word_count($text);
     }
+    // --8<-- [end:count_words]
 
     // ---------------------------------------------------------------------
     // Validación básica de Markdown
@@ -283,6 +297,7 @@ class markdown_parser {
      * Comprueba errores estructurales comunes en un documento Markdown.
      * @return array [bool $is_valid, string[] $errors]
      */
+    // --8<-- [start:validate_markdown]
     private function validate_markdown(string $body): array {
         $errors = [];
 
@@ -316,4 +331,5 @@ class markdown_parser {
 
         return [empty($errors), $errors];
     }
+    // --8<-- [end:validate_markdown]
 }

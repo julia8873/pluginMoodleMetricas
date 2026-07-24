@@ -3,14 +3,16 @@ namespace block_gitmetrics;
 
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * Gestión de la caché de métricas en la base de datos de Moodle.
- *
- * Almacena los resultados del análisis en la tabla block_gitmetrics_cache
- * indexados por (blockinstanceid + MD5 de la URL del repositorio).
- *
- * El TTL (time-to-live) se lee de la configuración global del plugin.
- */
+/*
+--8<-- [start:class_desc]
+Gestión de la caché de métricas en la base de datos de Moodle.
+
+Almacena los resultados del análisis en la tabla block_gitmetrics_cache
+indexados por (blockinstanceid + MD5 de la URL del repositorio).
+
+El TTL (time-to-live) se lee de la configuración global del plugin.
+--8<-- [end:class_desc]
+*/
 class metrics_cache {
 
     const TABLE = 'block_gitmetrics_cache';
@@ -33,6 +35,7 @@ class metrics_cache {
      * @param  int    $block_id  ID de la instancia del bloque
      * @return array|null  Array de métricas, o null si no hay caché válida
      */
+    // --8<-- [start:get]
     public function get(string $repo_url, int $block_id): ?array {
         $ttl      = $this->get_ttl();
         $min_time = time() - $ttl;
@@ -61,6 +64,7 @@ class metrics_cache {
 
         return $data;
     }
+    // --8<-- [end:get]
 
     /**
      * Guarda (o actualiza) las métricas en la caché.
@@ -69,6 +73,7 @@ class metrics_cache {
      * @param  int    $block_id  ID de la instancia del bloque
      * @param  array  $metrics   Array de métricas a serializar
      */
+    // --8<-- [start:set]
     public function set(string $repo_url, int $block_id, array $metrics): void {
         $hash    = md5($repo_url);
         $json    = json_encode($metrics, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
@@ -95,6 +100,7 @@ class metrics_cache {
             $this->db->insert_record(self::TABLE, $record);
         }
     }
+    // --8<-- [end:set]
 
     /**
      * Elimina todos los registros de caché de una instancia de bloque.
@@ -102,14 +108,17 @@ class metrics_cache {
      *
      * @param int $block_id ID de la instancia del bloque
      */
+    // --8<-- [start:invalidate]
     public function invalidate(int $block_id): void {
         $this->db->delete_records(self::TABLE, ['blockinstanceid' => $block_id]);
     }
+    // --8<-- [end:invalidate]
 
     /**
      * Elimina registros de caché cuyo timemodified sea anterior al TTL actual.
      * Útil para un cleanup periódico (p. ej. desde un cron task).
      */
+    // --8<-- [start:purge_expired]
     public function purge_expired(): int {
         $min_time = time() - $this->get_ttl();
         return $this->db->delete_records_select(
@@ -118,6 +127,7 @@ class metrics_cache {
             ['mintime' => $min_time]
         );
     }
+    // --8<-- [end:purge_expired]
 
     // ---------------------------------------------------------------------
     // Utilidades privadas

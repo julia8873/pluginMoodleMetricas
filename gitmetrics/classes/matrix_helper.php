@@ -3,6 +3,15 @@ namespace block_gitmetrics;
 
 defined('MOODLE_INTERNAL') || die();
 
+/*
+--8<-- [start:class_desc]
+Helper para la integración de Matrix en Moodle.
+
+Gestiona la creación automática de salas en el servidor Synapse
+para cada curso, y orquesta la invitación y unión del bot (@githubbot)
+a dichas salas mediante llamadas a las APIs REST de Synapse y Maubot.
+--8<-- [end:class_desc]
+*/
 class matrix_helper {
 
     /**
@@ -13,6 +22,7 @@ class matrix_helper {
      * @param string|null $roomname Nombre opcional para la sala de Matrix
      * @return bool True si la sala y el bot estan configurados/unidos con exito.
      */
+    // --8<-- [start:ensure_room_and_bot]
     public static function ensure_room_and_bot(int $courseid, ?string $roomname = null): bool {
         global $DB, $CFG;
 
@@ -175,11 +185,13 @@ class matrix_helper {
 
         return true;
     }
+    // --8<-- [end:ensure_room_and_bot]
 
     /**
      * Asegura que el cliente (@githubbot:localhost) y la instancia del plugin
      * dev.julia.githubbot esten registrados, activos y online en Maubot.
      */
+    // --8<-- [start:ensure_maubot_active]
     public static function ensure_maubot_active(): void {
         $mauboturl = 'http://maubot:29316/_matrix/maubot/v1';
         $ch = curl_init("{$mauboturl}/auth/login");
@@ -250,12 +262,14 @@ class matrix_helper {
         curl_exec($ch);
         curl_close($ch);
     }
+    // --8<-- [end:ensure_maubot_active]
 
     /**
      * Aplica la creacion de sala y union de bot para todos los cursos existentes.
      *
      * @return int Numero de cursos procesados
      */
+    // --8<-- [start:process_all_existing_courses]
     public static function process_all_existing_courses(): int {
         global $DB;
         $courses = $DB->get_records_select('course', 'id > 1');
@@ -267,4 +281,5 @@ class matrix_helper {
         }
         return $count;
     }
+    // --8<-- [end:process_all_existing_courses]
 }

@@ -1,12 +1,17 @@
 <?php
-// -- AJUSTES GLOBALES DEL PLUGIN block_gitmetrics --------------------------
-// El administrador del sitio puede configurar:
-//   - Proveedor Git por defecto (GitHub / GitLab)
-//   - Tokens de autenticacion para cada proveedor
-//   - URL del servidor GitLab
-//   - TTL de la cache de metricas
+/*
+--8<-- [start:file_desc]
+AJUSTES GLOBALES DEL PLUGIN block_gitmetrics.
+El administrador del sitio puede configurar:
+  - Proveedor Git por defecto (GitHub / GitLab)
+  - Tokens de autenticacion para cada proveedor
+  - URL del servidor GitLab
+  - TTL de la cache de metricas
+--8<-- [end:file_desc]
+*/
 defined('MOODLE_INTERNAL') || die();
 
+// --8<-- [start:settings_definition]
 if ($ADMIN->fulltree) {
 
     // -- Proveedor Git por defecto -----------------------------------------
@@ -120,4 +125,5 @@ if ($ADMIN->fulltree) {
         PARAM_TEXT
     ));
 }
+// --8<-- [end:settings_definition]
 

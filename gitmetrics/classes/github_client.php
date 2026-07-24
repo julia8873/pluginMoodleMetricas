@@ -6,18 +6,20 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->libdir . '/filelib.php');
 
-/**
- * Cliente HTTP para la API de GitHub y raw.githubusercontent.com.
- *
- * Usa la clase curl de Moodle (lib/filelib.php) para respetar la
- * configuración de proxy del servidor y las restricciones de red.
- *
- * Endpoints utilizados:
- *   - GET /repos/{owner}/{repo}/git/trees/{branch}?recursive=1
- *     → árbol completo de ficheros y directorios.
- *   - GET https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}
- *     → contenido raw de cada fichero Markdown.
- */
+/*
+--8<-- [start:class_desc]
+Cliente HTTP para la API de GitHub y raw.githubusercontent.com.
+
+Usa la clase curl de Moodle (lib/filelib.php) para respetar la
+configuración de proxy del servidor y las restricciones de red.
+
+Endpoints utilizados:
+  - GET /repos/{owner}/{repo}/git/trees/{branch}?recursive=1
+    → árbol completo de ficheros y directorios.
+  - GET https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}
+    → contenido raw de cada fichero Markdown.
+--8<-- [end:class_desc]
+*/
 class github_client implements git_provider_interface {
 
     const API_BASE = 'https://api.github.com';
@@ -43,6 +45,7 @@ class github_client implements git_provider_interface {
      * @return array  Array de nodos [{path, type, size, sha, url}, ...]
      * @throws \Exception si la API devuelve error
      */
+    // --8<-- [start:get_tree]
     public function get_tree(string $owner, string $repo, string $branch): array {
         $url      = self::API_BASE . "/repos/{$owner}/{$repo}/git/trees/{$branch}?recursive=1";
         $response = $this->api_request($url);
@@ -58,6 +61,7 @@ class github_client implements git_provider_interface {
 
         return $response['tree'];
     }
+    // --8<-- [end:get_tree]
 
     /**
      * Descarga el contenido raw de un fichero del repositorio.
@@ -68,6 +72,7 @@ class github_client implements git_provider_interface {
      * @param  string $branch
      * @return string Contenido del fichero (puede estar vacío)
      */
+    // --8<-- [start:get_file_content]
     public function get_file_content(string $owner, string $repo, string $path, string $branch): string {
         // Codificamos cada segmento del path por separado para no romper las '/'
         $encoded_path = implode('/', array_map('rawurlencode', explode('/', $path)));
@@ -75,6 +80,7 @@ class github_client implements git_provider_interface {
 
         return $this->raw_request($url);
     }
+    // --8<-- [end:get_file_content]
 
     // ---------------------------------------------------------------------
     // Métodos privados de transporte HTTP

@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 """
 Ingesta automática OKF: convierte una fuente recién subida a raw/ en páginas
 estructuradas dentro de okf/ (conceptos, entidades, fuentes), siguiendo las
@@ -16,6 +17,7 @@ wiki en AGENTS.md, la ingesta automática las respeta sin tener que tocar códig
 
 import json
 import re
+# --8<-- [end:file_desc]
 
 # --------------------------------------------------------------------
 # Errores

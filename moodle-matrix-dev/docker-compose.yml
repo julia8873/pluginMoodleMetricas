@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 services:
   mariadb:
     image: mariadb:10.11
@@ -86,3 +87,4 @@ volumes:
     driver: local
   moodledata_data:
     driver: local
+# --8<-- [end:file_desc]

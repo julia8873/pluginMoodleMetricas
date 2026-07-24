@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 FROM dock.mau.dev/maubot/maubot:latest
 
 # Añadir repositorio community de Alpine para dependencias adicionales
@@ -26,3 +27,4 @@ RUN chmod +x /entrypoint.sh
 
 # El entrypoint construye el .mbp desde /plugin-src y luego arranca maubot
 ENTRYPOINT ["/entrypoint.sh"]
+# --8<-- [end:file_desc]

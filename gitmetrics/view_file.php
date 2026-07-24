@@ -1,13 +1,15 @@
 <?php
-// -----------------------------------------------------------------------------
-// view_file.php – Visor de archivos Markdown en vivo desde el repositorio Git.
-//
-// Características:
-//  · Parsea frontmatter YAML y lo renderiza como ficha elegante
-//  · Convierte [[wiki-links]] de estilo Obsidian en hipervínculos Moodle
-//  · Renderiza el cuerpo Markdown con format_text
-//  · No almacena ningún archivo en disco — todo en memoria RAM
-// -----------------------------------------------------------------------------
+/*
+--8<-- [start:file_desc]
+Visor de archivos Markdown en vivo desde el repositorio Git.
+
+Características:
+ · Parsea frontmatter YAML y lo renderiza como ficha elegante
+ · Convierte [[wiki-links]] de estilo Obsidian en hipervínculos Moodle
+ · Renderiza el cuerpo Markdown con format_text
+ · No almacena ningún archivo en disco — todo en memoria RAM
+--8<-- [end:file_desc]
+*/
 
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/filelib.php');
@@ -100,6 +102,7 @@ if ($obsidian_enabled) {
  * Extrae y parsea el frontmatter YAML (entre ---) del inicio del documento.
  * Devuelve ['meta' => [...campos...], 'body' => '...resto del contenido...'].
  */
+// --8<-- [start:gmv_parse_frontmatter]
 function gmv_parse_frontmatter(string $content): array {
     $meta = [];
     $body = $content;
@@ -137,12 +140,14 @@ function gmv_parse_frontmatter(string $content): array {
     }
     return ['meta' => $meta, 'body' => $body];
 }
+// --8<-- [end:gmv_parse_frontmatter]
 
 /**
  * Convierte [[path|Texto]] y [[path]] (Obsidian wiki-links) en hipervínculos
  * de Markdown hacia view_file.php con los parámetros del contexto actual.
  * Usa out(false) para que format_text no doble-codifique las URLs.
  */
+// --8<-- [start:gmv_convert_wiki_links]
 function gmv_convert_wiki_links(string $body, string $repourl, string $branch, int $courseid, int $blockid): string {
     // Directorio base del archivo actual (para resolver paths relativos)
     // No lo necesitamos aquí porque los wiki-links suelen ser paths completos
@@ -174,10 +179,12 @@ function gmv_convert_wiki_links(string $body, string $repourl, string $branch, i
 
     return $body;
 }
+// --8<-- [end:gmv_convert_wiki_links]
 
 /**
  * Genera la ficha de metadatos (frontmatter) renderizada en HTML.
  */
+// --8<-- [start:gmv_render_meta_card]
 function gmv_render_meta_card(array $meta, string $repourl, string $branch, int $courseid, int $blockid): string {
     if (empty($meta)) return '';
 
@@ -277,6 +284,7 @@ function gmv_render_meta_card(array $meta, string $repourl, string $branch, int 
     $h .= '</div>';
     return $h;
 }
+// --8<-- [end:gmv_render_meta_card]
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Procesar el contenido del archivo

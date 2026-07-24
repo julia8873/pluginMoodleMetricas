@@ -6,22 +6,24 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->libdir . '/filelib.php');
 
-/**
- * Cliente HTTP para la API v4 de GitLab (auto-alojado u OSL).
- *
- * Compatible con cualquier instancia GitLab: la OSL de tu universidad,
- * un servidor GitLab en red local o el propio gitlab.com.
- *
- * Endpoints utilizados:
- *   - GET /api/v4/projects/{id_encoded}/repository/tree?recursive=true&ref={branch}
- *     → arbol completo de ficheros y directorios.
- *   - GET /api/v4/projects/{id_encoded}/repository/files/{path_encoded}/raw?ref={branch}
- *     → contenido raw de cada fichero Markdown.
- *
- * Autenticacion:
- *   - Token personal (PRIVATE-TOKEN) o token de acceso de proyecto.
- *   - Sin token funciona para repositorios publicos.
- */
+/*
+--8<-- [start:class_desc]
+Cliente HTTP para la API v4 de GitLab (auto-alojado u OSL).
+
+Compatible con cualquier instancia GitLab: la OSL de tu universidad,
+un servidor GitLab en red local o el propio gitlab.com.
+
+Endpoints utilizados:
+  - GET /api/v4/projects/{id_encoded}/repository/tree?recursive=true&ref={branch}
+    → arbol completo de ficheros y directorios.
+  - GET /api/v4/projects/{id_encoded}/repository/files/{path_encoded}/raw?ref={branch}
+    → contenido raw de cada fichero Markdown.
+
+Autenticacion:
+  - Token personal (PRIVATE-TOKEN) o token de acceso de proyecto.
+  - Sin token funciona para repositorios publicos.
+--8<-- [end:class_desc]
+*/
 class gitlab_client implements git_provider_interface {
 
     /** @var string URL base de la instancia GitLab (sin barra final). Ej: https://gitlab.osl.ugr.es */
@@ -53,6 +55,7 @@ class gitlab_client implements git_provider_interface {
      * GitLab devuelve los nodos paginados (max 100 por pagina), por lo que
      * este metodo itera todas las paginas hasta recopilarlos todos.
      */
+    // --8<-- [start:get_tree]
     public function get_tree(string $owner, string $repo, string $branch): array {
         $project_id = rawurlencode("{$owner}/{$repo}");
         $nodes      = [];
@@ -90,10 +93,12 @@ class gitlab_client implements git_provider_interface {
 
         return $nodes;
     }
+    // --8<-- [end:get_tree]
 
     /**
      * Descarga el contenido raw de un fichero via API v4 de GitLab.
      */
+    // --8<-- [start:get_file_content]
     public function get_file_content(string $owner, string $repo, string $path, string $branch): string {
         $project_id   = rawurlencode("{$owner}/{$repo}");
         $encoded_path = rawurlencode($path);
@@ -103,6 +108,7 @@ class gitlab_client implements git_provider_interface {
 
         return $this->raw_request($url);
     }
+    // --8<-- [end:get_file_content]
 
     // -------------------------------------------------------------------------
     // Metodos privados de transporte HTTP

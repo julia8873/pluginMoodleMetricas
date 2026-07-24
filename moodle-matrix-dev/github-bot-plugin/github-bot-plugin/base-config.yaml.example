@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 # Proveedor Git principal ('gitlab' o 'github', o autodetectado por repo_url)
 provider: "gitlab"
 repo_url: "https://gitlab.com/tu-usuario/tu-repo"
@@ -22,3 +23,4 @@ llm_vision_api_key: ""
 bdc_cache_ttl_minutos: 30
 # Si es true, cada fuente subida a raw/ se estructura automaticamente en okf/
 ingest_automatico: true
+# --8<-- [end:file_desc]

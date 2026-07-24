@@ -1,4 +1,4 @@
-# Archivos temporales y de depuracion
+# ── Archivos temporales y de depuración ──
 communication
 *.log
 output/
@@ -6,6 +6,7 @@ scratch/
 .DS_Store
 *.swp
 *.tmp
+Thumbs.db
 
 # ── Ficheros con credenciales y secretos (NUNCA subir al repositorio) ──
 moodle-matrix-dev/.env
@@ -19,3 +20,26 @@ moodle-matrix-dev/github-bot-plugin/maubot-data/maubot.db
 moodle-matrix-dev/github-bot-plugin/maubot-data/plugins/
 moodle-matrix-dev/github-bot-plugin/maubot-data/dbs/
 moodle-matrix-dev/github-bot-plugin/maubot-data/trash/
+
+# ── Entorno virtual ──
+venv/
+.venv/
+env/
+
+# ── Python y Caché ──
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# ── Documentación (MkDocs) ──
+site/
+
+# ── Obsidian ──
+.obsidian/workspace
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# ── Entornos de Desarrollo (IDEs) ──
+.vscode/
+.idea/

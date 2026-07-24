@@ -1,3 +1,4 @@
+# --8<-- [start:file_desc]
 """
 Plugin de maubot para asistencia de estudio universitario con GitHub y Matrix.
 
@@ -152,6 +153,7 @@ class Config(BaseProxyConfig):
 # --------------------------------------------------------------------
 
 class GithubBot(Plugin):
+# --8<-- [end:file_desc]
 
     async def start(self) -> None:
         self.config.load_and_update()

@@ -1,13 +1,16 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * Formulario de configuracion por instancia del bloque.
- * El profesor elige el proveedor (GitHub o GitLab) y pega la URL
- * del repositorio que desea analizar en su asignatura o curso.
- */
+/*
+--8<-- [start:file_desc]
+Formulario de configuracion por instancia del bloque.
+El profesor elige el proveedor (GitHub o GitLab) y pega la URL
+del repositorio que desea analizar en su asignatura o curso.
+--8<-- [end:file_desc]
+*/
 class block_gitmetrics_edit_form extends block_edit_form {
 
+    // --8<-- [start:specific_definition]
     protected function specific_definition($mform) {
 
         // -- Seccion principal ----------------------------------------------
@@ -58,4 +61,5 @@ class block_gitmetrics_edit_form extends block_edit_form {
         $mform->setType('config_force_refresh', PARAM_BOOL);
         $mform->setDefault('config_force_refresh', 0);
     }
+    // --8<-- [end:specific_definition]
 }
