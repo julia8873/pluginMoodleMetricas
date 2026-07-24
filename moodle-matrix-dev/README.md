@@ -85,8 +85,11 @@ Configurar manualmente desde la interfaz web de Moodle:
 Cada vez que creas una asignatura nueva en Moodle, se genera y vincula automáticamente una sala de chat en Matrix (con el bot).
 
 Si un profesor no desea tener el chat activo para su asignatura, puede **deshabilitarlo manualmente** (Opt-out):
+
 1. En la asignatura, ve a la barra superior → **Más... → Comunicación**.
+
 2. Selecciona **Ninguno** en el proveedor de comunicación y pulsa guardar.
+
 
 *Nota: Si acabas de crear el curso y el chat aún no aparece en Element, puedes ejecutar el cron para que se genere:* 
 
