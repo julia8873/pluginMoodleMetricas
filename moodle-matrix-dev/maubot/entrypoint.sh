@@ -11,7 +11,7 @@ set -e
 
 PLUGIN_SRC="/plugin-src"
 PLUGIN_OUT="/data/plugins"
-PLUGIN_ID="dev.julia.githubbot"
+PLUGIN_ID="dev.julia.llmwikiassistant"
 
 # Extraer la versión del maubot.yaml del plugin
 VERSION=$(grep '^version:' "$PLUGIN_SRC/maubot.yaml" | awk '{print $2}')
@@ -31,7 +31,7 @@ cd "$PLUGIN_SRC"
 # Copiar los ficheros del plugin (excluyendo bytecode Python)
 cp maubot.yaml base-config.yaml "$TMP_BUILD/"
 
-find github_bot -type f \
+find llm_wiki_assistant -type f \
     ! -name "*.pyc" \
     ! -name "*.pyo" \
     ! -path "*/__pycache__/*" \

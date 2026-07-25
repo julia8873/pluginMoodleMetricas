@@ -44,7 +44,7 @@ copy_if_missing() {
 
 copy_if_missing "$DOCKER_DIR/.env.example"
 copy_if_missing "$DOCKER_DIR/synapse-data/homeserver.yaml.example"
-copy_if_missing "$DOCKER_DIR/maubot/github-bot-plugin/base-config.yaml.example"
+copy_if_missing "$DOCKER_DIR/maubot/llm-wiki-assistant-plugin/base-config.yaml.example"
 copy_if_missing "$DOCKER_DIR/maubot/maubot-data/config.yaml.example"
 
 # 1. Levantar contenedores Docker

@@ -1,0 +1,15 @@
+maubot: 0.1.0
+id: dev.julia.llmwikiassistant
+version: 2.9.3
+license: MIT
+modules:
+  - llm_wiki_assistant
+main_class: LlmWikiAssistant
+extra_files:
+  - base-config.yaml
+database: true
+database_type: asyncpg
+dependencies:
+  - pypdf
+  - pymupdf
+  - matplotlib

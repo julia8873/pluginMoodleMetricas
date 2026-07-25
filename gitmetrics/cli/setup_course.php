@@ -25,8 +25,10 @@ if (!$course) {
 
     $course = create_course($data);
     echo "Asignatura 'Panel de Métricas y BdC' creada con éxito (ID: {$course->id}).\n";
+    $is_new_course = true;
 } else {
     echo "Asignatura 'Panel de Métricas y BdC' ya existía (ID: {$course->id}).\n";
+    $is_new_course = false;
 }
 
 // Asegurar que exista el bloque en este curso
@@ -74,6 +76,11 @@ if ($enrolplugin) {
     }
 }
 
+if (!$is_new_course) {
+    echo "\nOmitiendo el cálculo inicial de métricas HTML porque la asignatura ya estaba configurada y lista.\n";
+    exit(0);
+}
+
 // Calculamos las métricas y las inyectamos como los 4 temas de la asignatura
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/github_client.php');
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/markdown_parser.php');
@@ -97,9 +104,6 @@ if (empty($repourl) || strpos($repourl, '<tu_usuario>') !== false) {
     $calculator = new \block_gitmetrics\metrics_calculator($token, $provider, $gitlab_url);
     $metrics    = $calculator->calculate($repourl, 'main');
 }
-
-$calculator = new \block_gitmetrics\metrics_calculator($token, $provider, $gitlab_url);
-$metrics    = $calculator->calculate($repourl, 'main');
 
 global $PAGE;
 $PAGE->set_context(context_course::instance($course->id));

@@ -28,31 +28,31 @@ theme:
 nav:
   - Proyecto Principal: index.md
   - Entorno Docker y Matrix:
-    - General: moodle-matrix-dev.md
+    - General: moodle-matrix-dev/index.md
     - Docker y Configuración: moodle-matrix-dev/docker.md
-    - Scripts de Usuarios: moodle-matrix-dev/usuarios.md
-    - Github Bot (Maubot):
-      - Configuración Base: moodle-matrix-dev/github_bot_config.md
-      - Archivos (github_bot):
-        - __init__.py: moodle-matrix-dev/github_bot/__init__.md
-        - bot.py: moodle-matrix-dev/github_bot/bot.md
-        - check_empty.py: moodle-matrix-dev/github_bot/check_empty.md
-        - check_missing_links.py: moodle-matrix-dev/github_bot/check_missing_links.md
-        - crear_conceptos_faltantes.py: moodle-matrix-dev/github_bot/crear_conceptos_faltantes.md
-        - db.py: moodle-matrix-dev/github_bot/db.md
-        - ejecutar_ingesta_lotes.py: moodle-matrix-dev/github_bot/ejecutar_ingesta_lotes.md
-        - estudio.py: moodle-matrix-dev/github_bot/estudio.md
-        - git_client.py: moodle-matrix-dev/github_bot/git_client.md
-        - image_ocr.py: moodle-matrix-dev/github_bot/image_ocr.md
-        - latex_render.py: moodle-matrix-dev/github_bot/latex_render.md
-        - llm_provider.py: moodle-matrix-dev/github_bot/llm_provider.md
-        - okf_ingest.py: moodle-matrix-dev/github_bot/okf_ingest.md
-        - organizacion.py: moodle-matrix-dev/github_bot/organizacion.md
-        - pdf_ingest.py: moodle-matrix-dev/github_bot/pdf_ingest.md
+    - Scripts de Usuarios: moodle-matrix-dev/usuarios/index.md
+    - LLM Wiki Assistant (Maubot):
+      - Configuración y Despliegue: moodle-matrix-dev/maubot/index.md
+      - moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant:
+        - __init__.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/__init__.md
+        - bot.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/bot.md
+        - check_empty.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/check_empty.md
+        - check_missing_links.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/check_missing_links.md
+        - crear_conceptos_faltantes.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/crear_conceptos_faltantes.md
+        - db.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/db.md
+        - ejecutar_ingesta_lotes.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/ejecutar_ingesta_lotes.md
+        - estudio.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/estudio.md
+        - git_client.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/git_client.md
+        - image_ocr.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/image_ocr.md
+        - latex_render.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/latex_render.md
+        - llm_provider.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/llm_provider.md
+        - okf_ingest.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/okf_ingest.md
+        - organizacion.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/organizacion.md
+        - pdf_ingest.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/pdf_ingest.md
   - Plugin Gitmetrics:
     - General: gitmetrics/index.md
     - Estructura: gitmetrics/estructura.md
-    - Scripts CLI: gitmetrics/cli.md
+    - Scripts CLI: gitmetrics/cli/index.md
     - Archivos Base:
       - block_gitmetrics: gitmetrics/block_gitmetrics.md
       - edit_form: gitmetrics/edit_form.md

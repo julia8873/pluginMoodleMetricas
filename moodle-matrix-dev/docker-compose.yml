@@ -65,7 +65,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./maubot/maubot-data:/data
-      - ./maubot/github-bot-plugin:/plugin-src:ro
+      - ./maubot/llm-wiki-assistant-plugin:/plugin-src:ro
     ports:
       - "29316:29316"
     depends_on:

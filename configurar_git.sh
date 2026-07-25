@@ -73,7 +73,7 @@ echo " Proveedor: $PROVIDER | Repo: $OWNER/$REPO | Rama: $BRANCH"
 echo "======================================================================"
 
 # 1. Configurar Maubot (base-config.yaml)
-BOT_CONFIG_FILE="moodle-matrix-dev/maubot/github-bot-plugin/base-config.yaml"
+BOT_CONFIG_FILE="moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/base-config.yaml"
 
 if [ -f "$BOT_CONFIG_FILE" ]; then
     python3 -c '

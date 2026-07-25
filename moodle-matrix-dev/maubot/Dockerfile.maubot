@@ -17,9 +17,9 @@ RUN apk add --no-cache olm-dev build-base zip
 RUN pip install --no-cache-dir --break-system-packages pypdf pymupdf "maubot[encryption]"
 
 # Copiar el código fuente del plugin al contenedor
-# El contexto de build es ./maubot/, así que github-bot-plugin/
-# hace referencia a ./maubot/github-bot-plugin/
-COPY github-bot-plugin/ /plugin-src/
+# El contexto de build es ./maubot/, así que llm-wiki-assistant-plugin/
+# hace referencia a ./maubot/llm-wiki-assistant-plugin/
+COPY llm-wiki-assistant-plugin/ /plugin-src/
 
 # Copiar y activar el script de arranque
 COPY entrypoint.sh /entrypoint.sh

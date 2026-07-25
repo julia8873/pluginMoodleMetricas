@@ -32,7 +32,7 @@ Entorno integral formado por el plugin de bloque Moodle **`block_gitmetrics`** y
 7. [Seguridad: Gestión de Credenciales](#7-seguridad-gestión-de-credenciales)
 8. [Cambiar o Reconectar el Repositorio Git](#8-cambiar-o-reconectar-el-repositorio-git)
 9. [Guía de Uso: Secciones de Métricas](#9-guía-de-uso-secciones-de-métricas)
-10. [Integración con Matrix y el Bot Git](#10-integración-con-matrix-y-el-bot-git)
+10. [Integración con Matrix y el LLM Wiki Assistant](#10-integración-con-matrix-y-el-bot-git)
     - [Crear el usuario administrador de Matrix](#crear-el-usuario-administrador-de-matrix)
     - [Conectar Moodle con Matrix](#conectar-moodle-con-matrix)
     - [Las salas de chat (Automatización y Desactivación)](#las-salas-de-chat-automatización-y-desactivación)
@@ -58,6 +58,12 @@ docker run --rm -it -p 8000:8000 -v ${PWD}:/docs squidfunk/mkdocs-material
 *(Si usas la terminal de Windows en vez de WSL o Linux, usa `-v "%cd%":/docs` en su lugar).*
 
 La documentación estará disponible en: `http://127.0.0.1:8001/`
+
+Si se desea actualizar la documentación mientras el contenedor de mkdocs está corriendo, se puede ejecutar el siguiente comando:
+
+```bash
+docker restart mkdocs-docs
+```
 
 ---
 
@@ -218,7 +224,7 @@ Cada fichero que contiene credenciales tiene una versión `.example` con valores
 |:---|:---|
 | `moodle-matrix-dev/.env` | `.env.example` |
 | `moodle-matrix-dev/synapse-data/homeserver.yaml` | `homeserver.yaml.example` |
-| `moodle-matrix-dev/maubot/github-bot-plugin/base-config.yaml` | `base-config.yaml.example` |
+| `moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/base-config.yaml` | `base-config.yaml.example` |
 | `moodle-matrix-dev/maubot/maubot-data/config.yaml` | `config.yaml.example` |
 
 ### Primer uso (tras clonar el repositorio)
@@ -231,7 +237,7 @@ Si prefieres hacerlo manualmente antes de ejecutar `instalar.sh`:
 # Desde la raíz del proyecto
 cp moodle-matrix-dev/.env.example moodle-matrix-dev/.env
 cp moodle-matrix-dev/synapse-data/homeserver.yaml.example moodle-matrix-dev/synapse-data/homeserver.yaml
-cp moodle-matrix-dev/maubot/github-bot-plugin/base-config.yaml.example moodle-matrix-dev/maubot/github-bot-plugin/base-config.yaml
+cp moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/base-config.yaml.example moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/base-config.yaml
 cp moodle-matrix-dev/maubot/maubot-data/config.yaml.example moodle-matrix-dev/maubot/maubot-data/config.yaml
 ```
 
@@ -274,9 +280,9 @@ Este único comando actualiza simultáneamente:
 
 ---
 
-## 10. Integración con Matrix y el Bot Git
+## 10. Integración con Matrix y el LLM Wiki Assistant
 
-[Ver los pasos de Integración con Matrix y Bot Git en la documentación del entorno](./moodle-matrix-dev/#matrix)
+[Ver los pasos de Integración con Matrix y LLM Wiki Assistant en la documentación del entorno](./moodle-matrix-dev/#matrix)
 
 ---
 

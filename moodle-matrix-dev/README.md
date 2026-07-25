@@ -4,6 +4,28 @@ Stack Docker Compose para desarrollo y pruebas local de la integración de Moodl
 
 ## Estructura del Entorno
 
+```mermaid
+graph LR
+    subgraph EDU["Entorno Educativo (Moodle)"]
+        U["Scripts de Gestión (usuarios/)"] -.-> M["moodle-app (LMS)"]
+        M --- DB[("moodle-mariadb")]
+    end
+    
+    subgraph COMM["Red de Comunicación Matrix"]
+        E["element-web"] -.-> S["matrix-synapse"]
+        S --- SD[("synapse-data")]
+    end
+    
+    subgraph BOT["Inteligencia Artificial y Bots"]
+        B["maubot (LLM Wiki Assistant)"] --- MD[("maubot-data")]
+        B <-->|Inferencia Local| O["ollama (Motor LLM)"]
+        O --- OD[("ollama-data")]
+    end
+    
+    M <-->|API REST: Crea Salas| S
+    B -.->|Escucha eventos y responde| S
+```
+
 ```text
 moodle-matrix-dev/
 ├-- docker-compose.yml          Define y coordina todos los contenedores (Moodle, Matrix, Maubot, Ollama).
@@ -16,10 +38,10 @@ moodle-matrix-dev/
 │   ├-- maubot-data/            Archivos de configuración y datos internos de la plataforma Maubot.
 │   │   ├-- config.yaml         Configuración principal del servidor Maubot (administradores, secretos).
 │   │   └-- maubot.db           Base de datos SQLite del núcleo de Maubot.
-│   └-- github-bot-plugin/      Carpeta principal con el código fuente en Python del plugin.
+│   └-- llm-wiki-assistant-plugin/      Carpeta principal con el código fuente en Python del plugin.
 │       ├-- base-config.yaml    Fichero donde se configuran el repositorio Git y las claves de IA.
 │       ├-- maubot.yaml         Manifiesto de dependencias y definición del plugin para Maubot.
-│       └-- github_bot/         Código fuente modular del asistente virtual.
+│       └-- llm_wiki_assistant/         Código fuente modular del asistente virtual.
 │           ├-- bot.py          Coordina las conversaciones, comandos y el flujo general.
 │           ├-- git_client.py   Cliente para leer y escribir ficheros en la API de GitHub/GitLab.
 │           ├-- llm_provider.py Abstracción para conectar con distintos modelos de IA (Gemini, Ollama).
@@ -43,7 +65,7 @@ moodle-matrix-dev/
 | **MariaDB** | — | Base de datos de Moodle |
 | **Synapse** | `http://localhost:8008` | Servidor Matrix (homeserver) |
 | **Element Web** | `http://localhost:8081` | Cliente web de Matrix |
-| **Maubot** | `http://localhost:29316` | Bot de Matrix (GitHub Bot) |
+| **Maubot** | `http://localhost:29316` | Bot de Matrix (LLM Wiki Assistant) |
 | **Ollama** | `http://localhost:11434` | LLM local (opcional) |
 
 ---
@@ -55,7 +77,7 @@ moodle-matrix-dev/
 Antes de levantar los servicios, crea el fichero de configuración de maubot:
 
 ```bash
-cp maubot/maubot-data/config.yaml.example github-bot-plugin/maubot-data/config.yaml
+cp maubot/maubot-data/config.yaml.example llm-wiki-assistant-plugin/maubot-data/config.yaml
 ```
 
 Edita `config.yaml` para configurar tu usuario y contraseña (en la sección `admins`).
@@ -69,7 +91,7 @@ docker compose up -d
 > **Nota:** El primer arranque de Moodle puede tardar 1–2 minutos mientras inicializa la base de datos. El contenedor `maubot` compilará automáticamente el plugin (`.mbp`) desde el código fuente en cada inicio.
 
 <a id="matrix"></a>
-## Integración con Matrix y el Bot Git
+## Integración con Matrix y el LLM Wiki Assistant
 
 > **Nota:** La creación del usuario administrador y la conexión entre Moodle y Matrix (explicadas a continuación) se realizan automáticamente al ejecutar `instalar.sh`. Solo necesitas ejecutar estos pasos manualmente si realizas la instalación paso a paso (Opción B) o si necesitas reconfigurar el entorno.
 
@@ -152,7 +174,7 @@ docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/cron.php
 
 **Token necesario**: Personal Access Token con permiso `api` (o `read_api` + `write_repository`).
 
-Editar `moodle-matrix-dev/maubot/github-bot-plugin/base-config.yaml`:
+Editar `moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/base-config.yaml`:
 
 ```yaml
 provider: "gitlab"

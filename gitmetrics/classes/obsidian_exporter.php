@@ -15,6 +15,10 @@ Descarga los documentos Markdown de un repositorio Git remoto y los
 sincroniza con un vault local de Obsidian en el sistema de archivos,
 resolviendo además los enlaces internos (`[[wiki-links]]`) para que
 sean compatibles con el cliente nativo de Obsidian.
+
+Utiliza una caché local de hashes SHA1 de Git (`.obsidian_sync_cache.json`)
+para evitar peticiones HTTP innecesarias cuando los archivos remotos
+no han cambiado.
 --8<-- [end:class_desc]
 */
 class obsidian_exporter {
@@ -76,6 +80,17 @@ class obsidian_exporter {
     public function export(): array {
         $stats = ['written' => 0, 'skipped' => 0, 'errors' => []];
 
+        // Cargar caché local de SHAs de Git para evitar descargas HTTP redundantes
+        $cache_file = $this->vault_path . DIRECTORY_SEPARATOR . '.obsidian_sync_cache.json';
+        $sha_cache  = [];
+        if (is_file($cache_file)) {
+            $cached_data = json_decode(file_get_contents($cache_file), true);
+            if (is_array($cached_data)) {
+                $sha_cache = $cached_data;
+            }
+        }
+        $new_cache = [];
+
         // Obtener árbol completo del repositorio
         $tree = $this->git_client->get_tree($this->owner, $this->repo, $this->branch);
 
@@ -86,7 +101,20 @@ class obsidian_exporter {
         });
 
         foreach ($md_files as $node) {
-            $filepath = $node['path'];
+            $filepath   = $node['path'];
+            $remote_sha = $node['sha'] ?? '';
+
+            // Calcular ruta destino dentro del vault, manteniendo la estructura de carpetas del repo
+            $target_path = $this->vault_path . DIRECTORY_SEPARATOR
+                . str_replace('/', DIRECTORY_SEPARATOR, $filepath);
+
+            // Si el archivo ya existe localmente, tenemos un SHA remoto válido y coincide con la caché,
+            // nos saltamos la llamada HTTP a get_file_content por completo.
+            if (is_file($target_path) && !empty($remote_sha) && isset($sha_cache[$filepath]) && $sha_cache[$filepath] === $remote_sha) {
+                $stats['skipped']++;
+                $new_cache[$filepath] = $remote_sha;
+                continue;
+            }
 
             try {
                 // Descargar contenido raw desde la API (en memoria, sin escribir en Moodle)
@@ -96,10 +124,6 @@ class obsidian_exporter {
 
                 // Transformar los [[wiki-links]] al formato nativo de Obsidian
                 $obsidian_content = $this->resolve_wikilinks($raw_content);
-
-                // Calcular ruta destino dentro del vault, manteniendo la estructura de carpetas del repo
-                $target_path = $this->vault_path . DIRECTORY_SEPARATOR
-                    . str_replace('/', DIRECTORY_SEPARATOR, $filepath);
 
                 // Crear carpetas intermedias si no existen
                 $target_dir = dirname($target_path);
@@ -116,9 +140,28 @@ class obsidian_exporter {
                     $stats['skipped']++;
                 }
 
+                // Guardar el SHA actual en la nueva caché
+                if (!empty($remote_sha)) {
+                    $new_cache[$filepath] = $remote_sha;
+                }
+
             } catch (\Throwable $e) {
                 $stats['errors'][] = "[ERROR] {$filepath}: " . $e->getMessage();
+                // En caso de error de descarga, si existía una versión en disco con SHA en caché, conservar ese SHA
+                if (isset($sha_cache[$filepath])) {
+                    $new_cache[$filepath] = $sha_cache[$filepath];
+                }
             }
+        }
+
+        // Persistir el fichero de caché en el vault para futuras sincronizaciones
+        try {
+            if (!is_dir($this->vault_path)) {
+                mkdir($this->vault_path, 0755, true);
+            }
+            file_put_contents($cache_file, json_encode($new_cache, JSON_PRETTY_PRINT), LOCK_EX);
+        } catch (\Throwable $e) {
+            $stats['errors'][] = "[ERROR] No se pudo guardar la caché de SHA en {$cache_file}: " . $e->getMessage();
         }
 
         return $stats;

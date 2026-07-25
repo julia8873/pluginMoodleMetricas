@@ -56,6 +56,6 @@ echo "Parametros de Matrix guardados correctamente en la base de datos de Moodle
 echo "=== 5. Vinculando sala de Matrix e incluyendo al bot en todos los cursos de Moodle ===\n";
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/matrix_helper.php');
 $count = \block_gitmetrics\matrix_helper::process_all_existing_courses();
-echo "Se ha comprobado y asegurado la sala de chat y la inclusión del bot (@githubbot:localhost) en {$count} asignaturas.\n";
+echo "Se ha comprobado y asegurado la sala de chat y la inclusión del bot (@llmwikiassistant:localhost) en {$count} asignaturas.\n";
 
 echo "\n=== CONFIGURACION AUTOMATICA DE MATRIX COMPLETADA ===\n";

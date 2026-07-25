@@ -41,9 +41,6 @@ services:
     volumes:
       - moodle_data:/bitnami/moodle
       - moodledata_data:/bitnami/moodledata
-      # Volumen de exportacion a Obsidian (opcional).
-      # Monta la carpeta OKF-Vault del host en /obsidian-vault dentro del contenedor.
-      # Si no usas Obsidian, elimina esta linea sin afectar al resto del stack.
       - ${OBSIDIAN_VAULT_PATH:-/tmp/okf-vault-placeholder}:/obsidian-vault
 
   synapse:
@@ -74,7 +71,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./maubot/maubot-data:/data
-      - ./maubot/github-bot-plugin:/plugin-src:ro
+      - ./maubot/llm-wiki-assistant-plugin:/plugin-src:ro
     ports:
       - "29316:29316"
     depends_on:
@@ -104,7 +101,7 @@ volumes:
 - **moodle**: Aplicación principal de e-learning.
 - **synapse**: Servidor Matrix local que permite la federación y mensajería en tiempo real.
 - **element**: Cliente web ligero para conectarse a Matrix y visualizar los mensajes.
-- **maubot**: Contenedor del framework de bots donde se aloja el plugin de GithubBot.
+- **maubot**: Contenedor del framework de bots donde se aloja el plugin de LlmWikiAssistant.
 - **ollama**: Servicio opcional de LLM local si no se quiere depender de APIs externas (como Groq).
 
 ### Volúmenes de Persistencia

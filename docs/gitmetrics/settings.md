@@ -123,9 +123,7 @@ if ($ADMIN->fulltree) {
         PARAM_ALPHANUMEXT
     ));
 
-    // -- Sección Obsidian (opcional, eliminar para desactivar) -----------------
-    // Para desactivar: elimina desde OBSIDIAN_OPTIONAL_START hasta OBSIDIAN_OPTIONAL_END
-    // y borra los archivos: classes/obsidian_exporter.php y cli/export_obsidian.php
+    // -- Sección Obsidian -----------------
     $settings->add(new admin_setting_heading(
         'block_gitmetrics/heading_obsidian',
         get_string('heading_obsidian', 'block_gitmetrics'),

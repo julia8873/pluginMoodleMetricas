@@ -8,7 +8,7 @@ defined('MOODLE_INTERNAL') || die();
 Helper para la integración de Matrix en Moodle.
 
 Gestiona la creación automática de salas en el servidor Synapse
-para cada curso, y orquesta la invitación y unión del bot (@githubbot)
+para cada curso, y orquesta la invitación y unión del bot (@llmwikiassistant)
 a dichas salas mediante llamadas a las APIs REST de Synapse y Maubot.
 --8<-- [end:class_desc]
 */
@@ -16,7 +16,7 @@ class matrix_helper {
 
     /**
      * Asegura que el curso especificado tenga una sala de Matrix creada en Synapse
-     * y que el bot (@githubbot:localhost) este invitado y unido a dicha sala.
+     * y que el bot (@llmwikiassistant:localhost) este invitado y unido a dicha sala.
      *
      * @param int $courseid ID del curso de Moodle
      * @param string|null $roomname Nombre opcional para la sala de Matrix
@@ -158,7 +158,7 @@ class matrix_helper {
             return false;
         }
 
-        $botuserid = '@githubbot:localhost';
+        $botuserid = '@llmwikiassistant:localhost';
         $synapseurl = get_config('communication_matrix', 'matrixhomeserverurl') ?: 'http://matrix-synapse:8008';
 
         $ch = curl_init("{$synapseurl}/_matrix/client/v3/rooms/" . urlencode($roomid) . "/invite");
@@ -188,8 +188,8 @@ class matrix_helper {
     // --8<-- [end:ensure_room_and_bot]
 
     /**
-     * Asegura que el cliente (@githubbot:localhost) y la instancia del plugin
-     * dev.julia.githubbot esten registrados, activos y online en Maubot.
+     * Asegura que el cliente (@llmwikiassistant:localhost) y la instancia del plugin
+     * dev.julia.llmwikiassistant esten registrados, activos y online en Maubot.
      */
     // --8<-- [start:ensure_maubot_active]
     public static function ensure_maubot_active(): void {
@@ -225,7 +225,7 @@ class matrix_helper {
         $need_setup = true;
         if ($res && ($instances = json_decode($res, true)) && is_array($instances)) {
             foreach ($instances as $inst) {
-                if (!empty($inst['id']) && $inst['id'] === 'dev.julia.githubbot' && !empty($inst['started'])) {
+                if (!empty($inst['id']) && $inst['id'] === 'dev.julia.llmwikiassistant' && !empty($inst['started'])) {
                     $need_setup = false;
                     break;
                 }
@@ -241,20 +241,20 @@ class matrix_helper {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-            'username' => 'githubbot',
+            'username' => 'llmwikiassistant',
             'password' => 'botpass123'
         ]));
         curl_setopt($ch, CURLOPT_HTTPHEADER, [$authheader, 'Content-Type: application/json', 'Timeout: 6']);
         curl_exec($ch);
         curl_close($ch);
 
-        // 2. Crear o arrancar la instancia dev.julia.githubbot
-        $ch = curl_init("{$mauboturl}/instance/dev.julia.githubbot");
+        // 2. Crear o arrancar la instancia dev.julia.llmwikiassistant
+        $ch = curl_init("{$mauboturl}/instance/dev.julia.llmwikiassistant");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-            'type' => 'dev.julia.githubbot',
-            'primary_user' => '@githubbot:localhost',
+            'type' => 'dev.julia.llmwikiassistant',
+            'primary_user' => '@llmwikiassistant:localhost',
             'enabled' => true,
             'config' => ''
         ]));

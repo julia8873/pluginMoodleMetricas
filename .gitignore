@@ -8,43 +8,54 @@ scratch/
 *.tmp
 Thumbs.db
 
-# ── Ficheros con credenciales y secretos (NUNCA subir al repositorio) ──
-moodle-matrix-dev/.env
-moodle-matrix-dev/synapse-data/homeserver.yaml
-moodle-matrix-dev/synapse-data/*.signing.key
-moodle-matrix-dev/synapse-data/homeserver.db
-moodle-matrix-dev/synapse-data/media_store/
-moodle-matrix-dev/github-bot-plugin/github-bot-plugin/base-config.yaml
-moodle-matrix-dev/github-bot-plugin/maubot-data/config.yaml
-moodle-matrix-dev/github-bot-plugin/maubot-data/maubot.db
-moodle-matrix-dev/github-bot-plugin/maubot-data/plugins/
-moodle-matrix-dev/github-bot-plugin/maubot-data/dbs/
-moodle-matrix-dev/github-bot-plugin/maubot-data/trash/
-
-# ── Entorno virtual ──
+# ── Entornos Virtuales y Caché Python ──
 venv/
 .venv/
 env/
-
-# ── Python y Caché ──
 __pycache__/
 *.py[cod]
+*.pyo
 *$py.class
 .pytest_cache/
+*.mbp
 
 # ── Documentación (MkDocs) ──
 site/
 
-# ── Obsidian ──
+# ── Obsidian e IDEs de Desarrollo ──
 .obsidian/workspace
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
-
-# ── Entornos de Desarrollo (IDEs) ──
 .vscode/
 .idea/
 
-# Ignore all SQLite database files recursively
+# ── Moodle, Matrix y Maubot (Secretos, runtime y volúmenes) ──
+# Variables de entorno locales
+moodle-matrix-dev/.env
+
+# Maubot (datos locales de tiempo de ejecución y secretos)
+moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/base-config.yaml
+moodle-matrix-dev/maubot/maubot-data/config.yaml
+moodle-matrix-dev/maubot/maubot-data/maubot.db*
+moodle-matrix-dev/maubot/maubot-data/dbs/
+moodle-matrix-dev/maubot/maubot-data/plugins/
+moodle-matrix-dev/maubot/maubot-data/trash/
+moodle-matrix-dev/maubot/maubot-data/maubot-cli.json
+
+# Synapse (Base de datos SQLite, firmas y ficheros multimedia subidos)
+moodle-matrix-dev/synapse-data/*.db
+moodle-matrix-dev/synapse-data/*.db-shm
+moodle-matrix-dev/synapse-data/*.db-wal
+moodle-matrix-dev/synapse-data/*.signing.key
+moodle-matrix-dev/synapse-data/*.log.config
+moodle-matrix-dev/synapse-data/*.pid
+moodle-matrix-dev/synapse-data/media_store/
+
+# Ollama (Almacén de modelos locales de IA)
+moodle-matrix-dev/ollama-data/
+
+# Ignorar ficheros de bases de datos de prueba en todo el árbol
 **/*.db
 **/*.db-shm
 **/*.db-wal
+homeserver.db
