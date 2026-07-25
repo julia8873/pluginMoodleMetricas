@@ -273,6 +273,7 @@ def _parsear_lote_preguntas(bruto: str) -> list:
     return preguntas
 
 
+# --8<-- [start:flashcards]
 async def generar_flashcard(contexto: str, llm: LLMProvider, tipo: str = "") -> dict:
     """Genera una flashcard de repaso: {"concepto": ..., "pregunta": ...}."""
     instruccion = (
@@ -299,6 +300,7 @@ async def generar_ejercicio(contexto: str, llm: LLMProvider, tipo: str = "") -> 
     )
     bruto = await llm.generar_texto(instruccion, contexto)
     return _parsear_concepto_pregunta(bruto)
+# --8<-- [end:flashcards]
 
 
 def _parsear_concepto_pregunta(bruto: str) -> dict:
@@ -394,6 +396,7 @@ def _parsear_lote_ejerciciostema(bruto: str) -> list:
 # Evaluación de la respuesta del estudiante
 # --------------------------------------------------------------------
 
+# --8<-- [start:evaluar]
 async def evaluar_respuesta(
     tipo: str, concepto: str, pregunta: str, respuesta: str, contexto: str, llm: LLMProvider
 ) -> dict:
@@ -440,12 +443,14 @@ async def evaluar_respuesta(
         "correcto": resultado_m.group(1).lower() == "correcto",
         "feedback": feedback_m.group(1).strip(),
     }
+# --8<-- [end:evaluar]
 
 
 # --------------------------------------------------------------------
 # Resumen de sesión
 # --------------------------------------------------------------------
 
+# --8<-- [start:resumen]
 async def generar_resumen_sesion(interacciones: list, contexto: str, llm: LLMProvider) -> str:
     """
     interacciones: lista de dicts {"tipo", "contenido", "timestamp"}, tal como
@@ -462,4 +467,6 @@ async def generar_resumen_sesion(interacciones: list, contexto: str, llm: LLMPro
         "evita relleno.\n\n"
         f"REGISTRO DE LA SESIÓN:\n{log_sesion}"
     )
-    return await llm.generar_texto(instruccion, contexto)
+    resultado = await llm.generar_texto(instruccion, contexto)
+    # --8<-- [end:resumen]
+    return resultado
