@@ -4,27 +4,8 @@ Stack Docker Compose para desarrollo y pruebas local de la integración de Moodl
 
 ## Estructura del Entorno
 
-```mermaid
-graph LR
-    subgraph EDU["Entorno Educativo (Moodle)"]
-        U["Scripts de Gestión (usuarios/)"] -.-> M["moodle-app (LMS)"]
-        M --- DB[("moodle-mariadb")]
-    end
-    
-    subgraph COMM["Red de Comunicación Matrix"]
-        E["element-web"] -.-> S["matrix-synapse"]
-        S --- SD[("synapse-data")]
-    end
-    
-    subgraph BOT["Inteligencia Artificial y Bots"]
-        B["maubot (LLM Wiki Assistant)"] --- MD[("maubot-data")]
-        B <-->|Inferencia Local| O["ollama (Motor LLM)"]
-        O --- OD[("ollama-data")]
-    end
-    
-    M <-->|API REST: Crea Salas| S
-    B -.->|Escucha eventos y responde| S
-```
+![Estructura del Entorno](../imagenes/diagramaMoodle.png)
+
 
 ```text
 moodle-matrix-dev/

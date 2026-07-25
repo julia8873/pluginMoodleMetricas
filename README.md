@@ -90,7 +90,7 @@ pluginMoodleMetricas/
 ├── configurar_git.sh        ← Script para el cambio de
                                  repositorio Git
 ├── gitmetrics/              ← Plugin PHP para Moodle
-                                 (block_gitmetrics
+                                 (block_gitmetrics)
 └── moodle-matrix-dev/       ← Stack Docker con servicios
     ├── docker-compose.yml   ← Define los contenedores
     ├── synapse-data/        ← Datos persistentes
