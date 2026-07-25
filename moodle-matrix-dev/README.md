@@ -4,7 +4,7 @@ Stack Docker Compose para desarrollo y pruebas local de la integración de Moodl
 
 ## Estructura del Entorno
 
-![Estructura del Entorno](../imagenes/diagramaMoodle.png)
+![Estructura del Entorno](/imagenes/diagramaMoodle.png)
 
 
 ```text
@@ -74,7 +74,9 @@ docker compose up -d
 <a id="matrix"></a>
 ## Integración con Matrix y el LLM Wiki Assistant
 
-> **Nota:** La creación del usuario administrador y la conexión entre Moodle y Matrix (explicadas a continuación) se realizan automáticamente al ejecutar `instalar.sh`. Solo necesitas ejecutar estos pasos manualmente si realizas la instalación paso a paso (Opción B) o si necesitas reconfigurar el entorno.
+> **Nota:** La creación del usuario administrador y la conexión entre Moodle y Matrix (explicadas a continuación) se realizan automáticamente al ejecutar `instalar.sh`. 
+
+> Solo necesitas ejecutar estos pasos manualmente si realizas la instalación paso a paso (Opción B) o si necesitas reconfigurar el entorno.
 
 ---
 
@@ -132,19 +134,6 @@ Si un profesor no desea tener el chat activo para su asignatura, puede **deshabi
 ```bash
 docker exec --user daemon moodle-app php /bitnami/moodle/admin/cli/cron.php
 ```
-
----
-
-### Comandos del bot en la sala Matrix
-
-| Comando | Descripción |
-|:---|:---|
-| `!ficheros` | Lista el árbol completo del repositorio |
-| `!documento <nombre>` | Muestra el contenido y el historial de commits de un fichero |
-| `!estudio` | Inicia una sesión de estudio guiado por LLM con preguntas de comprensión |
-| `!repaso` | Repaso de conceptos previamente estudiados |
-| `!organizacion` | Analiza y propone reorganizaciones de la estructura OKF |
-| Adjuntar `.md` / PDF / imagen | Ingesta automática en OKF (si `ingest_automatico: true` en `base-config.yaml`) |
 
 ---
 

@@ -32,6 +32,7 @@ nav:
     - Docker y Configuración: moodle-matrix-dev/docker.md
     - Scripts de Usuarios: moodle-matrix-dev/usuarios/index.md
     - LLM Wiki Assistant (Maubot):
+      - Comandos del Maubot: moodle-matrix-dev/maubot/comandos_maubot.md
       - Configuración y Despliegue: moodle-matrix-dev/maubot/index.md
       - moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant:
         - __init__.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/__init__.md
