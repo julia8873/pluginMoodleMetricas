@@ -129,9 +129,10 @@ echo ""
 echo "[7/9] Creando asignatura dedicada 'Panel de Métricas y BdC' en Moodle..."
 docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_course.php
 
-# Asegurar que el usuario admin de Matrix está creado
-echo "      Asegurando que el usuario admin de Matrix existe en Synapse..."
+# Asegurar que el usuario admin y el bot de Matrix existen en Synapse
+echo "      Asegurando que los usuarios de Matrix existen en Synapse..."
 docker exec matrix-synapse register_new_matrix_user -u admin -p adminpass123 -c /data/homeserver.yaml --admin http://localhost:8008 2>/dev/null || true
+docker exec matrix-synapse register_new_matrix_user -u llmwikiassistant -p botpass123 -c /data/homeserver.yaml --no-admin http://localhost:8008 2>/dev/null || true
 
 # 8. Configurar automáticamente Matrix, desbloquear red interna y crear sala
 echo ""
