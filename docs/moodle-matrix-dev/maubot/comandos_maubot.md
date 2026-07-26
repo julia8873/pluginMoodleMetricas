@@ -1,6 +1,6 @@
 # Comandos de LLM Wiki Assistant (Maubot)
 
-A continuación se detalla la lista completa de comandos disponibles en las salas de Matrix donde esté invitado el bot asistente. Puedes enviar cualquiera de estos comandos en el chat para interactuar con tu Base de Conocimiento (BdC) y realizar sesiones de estudio.
+A continuación se detalla la lista completa de comandos dispnibles para el llm wiki assistant.
 
 ---
 
@@ -9,14 +9,12 @@ A continuación se detalla la lista completa de comandos disponibles en las sala
 | Comando | Descripción |
 | :--- | :--- |
 | `!ficheros` | **Lista el árbol completo** de archivos `.md` y `.txt` disponibles en el repositorio Git vinculado a la asignatura. |
-| `!documento <nombre>` | Muestra información detallada sobre un archivo concreto, incluyendo su contenido y el historial de cambios (commits). |
-| `!carpeta` | Comando base para gestionar la jerarquía de carpetas/asignaturas de la BdC. |
+| `!documento <nombre>` | **Muestra información detallada** sobre un archivo concreto, incluyendo su contenido y el historial de cambios (commits). |
+| `!carpeta` | Comando base para **gestionar la jerarquía de carpetas/asignaturas** de la BdC. |
 | `!mover <nombre> -> <destino>`| **Mueve un documento** de su ubicación actual a una nueva carpeta. Si quieres moverlo a la raíz, usa `raiz` como destino. |
-| `!borrar <nombre>` | **Elimina un documento** de la base de conocimiento (requiere confirmación previa para evitar borrados accidentales). |
-| `!ingest_lotes [tema:X]` | Fuerza la extracción completa de conceptos por lotes desde los archivos en bruto (`raw/`) que se hayan adjuntado. |
-| `!crear_conceptos` | Extrae automáticamente términos, preguntas y apuntes a partir del material no estructurado subido a la sala de chat. |
-
-*(**Nota:** Además de usar comandos, puedes simplemente **adjuntar archivos Markdown, PDFs o imágenes** en el chat y el bot procesará automáticamente la ingesta del material si la opción `ingest_automatico` está activa).*
+| `!borrar <nombre>` | **Elimina un documento** de la base de conocimiento. |
+| `!ingest_lotes [tema:X]` | Fuerza la extracción completa de conceptos por lotes desde los archivos en `raw/`. |
+| `!crear_conceptos` | **Extrae términos, preguntas y apuntes** a partir del material subido a la sala de chat. |
 
 ---
 

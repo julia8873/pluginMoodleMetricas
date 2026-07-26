@@ -117,9 +117,9 @@ pluginMoodleMetricas/
 - **`Raíz del proyecto (/)`**: Contiene los scripts principales de despliegue (`instalar.sh` y `configurar_git.sh`). Son los encargados de levantar toda la infraestructura de contenedores, configurar las conexiones de repositorios e inicializar los servicios.
 - **`gitmetrics/`**: Es el código fuente del plugin de Moodle (`block_gitmetrics`). Aquí se aloja la lógica en PHP para extraer métricas de GitHub/GitLab, procesar los documentos Markdown bajo el estándar OKF y mostrar las estadísticas.
 - **`moodle-matrix-dev/`**: Contiene el fichero de Docker Compose que enlaza Moodle con el servidor de chat, además de los siguientes subdirectorios:
-  - **`synapse-data/`**: Carpeta donde se guardan de forma permanente los datos, archivos y base de datos del servidor Matrix.
-  - **`maubot/`**: Contiene el código y la configuración del bot Maubot.
-  - **`usuarios/`**: Para gestionar usuarios de Moodle usando la línea de comandos.
+    - **`synapse-data/`**: Carpeta donde se guardan de forma permanente los datos, archivos y base de datos del servidor Matrix.
+    - **`maubot/`**: Contiene el código y la configuración del bot Maubot.
+    - **`usuarios/`**: Para gestionar usuarios de Moodle usando la línea de comandos.
 ---
 ## 5. Requisitos Previos
 
@@ -229,7 +229,7 @@ Cada fichero que contiene credenciales tiene una versión `.example` con valores
 
 ### Primer uso (tras clonar el repositorio)
 
-`instalar.sh` **copia automáticamente** cada plantilla `.example` a su fichero real la primera vez que se ejecuta. Si el fichero real ya existe, no lo sobrescribe (para no perder credenciales que ya hayas configurado).
+`instalar.sh` copia automáticamente cada plantilla `.example` a su fichero real la primera vez que se ejecuta. Si el fichero real ya existe, no lo sobrescribe (para no perder credenciales que ya hayas configurado).
 
 Si prefieres hacerlo manualmente antes de ejecutar `instalar.sh`:
 

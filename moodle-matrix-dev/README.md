@@ -51,7 +51,9 @@ moodle-matrix-dev/
 
 ---
 
-## Quick Start
+## Guía de inicio
+
+> **Nota:** El script `instalar.sh` ejecuta todos los pasos de esta guía automáticamente la primera vez que se ejecuta.
 
 ### 1. Configurar maubot
 
@@ -74,16 +76,9 @@ docker compose up -d
 <a id="matrix"></a>
 ## Integración con Matrix y el LLM Wiki Assistant
 
-> **Nota:** La creación del usuario administrador y la conexión entre Moodle y Matrix (explicadas a continuación) se realizan automáticamente al ejecutar `instalar.sh`. 
-
-> Solo necesitas ejecutar estos pasos manualmente si realizas la instalación paso a paso (Opción B) o si necesitas reconfigurar el entorno.
-
 ---
 
 ### Crear el usuario administrador de Matrix
-
-Crear la cuenta de administrador en el servidor Synapse. **`instalar.sh` lo ejecuta automáticamente** como parte del despliegue. Para hacerlo manualmente:
-
 ```bash
 docker exec -it matrix-synapse register_new_matrix_user \
   -c /data/homeserver.yaml \
@@ -99,7 +94,7 @@ Conectar el plugin de Moodle con el servidor Synapse para permitir la comunicaci
 
 #### Alternativa 1: Configuración automática (script)
 
-Activa el subsistema de comunicaciones, desbloquea los puertos internos Docker en las reglas cURL de Moodle, obtiene el Access Token de Synapse automáticamente y guarda todo en la base de datos. **`instalar.sh` lo ejecuta automáticamente.** Para lanzarlo de forma aislada:
+Activa el subsistema de comunicaciones, desbloquea los puertos internos Docker en las reglas cURL de Moodle, obtiene el Access Token de Synapse automáticamente y guarda todo en la base de datos.
 
 ```bash
 docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_matrix.php
