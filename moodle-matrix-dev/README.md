@@ -68,7 +68,11 @@ Edita `config.yaml` para configurar tu usuario y contraseña (en la sección `ad
 ### 2. Levantar los servicios
 
 ```bash
+# Arrancar los servicios principales
 docker compose up -d
+
+# Arrancar incluyendo Ollama (opcional)
+docker compose --profile ollama up -d
 ```
 
 > **Nota:** El primer arranque de Moodle puede tardar 1–2 minutos mientras inicializa la base de datos. El contenedor `maubot` compilará automáticamente el plugin (`.mbp`) desde el código fuente en cada inicio.
@@ -199,8 +203,11 @@ docker compose restart maubot
 ```bash
 cd pluginMoodleMetricas/moodle-matrix-dev
 
-# Arrancar todos los servicios
+# Arrancar los servicios principales (Moodle, Matrix, Maubot)
 docker compose up -d
+
+# Arrancar incluyendo Ollama (opcional)
+docker compose --profile ollama up -d
 
 # Detener todos los servicios (conserva los datos)
 docker compose down

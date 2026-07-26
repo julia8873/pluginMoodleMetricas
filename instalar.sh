@@ -7,11 +7,13 @@ set -e
 
 GIT_URL=""
 GIT_TOKEN=""
+START_OLLAMA=false
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --url=*) GIT_URL="${1#*=}" ;;
         --token=*) GIT_TOKEN="${1#*=}" ;;
+        --ollama) START_OLLAMA=true ;;
         -u|--url) GIT_URL="$2"; shift ;;
         -t|--token) GIT_TOKEN="$2"; shift ;;
     esac
@@ -60,7 +62,12 @@ if ! command -v docker &> /dev/null || ! docker info &> /dev/null; then
 fi
 
 cd "$DOCKER_DIR"
-docker compose up -d
+if [ "$START_OLLAMA" = true ]; then
+    echo "      Se ha solicitado iniciar Ollama (perfil ollama)..."
+    docker compose --profile ollama up -d
+else
+    docker compose up -d
+fi
 
 # 2. Esperar a que Moodle esté inicializado y escuchando
 echo ""

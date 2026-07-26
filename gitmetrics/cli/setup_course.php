@@ -76,10 +76,7 @@ if ($enrolplugin) {
     }
 }
 
-if (!$is_new_course) {
-    echo "\nOmitiendo el cálculo inicial de métricas HTML porque la asignatura ya estaba configurada y lista.\n";
-    exit(0);
-}
+// Removido el if (!$is_new_course) para que siempre se regeneren y muestren los resúmenes de las métricas.
 
 // Calculamos las métricas y las inyectamos como los 4 temas de la asignatura
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/github_client.php');

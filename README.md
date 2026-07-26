@@ -151,6 +151,9 @@ cd pluginMoodleMetricas
 # Despliegue completo con GitHub
 ./instalar.sh --url="https://github.com/tu-usuario/tu-repo" --token="ghp_xxxxxxxxxxxxxxxx"
 
+# Despliegue con el LLM local Ollama activado
+./instalar.sh --ollama --url="https://github.com/tu-usuario/tu-repo" --token="ghp_xxxxxxxxxxxxxxxx"
+
 # Despliegue sin repositorio (métricas inactivas hasta configurarlas manualmente)
 ./instalar.sh
 ```
@@ -181,9 +184,12 @@ Maubot:   http://localhost:29316/_matrix/maubot/
 ### Opción B: Instalación Manual Paso a Paso
 
 ```bash
-# 1. Levantar contenedores
+# 1. Levantar contenedores (principales)
 cd pluginMoodleMetricas/moodle-matrix-dev
 docker compose up -d
+
+# Nota: Si deseas levantar también Ollama (LLM local), usa en su lugar:
+# docker compose --profile ollama up -d
 
 # 2. Esperar a Moodle (ver logs hasta "** Moodle setup finished! **")
 docker compose logs -f moodle
