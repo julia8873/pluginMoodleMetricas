@@ -1,7 +1,10 @@
 <?php
+// --8<-- [start:file_desc]
 // -----------------------------------------------------------------------------
 // Script CLI para automatizar la configuracion e inicializacion de Matrix
 // -----------------------------------------------------------------------------
+// --8<-- [end:file_desc]
+
 
 define('CLI_SCRIPT', true);
 

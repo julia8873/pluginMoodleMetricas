@@ -4,13 +4,8 @@ Crear archivo en: `docs/gitmetrics/classes/metrics_cache.md`
 
 Ubicación: `classes/metrics_cache.php`
 
-```python
-Gestión de la caché de métricas en la base de datos de Moodle.
-
-Almacena los resultados del análisis en la tabla block_gitmetrics_cache
-indexados por (blockinstanceid + MD5 de la URL del repositorio).
-
-El TTL (time-to-live) se lee de la configuración global del plugin.
+```php
+--8<-- "gitmetrics/classes/metrics_cache.php:class_desc"
 ```
 
 ## Diagrama de Flujo Principal
@@ -46,36 +41,7 @@ graph TD
 Recupera y decodifica métricas almacenadas siempre y cuando su tiempo de vida (TTL) no haya caducado. Si hubo un error en la cadena JSON, borra la caché corrupta.
 
 ```php
-```python
-public function get(string $repo_url, int $block_id): ?array {
-    $ttl      = $this->get_ttl();
-    $min_time = time() - $ttl;
-    $hash     = md5($repo_url);
-
-    $record = $this->db->get_record(self::TABLE, [
-        'blockinstanceid' => $block_id,
-        'repo_url_hash'   => $hash,
-    ]);
-
-    if (!$record) {
-        return null; // Sin entrada en caché
-    }
-
-    if ($record->timemodified < $min_time) {
-        return null; // Caché caducada
-    }
-
-    $data = json_decode($record->metrics_json, true);
-
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        // JSON corrupto: eliminar el registro
-        $this->db->delete_records(self::TABLE, ['id' => $record->id]);
-        return null;
-    }
-
-    return $data;
-}
-// 
+--8<-- "gitmetrics/classes/metrics_cache.php:get"
 ```
 
 
@@ -83,34 +49,7 @@ public function get(string $repo_url, int $block_id): ?array {
 Guarda el array masivo de resultados en base de datos. Detecta automáticamente si se debe insertar un registro nuevo o actualizar uno existente (basándose en la instancia del bloque y la URL).
 
 ```php
-```python
-public function set(string $repo_url, int $block_id, array $metrics): void {
-    $hash    = md5($repo_url);
-    $json    = json_encode($metrics, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    $now     = time();
-
-    $existing = $this->db->get_record(self::TABLE, [
-        'blockinstanceid' => $block_id,
-        'repo_url_hash'   => $hash,
-    ]);
-
-    if ($existing) {
-        $existing->repo_url      = substr($repo_url, 0, 500); // respetar longitud BD
-        $existing->metrics_json  = $json;
-        $existing->timemodified  = $now;
-        $this->db->update_record(self::TABLE, $existing);
-    } else {
-        $record                   = new \stdClass();
-        $record->blockinstanceid  = $block_id;
-        $record->repo_url         = substr($repo_url, 0, 500);
-        $record->repo_url_hash    = $hash;
-        $record->metrics_json     = $json;
-        $record->timecreated      = $now;
-        $record->timemodified     = $now;
-        $this->db->insert_record(self::TABLE, $record);
-    }
-}
-// 
+--8<-- "gitmetrics/classes/metrics_cache.php:set"
 ```
 
 
@@ -118,11 +57,7 @@ public function set(string $repo_url, int $block_id, array $metrics): void {
 Borra todos los registros en caché asociados a un identificador concreto de instancia de bloque Moodle. Usado como botón del pánico o recarga manual ("Forzar refresco").
 
 ```php
-```python
-public function invalidate(int $block_id): void {
-    $this->db->delete_records(self::TABLE, ['blockinstanceid' => $block_id]);
-}
-// 
+--8<-- "gitmetrics/classes/metrics_cache.php:invalidate"
 ```
 
 
@@ -130,15 +65,6 @@ public function invalidate(int $block_id): void {
 Función de limpieza profunda que rastrea en toda la tabla y elimina permanentemente las entradas que han superado el umbral de su TTL.
 
 ```php
-```python
-public function purge_expired(): int {
-    $min_time = time() - $this->get_ttl();
-    return $this->db->delete_records_select(
-        self::TABLE,
-        'timemodified < :mintime',
-        ['mintime' => $min_time]
-    );
-}
-// 
+--8<-- "gitmetrics/classes/metrics_cache.php:purge_expired"
 ```
 

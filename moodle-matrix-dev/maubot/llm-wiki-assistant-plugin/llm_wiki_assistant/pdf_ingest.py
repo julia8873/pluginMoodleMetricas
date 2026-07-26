@@ -30,11 +30,6 @@ def parece_texto_de_baja_calidad(texto: str) -> bool:
     Detecta texto extraído de PDFs que en realidad es ruido de OCR de baja calidad
     o notación sin valor semántico (p.ej. símbolos de música, caracteres sueltos).
 
-    Muchas apps de escaneo de móvil (CamScanner, Notes, Adobe Scan...) incrustan
-    su propia capa de OCR dentro del PDF para hacerlo buscable. pypdf la lee como
-    "texto seleccionable" aunque sea ilegible, o extrae símbolos sin sentido
-    (notación musical, fragmentos de iconos).
-
     Esta función filtra esos casos comprobando la proporción de caracteres
     alfanuméricos, la densidad de palabras reales y la proporción de tokens
     de un solo carácter.

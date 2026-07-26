@@ -14,10 +14,10 @@ igual que la documentación de estudio) en vez de copiarse aquí como texto fijo
 Así, si el equipo (Alberto, Jose, Manuel, Incho...) ajusta las convenciones del
 wiki en AGENTS.md, la ingesta automática las respeta sin tener que tocar código.
 """
+# --8<-- [end:file_desc]
 
 import json
 import re
-# --8<-- [end:file_desc]
 
 # --------------------------------------------------------------------
 # Errores
@@ -25,7 +25,6 @@ import re
 
 class IngestError(Exception):
     """Se lanza cuando el LLM no devuelve la respuesta de INGEST con el formato esperado."""
-
 
 # --------------------------------------------------------------------
 # Construcción del prompt
@@ -37,6 +36,7 @@ class IngestError(Exception):
 _PATRON_FENCE_JSON = re.compile(r"^```(?:json)?\s*|\s*```$", re.IGNORECASE | re.MULTILINE)
 
 
+# --8<-- [start:construir_prompt_ingest]
 def construir_prompt_ingest(agents_md: str, ruta_fuente_repo: str, nombre_fichero: str, timestamp_iso: str) -> str:
     """
     Construye la instrucción (system prompt) para que el LLM ejecute la
@@ -54,7 +54,7 @@ def construir_prompt_ingest(agents_md: str, ruta_fuente_repo: str, nombre_ficher
         "continuación como CONTENIDO A INGESTAR.\n\n"
         "Sigue los pasos de la operación INGEST de AGENTS.md: crea/actualiza okf/sources/, "
         "okf/concepts/ y okf/entities/ según corresponda, añade cross-links relativos "
-        "[[ruta/nombre|Título]] entre páginas relacionadas, y marca con cualquier "
+        "[[ruta/nombre|Título]] entre páginas relacionadas, y marca con ⚠️ cualquier "
         "afirmación que contradiga contenido que ya conozcas por AGENTS.md o por el propio "
         "material. Respeta el frontmatter obligatorio y las convenciones de nombres, idioma "
         "y longitud de página descritas en AGENTS.md.\n\n"
@@ -74,8 +74,10 @@ def construir_prompt_ingest(agents_md: str, ruta_fuente_repo: str, nombre_ficher
         "\"ficheros\" debe incluir el fichero de okf/sources/ correspondiente a esta fuente "
         "como mínimo. Si no hay contradicciones o preguntas de seguimiento, usa listas vacías."
     )
+# --8<-- [end:construir_prompt_ingest]
 
 
+# --8<-- [start:dividir_en_lotes]
 def dividir_en_lotes(contenido: str, max_lineas: int = 250, solapamiento: int = 30) -> list:
     """
     Divide el texto de un archivo en bloques (lotes) de aproximadamente max_lineas,
@@ -94,8 +96,10 @@ def dividir_en_lotes(contenido: str, max_lineas: int = 250, solapamiento: int = 
             break
         i += paso
     return lotes
+# --8<-- [end:dividir_en_lotes]
 
 
+# --8<-- [start:construir_prompt_ingest_lote]
 def construir_prompt_ingest_lote(agents_md: str, ruta_fuente_repo: str, nombre_fichero: str, timestamp_iso: str, num_lote: int, total_lotes: int) -> str:
     """
     Construye el prompt para procesar un lote (chunk) específico de un documento largo.
@@ -128,12 +132,14 @@ def construir_prompt_ingest_lote(agents_md: str, ruta_fuente_repo: str, nombre_f
         "}\n\n"
         'Cada "path" debe empezar por "okf/". Devuelve tantas fichas como conceptos importantes haya en el fragmento.'
     )
+# --8<-- [end:construir_prompt_ingest_lote]
 
 
 # --------------------------------------------------------------------
 # Parseo de la respuesta
 # --------------------------------------------------------------------
 
+# --8<-- [start:parsear_respuesta_ingest]
 def parsear_respuesta_ingest(texto: str) -> dict:
     """
     Interpreta el JSON devuelto por el LLM tras ejecutar INGEST. Lanza
@@ -186,3 +192,4 @@ def parsear_respuesta_ingest(texto: str) -> dict:
         "contradicciones": [str(c) for c in contradicciones],
         "preguntas_seguimiento": [str(p) for p in preguntas],
     }
+# --8<-- [end:parsear_respuesta_ingest]

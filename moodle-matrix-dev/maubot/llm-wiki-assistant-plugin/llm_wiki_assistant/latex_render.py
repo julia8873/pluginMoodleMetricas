@@ -108,8 +108,6 @@ async def procesar_texto_con_latex(
     - body_plano: el texto original con LaTeX tal cual (fallback para clientes sin HTML).
     - formatted_body_html: texto con cada fórmula sustituida por <img mxc://...>.
 
-    upload_fn: callable async que recibe (bytes_png, alt_text) y devuelve el URI
-    mxc:// de la imagen subida, o None si la subida falla.
     """
     body_plano = texto
 

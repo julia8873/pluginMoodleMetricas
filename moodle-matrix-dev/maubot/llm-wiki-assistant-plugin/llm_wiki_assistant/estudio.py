@@ -468,5 +468,5 @@ async def generar_resumen_sesion(interacciones: list, contexto: str, llm: LLMPro
         f"REGISTRO DE LA SESIÓN:\n{log_sesion}"
     )
     resultado = await llm.generar_texto(instruccion, contexto)
-    # --8<-- [end:resumen]
     return resultado
+# --8<-- [end:resumen]

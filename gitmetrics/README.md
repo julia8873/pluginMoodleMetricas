@@ -46,7 +46,6 @@ gitmetrics/
 ```
 
 
----
 
 <a id="uso"></a>
 ## Guía de Uso: Secciones de Métricas

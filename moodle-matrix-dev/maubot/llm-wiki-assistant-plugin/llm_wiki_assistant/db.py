@@ -4,8 +4,6 @@ Trazabilidad por estudiante.
 
 Usa la base de datos que maubot proporciona automáticamente a cada plugin
 (self.database) cuando "database: true" está declarado en maubot.yaml.
-No hace falta gestionar ningún fichero .db a mano: maubot crea uno propio
-para este plugin en /data/dbs/ (ver docker-compose.yml → maubot-data).
 
 Aquí no se guarda el contenido de las conversaciones (eso lo tiene Synapse
 en su propio histórico); solo se guardan los EVENTOS de aprendizaje que

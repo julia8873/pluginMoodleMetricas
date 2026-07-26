@@ -1,10 +1,13 @@
 <?php
+// --8<-- [start:file_desc]
 // -----------------------------------------------------------------------------
 // cli/setup_obsidian.php
 //
 // Script CLI para automatizar la configuración y primera sincronización
 // del vault de Obsidian durante la instalación del plugin.
 // -----------------------------------------------------------------------------
+// --8<-- [end:file_desc]
+
 
 define('CLI_SCRIPT', true);
 

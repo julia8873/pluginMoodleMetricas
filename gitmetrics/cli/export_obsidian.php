@@ -1,4 +1,5 @@
 <?php
+// --8<-- [start:file_desc]
 // -----------------------------------------------------------------------------
 // cli/export_obsidian.php
 //
@@ -17,6 +18,8 @@
 // salvo los bloques marcados con "OBSIDIAN_OPTIONAL" en settings.php y
 // cli/setup_course.php.
 // -----------------------------------------------------------------------------
+// --8<-- [end:file_desc]
+
 
 define('CLI_SCRIPT', true);
 

@@ -1,8 +1,11 @@
 <?php
+// --8<-- [start:file_desc]
 // -----------------------------------------------------------------------------
 // Script CLI para sincronización unificada de Moodle, Bloques y Obsidian
 // al configurar un repositorio Git (GitLab o GitHub) y un Token.
 // -----------------------------------------------------------------------------
+// --8<-- [end:file_desc]
+
 
 define('CLI_SCRIPT', true);
 

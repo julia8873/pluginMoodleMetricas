@@ -4,10 +4,8 @@ Crear archivo en: `docs/gitmetrics/lib.md`
 
 Ubicación: `lib.php`
 
-```python
-Funciones de biblioteca para block_gitmetrics (Integración con el curso).
-Añade una pestaña en la navegación secundaria superior de la asignatura (curso)
-para acceder directamente a la página completa de Métricas Git.
+```php
+--8<-- "gitmetrics/lib.php:class_desc"
 ```
 
 ## Diagrama de Flujo Principal
@@ -37,23 +35,6 @@ graph TD
 Función Core Hook (gancho del núcleo). Permite a los plugins modificar dinámicamente el árbol de navegación inyectando enlaces a sus propias vistas.
 
 ```php
-```python
-function block_gitmetrics_extend_navigation_course(navigation_node $coursenode, stdClass $course, context $context) {
-    if (!has_capability('moodle/course:view', $context)) {
-        return;
-    }
-
-    $url = new moodle_url('/blocks/gitmetrics/view.php', ['courseid' => $course->id]);
-    $node = $coursenode->add(
-        get_string('pluginname', 'block_gitmetrics'),
-        $url,
-        navigation_node::TYPE_SETTING,
-        null,
-        'gitmetrics',
-        new pix_icon('i/report', '')
-    );
-    $node->showinflatnavigation = true;
-}
-// 
+--8<-- "gitmetrics/lib.php:block_gitmetrics_extend_navigation_course"
 ```
 

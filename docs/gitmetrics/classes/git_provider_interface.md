@@ -4,11 +4,8 @@ Crear archivo en: `docs/gitmetrics/classes/git_provider_interface.md`
 
 Ubicación: `classes/git_provider_interface.php`
 
-```python
-Interfaz comun para clientes de proveedores Git (GitHub, GitLab...).
-
-Cualquier proveedor debe implementar estos dos metodos para ser
-compatible con metrics_calculator.
+```php
+--8<-- "gitmetrics/classes/git_provider_interface.php:class_desc"
 ```
 
 ## Diagrama de Flujo Principal
@@ -36,9 +33,7 @@ graph TD
 Firma obligatoria para obtener el árbol recursivo del repositorio. Define qué argumentos se deben pasar (*owner*, *repo*, *branch*) y qué se debe retornar.
 
 ```php
-```python
-public function get_tree(string $owner, string $repo, string $branch): array;
-// 
+--8<-- "gitmetrics/classes/git_provider_interface.php:get_tree"
 ```
 
 
@@ -46,8 +41,6 @@ public function get_tree(string $owner, string $repo, string $branch): array;
 Firma obligatoria para descargar el contenido raw (texto plano) de un fichero. Define los parámetros necesarios (añadiendo el *path* relativo) y su retorno.
 
 ```php
-```python
-public function get_file_content(string $owner, string $repo, string $path, string $branch): string;
-// 
+--8<-- "gitmetrics/classes/git_provider_interface.php:get_file_content"
 ```
 

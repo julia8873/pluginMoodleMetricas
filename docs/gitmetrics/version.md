@@ -4,8 +4,8 @@ Crear archivo en: `docs/gitmetrics/version.md`
 
 Ubicación: `version.php`
 
-```python
-Definición de versión e información básica del plugin Gitmetrics.
+```php
+--8<-- "gitmetrics/version.php:class_desc"
 ```
 
 ## Diagrama de Flujo Principal
@@ -34,11 +34,6 @@ graph TD
 Asignación de variables al objeto estándar global `$plugin`. No contiene funciones, únicamente declaraciones paramétricas requeridas estrictamente por la API de plugins de Moodle.
 
 ```php
-```python
-$plugin->component = 'block_gitmetrics';
-$plugin->version   = 2026072100;
-$plugin->requires  = 2022041900;  // Moodle 4.0+
-$plugin->maturity  = MATURITY_STABLE;
-// 
+--8<-- "gitmetrics/version.php:Definición de Versión"
 ```
 
