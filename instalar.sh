@@ -46,6 +46,7 @@ copy_if_missing() {
 
 copy_if_missing "$DOCKER_DIR/.env.example"
 copy_if_missing "$DOCKER_DIR/synapse-data/homeserver.yaml.example"
+copy_if_missing "$DOCKER_DIR/synapse-data/localhost.log.config.example"
 copy_if_missing "$DOCKER_DIR/maubot/llm-wiki-assistant-plugin/base-config.yaml.example"
 copy_if_missing "$DOCKER_DIR/maubot/maubot-data/config.yaml.example"
 
@@ -61,6 +62,10 @@ if ! command -v docker &> /dev/null || ! docker info &> /dev/null; then
     exit 1
 fi
 
+# Asegurar permisos de synapse-data para evitar que el contenedor falle al arrancar
+mkdir -p "$DOCKER_DIR/synapse-data"
+chmod 777 "$DOCKER_DIR/synapse-data"
+
 cd "$DOCKER_DIR"
 if [ "$START_OLLAMA" = true ]; then
     echo "      Se ha solicitado iniciar Ollama (perfil ollama)..."
@@ -74,20 +79,25 @@ echo ""
 echo "[2/9] Esperando a que Moodle esté completamente iniciado..."
 echo "      (Esto puede tardar unos segundos...)"
 
-MAX_RETRIES=40
+MAX_RETRIES=60
 COUNTER=0
-until docker exec moodle-app php -r "echo 'OK';" &>/dev/null; do
+echo "      Esperando a que Moodle extraiga los archivos iniciales..."
+until docker exec moodle-app test -d /bitnami/moodle/blocks &>/dev/null; do
     sleep 3
     COUNTER=$((COUNTER+1))
     if [ $COUNTER -ge $MAX_RETRIES ]; then
-        echo "Advertencia: Tiempo de espera superado comprobando PHP en Moodle."
+        echo "Advertencia: Tiempo de espera superado esperando a /bitnami/moodle/blocks."
         break
     fi
 done
 
-# Esperar adicionalmente a que el servidor web/BD responda en el contenedor
-sleep 3
-echo "Moodle contenedor activo."
+# Asegurar que PHP esté disponible también
+until docker exec moodle-app php -r "echo 'OK';" &>/dev/null; do
+    sleep 3
+done
+
+sleep 5
+echo "Moodle contenedor activo y archivos inicializados."
 
 # 3. Copiar el plugin gitmetrics dentro del contenedor
 echo ""
@@ -119,6 +129,10 @@ echo ""
 echo "[7/9] Creando asignatura dedicada 'Panel de Métricas y BdC' en Moodle..."
 docker exec --user daemon moodle-app php /bitnami/moodle/blocks/gitmetrics/cli/setup_course.php
 
+# Asegurar que el usuario admin de Matrix está creado
+echo "      Asegurando que el usuario admin de Matrix existe en Synapse..."
+docker exec matrix-synapse register_new_matrix_user -u admin -p adminpass123 -c /data/homeserver.yaml --admin http://localhost:8008 2>/dev/null || true
+
 # 8. Configurar automáticamente Matrix, desbloquear red interna y crear sala
 echo ""
 echo "[8/9] Configurando integración con Matrix y creando sala de chat..."
@@ -140,6 +154,10 @@ echo " ¡TODO LISTO! EL ENTORNO, EL PLUGIN Y LA DOCUMENTACIÓN FUNCIONAN"
 echo "------------------------------------------------------------------------------"
 echo ""
 echo " Moodle URL  : http://localhost:8000"
+echo " Usuario     : admin"
+echo " Contraseña  : adminpass123"
+echo ""
+echo " Chat Element (Matrix): http://localhost:8081"
 echo " Usuario     : admin"
 echo " Contraseña  : adminpass123"
 echo ""

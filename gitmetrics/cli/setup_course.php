@@ -125,9 +125,13 @@ $branch_link        = 'main';
 // Obtener árbol de archivos desde la API
 require_once($CFG->dirroot . '/blocks/gitmetrics/classes/gitlab_client.php');
 $git_client = new \block_gitmetrics\gitlab_client($gitlab_url, $token);
-// Extraer owner/repo de la URL del repo
-$repo_parts = array_values(array_filter(explode('/', trim(parse_url($repourl, PHP_URL_PATH), '/'))));
-$tree = $git_client->get_tree($repo_parts[0], $repo_parts[1], $branch_link);
+$tree = [];
+if (!empty($repourl) && strpos($repourl, '<tu_usuario>') === false) {
+    $repo_parts = array_values(array_filter(explode('/', trim((string)parse_url($repourl, PHP_URL_PATH), '/'))));
+    if (count($repo_parts) >= 2) {
+        $tree = $git_client->get_tree($repo_parts[0], $repo_parts[1], $branch_link);
+    }
+}
 
 // Filtrar solo archivos .md y agrupar por directorio
 $md_by_dir = [];
@@ -326,23 +330,29 @@ $topics = [
     0 => [
         'name'    => 'Acceso a Documentos',
         'summary' => $doc_html
-    ],
-    1 => [
-        'name'    => 'Volumen y Tamaño de la Base de Conocimiento',
-        'summary' => $styles . $renderer->render_volume($metrics['volume'])
-    ],
-    2 => [
-        'name'    => 'Red de Enlaces e Interconectividad Markdown',
-        'summary' => $renderer->render_network($metrics['network'])
-    ],
-    3 => [
-        'name'    => 'Taxonomía, Metadatos y Etiquetas YAML',
-        'summary' => $renderer->render_tags($metrics['tags'])
-    ],
-    4 => [
-        'name'    => 'Calidad Markdown y Elementos Estructurales',
-        'summary' => $renderer->render_format($metrics['format'])
     ]
+];
+
+$no_repo_msg = '<div style="padding:20px; text-align:center; background:#f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; color: #64748b;">'
+             . '<strong>Aviso:</strong> Aún no has configurado un repositorio Git. '
+             . 'Ve a los ajustes del bloque y configura la URL para ver estas métricas.'
+             . '</div>';
+
+$topics[1] = [
+    'name'    => 'Volumen y Tamaño de la Base de Conocimiento',
+    'summary' => empty($metrics['volume']) ? $no_repo_msg : $styles . $renderer->render_volume($metrics['volume'])
+];
+$topics[2] = [
+    'name'    => 'Red de Enlaces e Interconectividad Markdown',
+    'summary' => empty($metrics['network']) ? $no_repo_msg : $renderer->render_network($metrics['network'])
+];
+$topics[3] = [
+    'name'    => 'Taxonomía, Metadatos y Etiquetas YAML',
+    'summary' => empty($metrics['tags']) ? $no_repo_msg : $renderer->render_tags($metrics['tags'])
+];
+$topics[4] = [
+    'name'    => 'Calidad Markdown y Elementos Estructurales',
+    'summary' => empty($metrics['format']) ? $no_repo_msg : $renderer->render_format($metrics['format'])
 ];
 
 require_once($CFG->dirroot . '/course/lib.php');
