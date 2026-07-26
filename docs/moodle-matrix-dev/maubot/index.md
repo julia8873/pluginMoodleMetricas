@@ -2,133 +2,54 @@
 
 Ubicación: `maubot/`
 
-La integración del LLM y de Git con la sala de Matrix se realiza mediante un bot construido sobre la plataforma **Maubot**. 
+La integración del LLM y de Git con la sala de Matrix se realiza mediante un bot construido sobre la plataforma Maubot. 
 
 ## Dockerfile y Despliegue
 
-La imagen personalizada se construye sobre la base de Alpine y se encarga de instalar dependencias críticas de cifrado (`olm-dev`, `maubot[encryption]`) y utilidades como `zip` necesarias para construir el `.mbp` (Maubot Plugin Bundle).
+El `Dockerfile.maubot` realiza los siguientes pasos para construir la imagen:
+
+1. **Partir de la imagen base**: Usa `dock.mau.dev/maubot/maubot:latest` como punto de partida.
+2. **Añadir el repositorio community de Alpine**: Necesario para instalar ciertas dependencias adicionales del sistema que no vienen por defecto.
+3. **Instalar dependencias del sistema**: Se instalan `olm-dev`, `build-base` y `zip`, requeridos para el cifrado y para construir el empaquetado del plugin.
+4. **Instalar dependencias de Python del plugin**: Instala `pypdf`, `pymupdf` (para procesamiento de documentos) y la extensión `maubot[encryption]` (cifrado extremo a extremo) a través de `pip`.
+5. **Copiar el código fuente**: Traspasa el directorio del plugin (`llm-wiki-assistant-plugin/`) hacia el directorio `/plugin-src/` dentro de la imagen.
+6. **Configurar el script de arranque**: Copia `entrypoint.sh`, le otorga permisos de ejecución y lo define como el punto de entrada (`ENTRYPOINT`). Este script empaquetará el código antes de arrancar maubot.
+
 
 ```dockerfile
-```python
-FROM dock.mau.dev/maubot/maubot:latest
-
-# Añadir repositorio community de Alpine para dependencias adicionales
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/v$(cut -d'.' -f1,2 /etc/alpine-release)/community" \
-        >> /etc/apk/repositories \
-    && apk update
-
-# Dependencias del sistema:
-#   olm-dev + build-base: cifrado (libolm para maubot[encryption])
-#   zip: necesario para el entrypoint.sh (construye el .mbp en cada inicio)
-RUN apk add --no-cache olm-dev build-base zip
-
-# Dependencias Python del plugin:
-#   pypdf / pymupdf: extracción de texto de PDFs
-#   maubot[encryption]: soporte de cifrado extremo a extremo
-RUN pip install --no-cache-dir --break-system-packages pypdf pymupdf "maubot[encryption]"
-
-# Copiar el código fuente del plugin al contenedor
-# El contexto de build es ./maubot/, así que llm-wiki-assistant-plugin/
-# hace referencia a ./maubot/llm-wiki-assistant-plugin/
-COPY llm-wiki-assistant-plugin/ /plugin-src/
-
-# Copiar y activar el script de arranque
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-# El entrypoint construye el .mbp desde /plugin-src y luego arranca maubot
-ENTRYPOINT ["/entrypoint.sh"]
+--8<-- "moodle-matrix-dev/maubot/Dockerfile.maubot:file_desc"
 ```
-
 
 ## `entrypoint.sh`
 
 El punto de entrada del contenedor compila dinámicamente el código fuente alojado en la carpeta de desarrollo al arrancar, generando un archivo ZIP (`.mbp`) sin necesidad de realizar compilaciones manuales.
 
+El script `entrypoint.sh` realiza los siguientes pasos para preparar e iniciar el bot:
+
+1. **Definir variables clave**: Establece los directorios de trabajo y el identificador del plugin.
+2. **Extraer la versión**: Lee la versión desde `maubot.yaml` para nombrar el archivo correctamente.
+3. **Limpiar el entorno**: Elimina empaquetados `.mbp` anteriores del plugin en el destino para evitar duplicados.
+4. **Preparar archivos**: Copia el código fuente y las configuraciones (`maubot.yaml`, `base-config.yaml`) a un directorio temporal, ignorando la caché de python.
+5. **Empaquetar**: Comprime todo el contenido del directorio temporal en un formato ZIP y lo ubica en `/data/plugins` (directorio que lee Maubot).
+6. **Arrancar el servidor**: Ejecuta la instancia principal de Maubot pasándole el archivo de configuración.
+
 ```bash
-```python
-# entrypoint.sh – Compila el plugin de maubot desde el código fuente
-# y arranca el servidor maubot.
-#
-# El .mbp (maubot plugin bundle) es simplemente un ZIP con el código fuente
-# del plugin. Se construye en cada inicio del contenedor para asegurar que
-# siempre se usa la versión más reciente del código.
-
-set -e
-
-PLUGIN_SRC="/plugin-src"
-PLUGIN_OUT="/data/plugins"
-PLUGIN_ID="dev.julia.llmwikiassistant"
-
-# Extraer la versión del maubot.yaml del plugin
-VERSION=$(grep '^version:' "$PLUGIN_SRC/maubot.yaml" | awk '{print $2}')
-MBP_FILE="$PLUGIN_OUT/${PLUGIN_ID}-v${VERSION}.mbp"
-
-echo "[entrypoint] Compilando plugin ${PLUGIN_ID} v${VERSION}..."
-mkdir -p "$PLUGIN_OUT"
-
-# Eliminar .mbp antiguos de este plugin para evitar duplicados
-rm -f "$PLUGIN_OUT/${PLUGIN_ID}"*.mbp
-
-# Construir el .mbp en un directorio temporal
-TMP_BUILD=$(mktemp -d)
-
-cd "$PLUGIN_SRC"
-
-# Copiar los ficheros del plugin (excluyendo bytecode Python)
-cp maubot.yaml base-config.yaml "$TMP_BUILD/"
-
-find llm_wiki_assistant -type f \
-    ! -name "*.pyc" \
-    ! -name "*.pyo" \
-    ! -path "*/__pycache__/*" \
-    | while IFS= read -r f; do
-        mkdir -p "$TMP_BUILD/$(dirname "$f")"
-        cp "$f" "$TMP_BUILD/$f"
-    done
-
-# Crear el fichero .mbp (ZIP)
-cd "$TMP_BUILD"
-zip -r "$MBP_FILE" .
-cd /
-rm -rf "$TMP_BUILD"
-
-echo "[entrypoint] Plugin construido: $MBP_FILE"
-
-# Arrancar el servidor maubot
-exec python -m maubot -c /data/config.yaml "$@"
+--8<-- "moodle-matrix-dev/maubot/entrypoint.sh:file_desc"
 ```
 
 
 ## Configuración Base del Plugin
 
-La configuración base permite indicar los credenciales de Git, la URL del LLM y los distintos modelos utilizados.
+La configuración base (`base-config.yaml`) permite indicar las credenciales de Git, la URL del LLM y los distintos modelos utilizados. Definiendo los siguientes puntos:
+
+1. **Conexión a Git**: Se especifica el proveedor (ej. `gitlab`), la URL, el token de acceso, el propietario, el repositorio por defecto y la rama principal (`main`) para la sincronización con la Base de Conocimiento (BdC).
+2. **Directorio Raw**: Define que las subidas en bruto sin procesar irán a la carpeta `raw/`.
+3. **LLM Principal**: Establece el modelo de lenguaje principal para procesar interacciones, su URL de API base y la llave de autorización (API key).
+4. **LLM de Visión (Opcional)**: Permite configurar un segundo modelo estrictamente para la extracción multimodal de texto en imágenes y documentos escaneados. Si se omite, se usa el principal.
+5. **Caché (TTL)**: Configura el tiempo de vida en minutos (`bdc_cache_ttl_minutos`) del árbol de archivos en caché, lo cual evita recargas innecesarias desde Git durante una sesión.
+6. **Ingesta Automática**: El parámetro `ingest_automatico` permite activar o desactivar que las nuevas subidas a `raw/` sean re-organizadas de inmediato usando el LLM para generar conceptos bajo la estructura de conocimiento de la BdC.
 
 ```yaml
-```python
-# Proveedor Git principal ('gitlab' o 'github', o autodetectado por repo_url)
-provider: "gitlab"
-repo_url: "https://gitlab.com/tu-usuario/tu-repo"
-gitlab_url: "https://gitlab.com"
-gitlab_token: "TU_TOKEN_GITLAB_AQUI"
-github_token: ""
-default_owner: "tu-usuario"
-default_repo: "tu-repo"
-default_branch: "main"
-raw_folder: "raw"
-llm_base_url: "https://api.groq.com/openai/v1"
-llm_api_key: ""
-llm_model: "llama-3.1-8b-instant"
-# Modelo usado SOLO para transcribir imagenes/PDFs escaneados (debe admitir
-# entrada multimodal). Si se deja vacio, se usa llm_model para todo.
-llm_vision_model: ""
-# URL base y API key opcionales especificas para el modelo de vision.
-# Si se dejan vacias, se usaran llm_base_url y llm_api_key por defecto.
-llm_vision_base_url: ""
-llm_vision_api_key: ""
-# TTL de la cache de contenido de la BdC, en minutos.
-bdc_cache_ttl_minutos: 30
-# Si es true, cada fuente subida a raw/ se estructura automaticamente en okf/
-ingest_automatico: true
+--8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/base-config.yaml.example:file_desc"
 ```
 
