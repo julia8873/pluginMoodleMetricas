@@ -152,6 +152,19 @@ class LLMProvider:
     # Métodos de alto nivel para cada caso de uso
     # --------------------------------------------------------------------
 
+    def _truncar_contexto(self, contexto: str, max_chars: int = 20000) -> str:
+        """
+        Trunca el contexto para evitar errores 413 (Payload Too Large) o 
+        superar límites de Tokens por Minuto (TPM) en APIs gratuitas (ej. Groq).
+        20.000 caracteres equivalen aprox a 5.000 tokens.
+        """
+        if not contexto:
+            return contexto
+        if len(contexto) > max_chars:
+            aviso = "\n\n[... AVISO: El contenido de la BdC es demasiado grande y se ha truncado para ajustarse al límite de memoria del modelo. Solo se leerá una parte ...]"
+            return contexto[:max_chars - len(aviso)] + aviso
+        return contexto
+
     async def preguntar(self, pregunta: str, contexto: str) -> str:
         """
         Responde una pregunta basándose únicamente en el contexto proporcionado
@@ -168,7 +181,7 @@ class LLMProvider:
             "Solo si el tema consultado está COMPLETAMENTE AUSENTE o no tiene ninguna relación con la documentación, "
             "responde exactamente: 'No tengo esa información en la documentación del repositorio.' "
             "No inventes información ni uses conocimiento externo al repositorio.\n\n"
-            f"DOCUMENTACIÓN:\n{contexto}"
+            f"DOCUMENTACIÓN:\n{self._truncar_contexto(contexto)}"
         )
         try:
             return await self._chat([
@@ -238,9 +251,58 @@ class LLMProvider:
         basarse. Propaga RuntimeError si el LLM falla, para que cada comando decida
         cómo informar al estudiante.
         """
-        system_prompt = f"{instruccion}\n\nContenido de la BdC de referencia:\n{contexto}"
+        system_prompt = f"{instruccion}\n\nContenido de la BdC de referencia:\n{self._truncar_contexto(contexto)}"
         return await self._chat([
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": "Adelante."},
         ])
+
+    async def evaluar_necesidad_bdc(self, mensaje: str) -> bool:
+        """
+        Evalúa si un mensaje de texto libre requiere consultar la BdC o si es pura
+        conversación (saludos, agradecimientos, bromas).
+        """
+        system_prompt = (
+            "Eres un clasificador de intenciones. El usuario te ha enviado un mensaje. "
+            "Tu tarea es decidir si necesitas consultar los apuntes del alumno para responder.\n"
+            "Reglas:\n"
+            "- Si es puramente un saludo ('hola'), despedida, agradecimiento ('gracias') o pregunta genérica sobre tus funciones ('qué puedes hacer'): responde 'NO'.\n"
+            "- Si es una duda académica, o el usuario te pide un resumen de tus conocimientos, temas, o te pregunta qué sabes: responde 'SI'.\n"
+            "Responde ÚNICAMENTE con la palabra 'SI' o la palabra 'NO'."
+        )
+        try:
+            respuesta = await self._chat([
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": mensaje},
+            ], max_tokens=10)
+            # Limpiar puntuación y espacios
+            texto_limpio = "".join(c for c in respuesta.lower() if c.isalnum() or c.isspace()).strip()
+            # Devolver True solo si la primera palabra es "si"
+            return texto_limpio.startswith("si")
+        except RuntimeError:
+            return True  # Ante la duda, intentamos extraer de la BdC
+
+    async def conversar(self, mensaje: str) -> str:
+        """
+        Responde a mensajes generales que no requieren BdC (saludos, despedidas...).
+        """
+        system_prompt = (
+            "Eres el asistente virtual del plugin MoodleMetricas en un chat de Matrix. "
+            "Tu objetivo es ayudar a los alumnos usando EXCLUSIVAMENTE la Base de Conocimiento (BdC) de la asignatura. "
+            "Si te preguntan qué puedes hacer, explica brevemente que puedes:\n"
+            "1. Responder dudas buscando en los apuntes de la asignatura.\n"
+            "2. Generar flashcards (!flashcard) y ejercicios (!ejercicio).\n"
+            "3. Hacer repasos interactivos (!feynman, !repasartema).\n"
+            "4. Procesar y guardar apuntes (texto, PDF o fotos) que suban al chat.\n"
+            "ATENCIÓN: Ahora mismo estás en modo conversacional rápido y NO tienes acceso al contenido de la BdC. "
+            "Por lo tanto, NUNCA intentes listar o adivinar las materias, temas o conceptos concretos (como matemáticas, física, etc.) "
+            "que contiene la base de conocimiento, porque te los inventarás. Solo explica tus funciones (flashcards, repasos, dudas)."
+        )
+        try:
+            return await self._chat([
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": mensaje},
+            ])
+        except RuntimeError as exc:
+            return str(exc)
 # --8<-- [end:file_desc]

@@ -278,6 +278,19 @@ Este único comando actualiza simultáneamente:
 - Configuración de Moodle (`mdl_config_plugins`)
 - Integración con Obsidian
 
+### Sincronizar Configuración de Inteligencia Artificial (LLM)
+
+Si deseas modificar el modelo de inteligencia artificial, la clave API (ej. Groq o OpenAI) u otros parámetros internos del asistente virtual, debes realizarlo editando el archivo de configuración y sincronizándolo:
+
+1. Edita manualmente el archivo de configuración del bot:
+   `moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/base-config.yaml`
+2. Aplica los cambios ejecutando el script de sincronización, el cual inyectará la nueva configuración en la base de datos interna y reiniciará el bot automáticamente:
+
+```bash
+cd pluginMoodleMetricas
+./sincronizar_bot.sh
+```
+
 ---
 
 ## 9. Guía de Uso: Secciones de Métricas

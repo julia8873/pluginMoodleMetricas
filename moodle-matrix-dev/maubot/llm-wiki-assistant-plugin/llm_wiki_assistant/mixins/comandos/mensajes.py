@@ -12,6 +12,7 @@ from llm_wiki_assistant.db import Tracker
 from llm_wiki_assistant.image_ocr import OcrError, es_imagen_de_apuntes, transcribir_imagen
 from llm_wiki_assistant.pdf_ingest import PdfExtractionError, extraer_texto_pdf, parece_texto_de_baja_calidad
 from llm_wiki_assistant.constants import PENDIENTE_TTL_SEGUNDOS
+from llm_wiki_assistant.helpers import _extraer_modificadores
 
 if TYPE_CHECKING:
     class _HostProtocol:
@@ -81,6 +82,44 @@ class MensajesMixin(ComandosBaseMixin):
                     else:
                         await self._evaluar_pendiente(evt, pendiente)
                     return
+
+                # Tratar cualquier mensaje sin exclamacion como una pregunta a la BdC
+                texto_msg = evt.content.body
+                texto, tema, _ = _extraer_modificadores(texto_msg)
+                provider = self._crear_llm()
+
+                # Preguntar al LLM si este mensaje justifica leer la Base de Conocimiento
+                necesita_bdc = await provider.evaluar_necesidad_bdc(texto_msg)
+
+                if not necesita_bdc:
+                    respuesta = await provider.conversar(texto_msg)
+                    await self._responder_con_latex(evt, respuesta)
+                    return
+                
+                token = self._obtener_git_token()
+                owner = self.config["default_owner"]
+                repo = self.config["default_repo"]
+                
+                await evt.reply("Consultando la Base de Conocimiento, un momento...")
+                
+                contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
+                if not contenido_docs and tema:
+                    await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
+                    return
+                if not contenido_docs:
+                    await evt.reply("No he podido leer la documentación del repositorio.")
+                    return
+                    
+                try:
+                    respuesta = await provider.preguntar(texto, contenido_docs)
+                except Exception as exc:
+                    await evt.reply(f"Error al consultar el modelo: {exc}")
+                    return
+                    
+                await self._responder_con_latex(evt, respuesta)
+                await self.tracker.log_interaccion(evt.sender, evt.room_id, "pregunta_implicita", texto)
+                await self.tracker.log_qa(evt.sender, evt.room_id, "pregunta_implicita", texto, respuesta, "informativo")
+                return
 
             nombre_archivo = evt.content.body or ""
             es_fichero_pdf = evt.content.msgtype == MessageType.FILE and nombre_archivo.lower().endswith(".pdf")
