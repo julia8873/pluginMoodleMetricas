@@ -7,8 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Tuple, Any
 import aiohttp
 
-FICHEROS_EXCLUIDOS_CONTEXTO = {"log.md", "readme.md", "welcome.md", "agents.md"}
-OKF_LOG_PATH = "okf/log.md"
+from .constants import FICHEROS_EXCLUIDOS_CONTEXTO, OKF_LOG_PATH
 
 class GitProvider(ABC):
     """Interfaz modular para operaciones sobre repositorios Git (GitHub / GitLab)."""
