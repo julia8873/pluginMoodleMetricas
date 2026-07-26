@@ -2,6 +2,8 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Any
 
+from maubot.handlers import command
+from maubot import MessageEvent
 
 from llm_wiki_assistant.db import Tracker
 
@@ -29,13 +31,12 @@ if TYPE_CHECKING:
 else:
     _HostProtocol = object
 
-class LocksMixin(_HostProtocol):
-# --8<-- [start:get_user_lock]
-    def _get_user_lock(self, room_id: str, sender: str) -> asyncio.Lock:
-        """Obtiene o crea el cerrojo de concurrencia para el estudiante en la sala."""
-        clave = (room_id, sender)
-        if clave not in self._user_locks:
-            self._user_locks[clave] = asyncio.Lock()
-        return self._user_locks[clave]
-# --8<-- [end:get_user_lock]
+from .base import ComandosBaseMixin
 
+class AyudaMixin(ComandosBaseMixin):
+# --8<-- [start:ayuda_handler]
+    @command.new(name="ayuda", help="Lista todos los comandos disponibles")
+    async def ayuda_handler(self, evt: MessageEvent) -> None:
+        """Manejador del comando !ayuda para mostrar los comandos disponibles."""
+        await evt.reply(self.AYUDA_TEXTO)
+# --8<-- [end:ayuda_handler]

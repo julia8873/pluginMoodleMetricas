@@ -1,33 +1,17 @@
 from __future__ import annotations
 import asyncio
-import base64
 import time
-from datetime import datetime
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Any
 
-import aiohttp
-from maubot.handlers import command, event
 from maubot import MessageEvent
 from mautrix.crypto.attachments import decrypt_attachment
-from mautrix.errors import DecryptionError
-from mautrix.types import EventType, MessageType
 
 from llm_wiki_assistant.db import Tracker
-from llm_wiki_assistant.estudio import (
-    EstudioError, buscar_ejercicios_por_tecnica, elegir_concepto, evaluar_respuesta,
-    generar_ejercicio, generar_flashcard, generar_preguntas_para_conceptos, generar_resumen_sesion, listar_conceptos
-)
-from llm_wiki_assistant.image_ocr import OcrError, es_imagen_de_apuntes, transcribir_imagen, transcribir_pdf_escaneado
-from llm_wiki_assistant.latex_render import procesar_texto_con_latex
-from llm_wiki_assistant.llm_provider import LLMProvider
-from llm_wiki_assistant.organizacion import VENTANA_LOTE_SEGUNDOS, es_respuesta_modo_lote, formatear_lista_carpetas, resolver_eleccion_carpeta, sanitizar_carpeta
-from llm_wiki_assistant.pdf_ingest import PdfExtractionError, extraer_texto_pdf, parece_texto_de_baja_calidad
-from llm_wiki_assistant.okf_ingest import IngestError, construir_prompt_ingest, construir_prompt_ingest_lote, dividir_en_lotes, parsear_respuesta_ingest
-from llm_wiki_assistant.git_client import get_git_client
+from llm_wiki_assistant.image_ocr import OcrError, transcribir_pdf_escaneado
+from llm_wiki_assistant.organizacion import VENTANA_LOTE_SEGUNDOS, es_respuesta_modo_lote, formatear_lista_carpetas, resolver_eleccion_carpeta
 from llm_wiki_assistant.constants import PENDIENTE_TTL_SEGUNDOS, PATRON_RENOMBRAR
 
 if TYPE_CHECKING:
-    from maubot import Plugin
     class _HostProtocol:
         config: Any
         git: Any
@@ -72,19 +56,19 @@ class OcrMixin(_HostProtocol):
             )
             try:
                 async def notificar_progreso(pag_actual: int, total_pags: int) -> None:
-                    await evt.reply(f"⏳ Procesando OCR visual... (página {pag_actual}/{total_pags})")
+                    await evt.reply(f"Procesando OCR visual... (página {pag_actual}/{total_pags})")
 
                 texto_extraido, paginas_fallidas = await transcribir_pdf_escaneado(
                     contenido_binario, llm_vision, progress_callback=notificar_progreso
                 )
                 if paginas_fallidas:
                     self.log.warning(f"[llm_wiki_assistant] Páginas con error al transcribir PDF: {paginas_fallidas}")
-                    await evt.reply(f"⚠️ Aviso: Hubo problemas al transcribir {len(paginas_fallidas)} página(s).")
+                    await evt.reply(f"Aviso: Hubo problemas al transcribir {len(paginas_fallidas)} página(s).")
                 tipo_interaccion = "pdf_escaneado_ocr"
             except (OcrError, Exception) as exc:
                 self.log.error(f"[llm_wiki_assistant] Error en OCR visual de «{nombre_archivo}»: {exc}")
                 await evt.reply(
-                    f"⚠️ Error al procesar «{nombre_archivo}» con OCR visual: {exc}\n\n"
+                    f"Error al procesar «{nombre_archivo}» con OCR visual: {exc}\n\n"
                     "Si el error persiste, verifica la clave API/configuración del LLM en base-config.yaml o responde **no** al subir el archivo para guardar el texto extraído sin OCR visual."
                 )
                 return
@@ -181,7 +165,7 @@ class OcrMixin(_HostProtocol):
             try:
                 await self.client.send_text(
                     room_id,
-                    f"⚠️ Error al preparar el guardado del fichero en el repositorio: {exc}\n"
+                    f"Error al preparar el guardado del fichero en el repositorio: {exc}\n"
                     "Por favor, intenta subir el archivo nuevamente o verifica la configuración del repositorio."
                 )
             except Exception:

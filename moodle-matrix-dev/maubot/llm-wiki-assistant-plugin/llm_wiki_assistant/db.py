@@ -123,6 +123,11 @@ async def upgrade_v5(conn: Connection) -> None:
     )
 
 
+@upgrade_table.register(description="Dummy upgrade para evitar error de versión v6 adelantada")
+async def upgrade_v6(conn: Connection) -> None:
+    pass
+
+
 # --------------------------------------------------------------------
 # Tracker: envoltorio sobre la base de datos del plugin
 # --------------------------------------------------------------------

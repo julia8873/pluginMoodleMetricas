@@ -70,7 +70,7 @@ from .mixins.cache_mixin import CacheMixin
 from .mixins.locks_mixin import LocksMixin
 from .mixins.utils_mixin import UtilsMixin
 from .mixins.ingest_mixin import IngestMixin
-from .mixins.comandos_mixin import ComandosMixin
+from .mixins.comandos import ComandosMixin
 
 
 # --------------------------------------------------------------------
@@ -149,11 +149,11 @@ class LlmWikiAssistant(GitMixin, OcrMixin, CacheMixin, LocksMixin, UtilsMixin, I
         self.pendientes_borrado_carpeta = {} # Espera confirmación para borrar una carpeta entera
         self.pendientes_ocr = {}             # Confirmación para realizar OCR visual tras preview de PDF
 
-        # 4. Inicializar control de concurrencia (T2)
+        # 4. Inicializar control de concurrencia
         # Locks por usuario/sala para evitar race conditions si llegan mensajes simultáneos
         self._user_locks = {}
 
-        # 5. Inicializar cachés en memoria con TTL configurable (T4)
+        # 5. Inicializar cachés en memoria con TTL configurable
         # Optimizan el rendimiento evitando llamadas redundantes a la API de Git
         self._cache_docs = {}      # (owner, repo, filtro) -> (timestamp, contenido)
         self._cache_rutas = {}     # (owner, repo, path) -> (timestamp, lista_rutas)

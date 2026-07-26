@@ -25,10 +25,6 @@ graph TD
     H -->|"No"| J["Ignorar"]
 ```
 
-## Ciclo de Vida y Concurrencia
-
-El bot implementa un control de caché agresivo y manejo asíncrono avanzado con semáforos (`MAX_CONCURRENCIA_GITHUB`) para no exceder las cuotas de la API del proveedor (GitHub/GitLab) ni solapar transacciones concurrentes en el chat (`_user_locks`).
-
 ---
 
 ## Organización por Mixins
@@ -191,113 +187,113 @@ A continuación se documentan todos los métodos expuestos por el bot, organizad
     --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/ingest_mixin.py:ingest_lotes_handler"
     ```
 
-??? note "5. ComandosMixin (`mixins/comandos_mixin.py`)"
+??? note "5. ComandosMixin (`mixins/comandos/`)"
     Contiene el manejador principal de mensajes y todos los comandos interactivos (`!flashcard`, `!documento`, `!ayuda`, etc.) con los que interactúa el usuario.
     
     **`on_message`**
     Manejador principal de eventos de mensaje. Procesa todos los mensajes entrantes de la sala, evalúa candados de concurrencia y delega el flujo a los procesos de OCR o comandos.
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:on_message"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/mensajes.py:on_message"
     ```
     
     **Curación Explícita**
     Manejadores para visualizar metadatos de documentos, borrarlos con confirmación, moverlos y gestionar carpetas.
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:documento_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/documento.py:documento_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:borrar_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/borrar.py:borrar_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:procesar_confirmacion_borrado"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/borrar.py:procesar_confirmacion_borrado"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:mover_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/mover.py:mover_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:carpeta_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/carpeta.py:carpeta_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:carpeta_crear_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/carpeta.py:carpeta_crear_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:carpeta_listar_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/carpeta.py:carpeta_listar_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:carpeta_borrar_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/carpeta.py:carpeta_borrar_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:procesar_confirmacion_borrado_carpeta"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/carpeta.py:procesar_confirmacion_borrado_carpeta"
     ```
     
     **Consultas y Estadísticas**
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:pregunta_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/pregunta.py:pregunta_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:ficheros_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/ficheros.py:ficheros_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:estadisticas_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/estadisticas.py:estadisticas_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:trazabilidad_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/trazabilidad.py:trazabilidad_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:trazabilidad_qa_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/trazabilidad.py:trazabilidad_qa_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:trazabilidad_interacciones_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/trazabilidad.py:trazabilidad_interacciones_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:trazabilidad_curacion_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/trazabilidad.py:trazabilidad_curacion_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:trazabilidad_exportar_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/trazabilidad.py:trazabilidad_exportar_handler"
     ```
     
     **Herramientas de Estudio Interactivas**
     Comandos de recuperación activa para afianzar conceptos y forzar explicaciones sintéticas.
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:plantear_pregunta"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/base.py:plantear_pregunta"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:plantear_pregunta_concepto"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/base.py:plantear_pregunta_concepto"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:evaluar_pendiente"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/base.py:evaluar_pendiente"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:flashcard_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/flashcard.py:flashcard_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:ejercicio_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/ejercicio.py:ejercicio_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:concepto_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/concepto.py:concepto_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:feynman_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/feynman.py:feynman_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:repasartema_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/repasartema.py:repasartema_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:avanzar_repaso_tema"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/base.py:avanzar_repaso_tema"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:ejerciciostema_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/ejerciciostema.py:ejerciciostema_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:resumen_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/resumen.py:resumen_handler"
     ```
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:mapa_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/mapa.py:mapa_handler"
     ```
     
     **Menú de Ayuda**
     ```python
-    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos_mixin.py:ayuda_handler"
+    --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/comandos/ayuda.py:ayuda_handler"
     ```
 
 ??? note "6. CacheMixin (`mixins/cache_mixin.py`)"

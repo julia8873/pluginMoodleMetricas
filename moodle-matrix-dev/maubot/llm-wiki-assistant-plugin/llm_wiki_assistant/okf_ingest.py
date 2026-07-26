@@ -54,7 +54,7 @@ def construir_prompt_ingest(agents_md: str, ruta_fuente_repo: str, nombre_ficher
         "continuación como CONTENIDO A INGESTAR.\n\n"
         "Sigue los pasos de la operación INGEST de AGENTS.md: crea/actualiza okf/sources/, "
         "okf/concepts/ y okf/entities/ según corresponda, añade cross-links relativos "
-        "[[ruta/nombre|Título]] entre páginas relacionadas, y marca con ⚠️ cualquier "
+        "[[ruta/nombre|Título]] entre páginas relacionadas, y marca con cualquier "
         "afirmación que contradiga contenido que ya conozcas por AGENTS.md o por el propio "
         "material. Respeta el frontmatter obligatorio y las convenciones de nombres, idioma "
         "y longitud de página descritas en AGENTS.md.\n\n"

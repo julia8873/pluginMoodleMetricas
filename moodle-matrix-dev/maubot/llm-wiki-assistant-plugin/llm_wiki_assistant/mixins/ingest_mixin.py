@@ -1,34 +1,19 @@
 from __future__ import annotations
 import asyncio
 import base64
-import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
-from maubot.handlers import command, event
+from maubot.handlers import command
 from maubot import MessageEvent
-from mautrix.crypto.attachments import decrypt_attachment
-from mautrix.errors import DecryptionError
-from mautrix.types import EventType, MessageType
 
 from llm_wiki_assistant.db import Tracker
-from llm_wiki_assistant.estudio import (
-    EstudioError, buscar_ejercicios_por_tecnica, elegir_concepto, evaluar_respuesta,
-    generar_ejercicio, generar_flashcard, generar_preguntas_para_conceptos, generar_resumen_sesion, listar_conceptos
-)
-from llm_wiki_assistant.image_ocr import OcrError, es_imagen_de_apuntes, transcribir_imagen, transcribir_pdf_escaneado
-from llm_wiki_assistant.latex_render import procesar_texto_con_latex
-from llm_wiki_assistant.llm_provider import LLMProvider
-from llm_wiki_assistant.organizacion import VENTANA_LOTE_SEGUNDOS, es_respuesta_modo_lote, formatear_lista_carpetas, resolver_eleccion_carpeta, sanitizar_carpeta
-from llm_wiki_assistant.pdf_ingest import PdfExtractionError, extraer_texto_pdf, parece_texto_de_baja_calidad
 from llm_wiki_assistant.okf_ingest import IngestError, construir_prompt_ingest, construir_prompt_ingest_lote, dividir_en_lotes, parsear_respuesta_ingest
-from llm_wiki_assistant.git_client import get_git_client
 from llm_wiki_assistant.constants import AGENTS_MD_PATH, OKF_LOG_PATH
 from llm_wiki_assistant.helpers import _extraer_modificadores
 
 if TYPE_CHECKING:
-    from maubot import Plugin
     class _HostProtocol:
         config: Any
         git: Any
@@ -58,13 +43,6 @@ class IngestMixin(_HostProtocol):
         self, evt: MessageEvent, owner: str, repo: str, token: str, branch: str,
         ruta_fuente_repo: str, nombre_archivo: str,
     ) -> None:
-        """
-        Tras guardar una fuente en bruto, la estructura automáticamente en
-        okf/ siguiendo AGENTS.md. Si algo falla aquí, la fuente en raw/ ya
-        quedó guardada de todas formas: este paso es un "extra" sobre la
-        curación normal, nunca debe hacer perder el fichero que el estudiante
-        acaba de subir.
-        """
         try:
             agents_md = await self._obtener_agents_md(owner, repo, token)
             if not agents_md:
@@ -139,7 +117,7 @@ class IngestMixin(_HostProtocol):
         if actualizados:
             partes.append("**Ficheros actualizados:**\n" + "\n".join(f"- `{p}`" for p in actualizados))
         if resultado["contradicciones"]:
-            partes.append("**⚠️ Contradicciones detectadas:**\n" + "\n".join(f"- {c}" for c in resultado["contradicciones"]))
+            partes.append("**Contradicciones detectadas:**\n" + "\n".join(f"- {c}" for c in resultado["contradicciones"]))
         if resultado["preguntas_seguimiento"]:
             partes.append("**Preguntas de seguimiento:**\n" + "\n".join(f"- {p}" for p in resultado["preguntas_seguimiento"]))
 
@@ -161,7 +139,7 @@ class IngestMixin(_HostProtocol):
         creados_totales, actualizados_totales = [], []
 
         for i, texto_lote in enumerate(lotes, start=1):
-            await evt.reply(f"📦 Procesando lote {i}/{total_lotes} de «{nombre_archivo}»...")
+            await evt.reply(f"Procesando lote {i}/{total_lotes} de «{nombre_archivo}»...")
             instruccion = construir_prompt_ingest_lote(
                 agents_md, ruta_fuente_repo, nombre_archivo, timestamp_iso, i, total_lotes
             )
@@ -170,7 +148,7 @@ class IngestMixin(_HostProtocol):
                 resultado = parsear_respuesta_ingest(respuesta)
             except Exception as exc:
                 self.log.warning(f"[llm_wiki_assistant] Error procesando lote {i}/{total_lotes} de '{ruta_fuente_repo}': {exc}")
-                await evt.reply(f"⚠️ Lote {i}/{total_lotes}: Hubo un problema extrayendo conceptos ({exc}). Continuando con el siguiente lote...")
+                await evt.reply(f"Lote {i}/{total_lotes}: Hubo un problema extrayendo conceptos ({exc}). Continuando con el siguiente lote...")
                 continue
 
             for fichero in resultado["ficheros"]:
