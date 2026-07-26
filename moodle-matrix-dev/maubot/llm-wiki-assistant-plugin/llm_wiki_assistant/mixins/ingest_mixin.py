@@ -130,7 +130,7 @@ class IngestMixin(_HostProtocol):
         ruta_fuente_repo: str, nombre_archivo: str, contenido_fuente: str, agents_md: str
     ) -> None:
         """Ejecuta el proceso de ingesta de archivos en lotes."""
-        lotes = dividir_en_lotes(contenido_fuente, max_lineas=250, solapamiento=30)
+        lotes = dividir_en_lotes(contenido_fuente, max_lineas=120, solapamiento=20)
         total_lotes = len(lotes)
         await evt.reply(f"El documento «{nombre_archivo}» es extenso ({len(contenido_fuente.splitlines())} líneas). Iniciando extracción exhaustiva por {total_lotes} lotes en okf/...")
 

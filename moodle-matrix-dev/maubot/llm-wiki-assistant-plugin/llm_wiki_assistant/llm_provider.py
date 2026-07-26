@@ -112,22 +112,23 @@ class LLMProvider:
                 async with aiohttp.ClientSession(timeout=timeout) as session:
                     async with session.post(url, json=payload, headers=headers) as resp:
 
-                        if resp.status == 429:
+                        if resp.status == 429 or resp.status == 413:
                             error_text = await resp.text()
-                            if any(p in error_text.lower() for p in self._PATRONES_429_NO_REINTENTABLE):
-                                # Cuota diaria/mensual agotada: reintentar no ayuda.
-                                raise RuntimeError(
-                                    "Se ha agotado la cuota gratuita del modelo por hoy "
-                                    f"(el proveedor responde: {error_text}). Prueba de nuevo "
-                                    "mañana, añade crédito/cupo en el proveedor, o cambia de "
-                                    "modelo en la configuración del bot."
-                                )
+                            if "rate_limit_exceeded" in error_text or "too large" in error_text.lower() or any(p in error_text.lower() for p in self._PATRONES_429_NO_REINTENTABLE):
+                                # Cuota diaria/mensual agotada o request individual demasiado grande
+                                if "tokens per minute" not in error_text.lower() and "tpm" not in error_text.lower():
+                                    raise RuntimeError(
+                                        "Se ha agotado la cuota gratuita del modelo o el tamaño de la petición excede el máximo permitido. "
+                                        f"(el proveedor responde: {error_text})."
+                                    )
+                            
                             if intento < self.MAX_REINTENTOS_429:
-                                # Límite de ráfaga temporal: esperar y reintentar.
-                                espera = self.ESPERA_BASE_429_SEGUNDOS * (2 ** intento)
+                                # Límite de ráfaga temporal o TPM alcanzado temporalmente: esperar y reintentar.
+                                # Groq tiene límites muy estrictos de TPM en la capa gratuita.
+                                espera = self.ESPERA_BASE_429_SEGUNDOS * (3 ** intento)  # backoff más agresivo (3, 9, 27)
                                 await asyncio.sleep(espera)
                                 continue
-                            raise RuntimeError(f"Error al consultar el modelo (429): {error_text}")
+                            raise RuntimeError(f"Error de límite de cuota al consultar el modelo ({resp.status}): {error_text}")
 
                         if resp.status != 200:
                             error_text = await resp.text()
@@ -168,10 +169,17 @@ class LLMProvider:
     async def preguntar(self, pregunta: str, contexto: str) -> str:
         """
         Responde una pregunta basándose únicamente en el contexto proporcionado
-        (contenido de la BdC). A diferencia de generar_texto(), los errores del
-        LLM se devuelven como texto de respuesta en vez de propagarse como excepción,
-        porque !pregunta siempre debe responder algo al estudiante.
+        (contenido de la BdC). Si el contexto es demasiado grande, usa TF-IDF 
+        para recuperar los fragmentos más relevantes.
         """
+        if len(contexto) > 15000:
+            from .buscador import BuscadorTFIDF
+            buscador = BuscadorTFIDF()
+            buscador.indexar(contexto)
+            contexto = buscador.buscar(pregunta, top_k=8)
+        else:
+            contexto = self._truncar_contexto(contexto, max_chars=15000)
+
         system_prompt = (
             "Eres un asistente de estudio que responde ÚNICAMENTE usando la documentación "
             "proporcionada a continuación. Si la pregunta pide varios datos o elementos y solo "
@@ -246,12 +254,18 @@ class LLMProvider:
     async def generar_texto(self, instruccion: str, contexto: str) -> str:
         """
         Método genérico para las herramientas de estudio (flashcards, ejercicios,
-        técnica Feynman, búsqueda de ejercicios, resumen de sesión...): instruccion
-        define la tarea concreta y contexto es el contenido de la BdC en el que debe
-        basarse. Propaga RuntimeError si el LLM falla, para que cada comando decida
-        cómo informar al estudiante.
+        técnica Feynman, búsqueda de ejercicios, resumen de sesión...).
+        Si el contexto es gigante, usa TF-IDF basado en la instrucción para filtrar.
         """
-        system_prompt = f"{instruccion}\n\nContenido de la BdC de referencia:\n{self._truncar_contexto(contexto)}"
+        if len(contexto) > 15000:
+            from .buscador import BuscadorTFIDF
+            buscador = BuscadorTFIDF()
+            buscador.indexar(contexto)
+            contexto = buscador.buscar(instruccion, top_k=10)
+        else:
+            contexto = self._truncar_contexto(contexto, max_chars=15000)
+
+        system_prompt = f"{instruccion}\n\nContenido de la BdC de referencia:\n{contexto}"
         return await self._chat([
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": "Adelante."},

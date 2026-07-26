@@ -78,10 +78,10 @@ def construir_prompt_ingest(agents_md: str, ruta_fuente_repo: str, nombre_ficher
 
 
 # --8<-- [start:dividir_en_lotes]
-def dividir_en_lotes(contenido: str, max_lineas: int = 250, solapamiento: int = 30) -> list:
+def dividir_en_lotes(contenido: str, max_lineas: int = 120, solapamiento: int = 20) -> list:
     """
-    Divide el texto de un archivo en bloques (lotes) de aproximadamente max_lineas,
-    manteniendo un solapamiento de líneas para no cortar conceptos a mitad de párrafo o frase.
+    Divide un documento largo en lotes (chunks) basados en número de líneas,
+    con un pequeño solapamiento para no perder el contexto entre cortes.
     """
     lineas = contenido.splitlines()
     if len(lineas) <= max_lineas:
