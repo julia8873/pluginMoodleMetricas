@@ -125,7 +125,7 @@ A continuación se documentan todos los métodos expuestos por el bot, organizad
     ```
     
     **`_append_log_okf`**
-    Añade registros inmutables de auditoría al log OKF cada vez que el LLM genera o modifica conceptos.
+    Guarda un historial en el log OKF cada vez que el LLM genera o modifica conceptos.
     ```python
     --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/mixins/git_mixin.py:append_log_okf"
     ```

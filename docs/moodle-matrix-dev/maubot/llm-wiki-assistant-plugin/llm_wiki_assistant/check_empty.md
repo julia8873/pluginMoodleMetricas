@@ -2,7 +2,7 @@
 
 Ubicación: `maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/check_empty.py`
 
-Herramienta de auditoría para la base de conocimiento que identifica ficheros vacíos o huérfanos de contenido.
+Herramienta de revisión para la base de conocimiento que identifica ficheros vacíos o huérfanos de contenido.
 
 ## Código Fuente
 
