@@ -39,7 +39,6 @@ nav:
         - bot.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/bot.md
         - check_empty.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/check_empty.md
         - check_missing_links.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/check_missing_links.md
-        - crear_conceptos_faltantes.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/crear_conceptos_faltantes.md
         - db.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/db.md
         - ejecutar_ingesta_lotes.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/ejecutar_ingesta_lotes.md
         - estudio.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/estudio.md

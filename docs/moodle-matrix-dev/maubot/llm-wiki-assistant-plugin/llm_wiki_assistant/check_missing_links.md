@@ -2,7 +2,7 @@
 
 Ubicación: `maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/check_missing_links.py`
 
-Validador de integridad referencial; asegura que todos los punteros internos (enlaces Markdown) hacia otros conceptos del repositorio sean válidos.
+Revisa que todos los punteros internos (enlaces Markdown) hacia otros conceptos del repositorio sean válidos.
 
 ## Código Fuente
 

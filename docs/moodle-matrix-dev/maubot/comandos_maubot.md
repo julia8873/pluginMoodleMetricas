@@ -14,7 +14,6 @@ A continuación se detalla la lista completa de comandos dispnibles para el llm 
 | `!mover <nombre> -> <destino>`| **Mueve un documento** de su ubicación actual a una nueva carpeta. Si quieres moverlo a la raíz, usa `raiz` como destino. |
 | `!borrar <nombre>` | **Elimina un documento** de la base de conocimiento. |
 | `!ingest_lotes [tema:X]` | Fuerza la extracción completa de conceptos por lotes desde los archivos en `raw/`. |
-| `!crear_conceptos` | **Extrae términos, preguntas y apuntes** a partir del material subido a la sala de chat. |
 
 ---
 
