@@ -90,7 +90,7 @@ class LLMProvider:
         texto de respuesta del modelo. Lo comparten preguntar(), transcribir_imagen()
         y generar_texto() para no duplicar el bloque de petición HTTP.
         """
-        is_local = any(loc in self.base_url for loc in ("://localhost", "://127.0.0.1", "://0.0.0.0", "://host.docker.internal", "://ollama"))
+        is_local = any(loc in self.base_url for loc in ("://localhost", "://127.0.0.1", "://0.0.0.0", "://host.docker.internal", "://ollama", "ugr.es"))
         if not is_local and (not self.api_key or not self.api_key.strip()):
             raise RuntimeError(
                 "No se ha configurado la clave API del LLM (llm_api_key o llm_vision_api_key están vacíos). "
@@ -140,6 +140,9 @@ class LLMProvider:
                     f"El backend LLM no ha respondido en {self.TIMEOUT_SEGUNDOS}s (timeout). "
                     "Puede ser un problema de conectividad con el servidor del modelo."
                 )
+            except Exception as exc: # Catch DNS and connection errors
+                raise RuntimeError(f"Error de conexión con el LLM: {exc}. ¿La IP/dominio es accesible?")
+
 
             try:
                 # Ruta estándar de la API OpenAI: data -> choices -> [0] -> message -> content.
@@ -166,11 +169,13 @@ class LLMProvider:
             return contexto[:max_chars - len(aviso)] + aviso
         return contexto
 
-    async def preguntar(self, pregunta: str, contexto: str) -> str:
+    async def preguntar(self, pregunta: str, contexto: str, historial: list | None = None) -> str:
         """
         Responde una pregunta basándose únicamente en el contexto proporcionado
         (contenido de la BdC). Si el contexto es demasiado grande, usa TF-IDF 
         para recuperar los fragmentos más relevantes.
+        Acepta historial opcional de turnos previos [{role, content}] para 
+        mantener la coherencia de la conversación.
         """
         if len(contexto) > 15000:
             from .buscador import BuscadorTFIDF
@@ -181,21 +186,22 @@ class LLMProvider:
             contexto = self._truncar_contexto(contexto, max_chars=15000)
 
         system_prompt = (
-            "Eres un asistente de estudio que responde ÚNICAMENTE usando la documentación "
-            "proporcionada a continuación. Si la pregunta pide varios datos o elementos y solo "
-            "algunos aparecen en la documentación (por ejemplo, si aparecen ejercicios pero no sus soluciones, "
-            "o si un concepto se menciona parcialmente), DEBES responder con toda la información "
-            "relevante que SÍ esté presente en la documentación y aclarar qué parte no figura o cómo lo indica el texto.\n\n"
-            "Solo si el tema consultado está COMPLETAMENTE AUSENTE o no tiene ninguna relación con la documentación, "
-            "responde exactamente: 'No tengo esa información en la documentación del repositorio.' "
-            "No inventes información ni uses conocimiento externo al repositorio.\n\n"
+            "Eres un asistente de estudio que responde basándose ÚNICAMENTE en dos fuentes:\n"
+            "1. La documentación de la asignatura proporcionada a continuación.\n"
+            "2. El historial reciente de la conversación con el usuario.\n\n"
+            "No inventes información ni uses conocimiento externo. Si la pregunta pide varios datos "
+            "y solo algunos aparecen en tus fuentes, DEBES responder con toda la información "
+            "relevante que SÍ esté presente y aclarar qué parte falta.\n\n"
+            "Solo si el tema consultado está COMPLETAMENTE AUSENTE de la documentación y de la conversación previa, "
+            "responde exactamente: 'No tengo esa información en la documentación ni en nuestra conversación reciente.'\n\n"
             f"DOCUMENTACIÓN:\n{self._truncar_contexto(contexto)}"
         )
+        messages = [{"role": "system", "content": system_prompt}]
+        if historial:
+            messages.extend(historial)
+        messages.append({"role": "user", "content": pregunta})
         try:
-            return await self._chat([
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": pregunta},
-            ])
+            return await self._chat(messages)
         except RuntimeError as exc:
             return str(exc)
 
@@ -293,30 +299,32 @@ class LLMProvider:
             texto_limpio = "".join(c for c in respuesta.lower() if c.isalnum() or c.isspace()).strip()
             # Devolver True solo si la primera palabra es "si"
             return texto_limpio.startswith("si")
-        except RuntimeError:
-            return True  # Ante la duda, intentamos extraer de la BdC
+        except RuntimeError as exc:
+            raise exc # Bubble up the connection error instead of falling back to True
 
-    async def conversar(self, mensaje: str) -> str:
+    async def conversar(self, mensaje: str, historial: list | None = None) -> str:
         """
         Responde a mensajes generales que no requieren BdC (saludos, despedidas...).
+        Acepta historial opcional de turnos previos [{role, content}] para
+        que el LLM recuerde lo que el alumno dijo antes en la misma sesión.
         """
         system_prompt = (
-            "Eres el asistente virtual del plugin MoodleMetricas en un chat de Matrix. "
-            "Tu objetivo es ayudar a los alumnos usando EXCLUSIVAMENTE la Base de Conocimiento (BdC) de la asignatura. "
-            "Si te preguntan qué puedes hacer, explica brevemente que puedes:\n"
-            "1. Responder dudas buscando en los apuntes de la asignatura.\n"
-            "2. Generar flashcards (!flashcard) y ejercicios (!ejercicio).\n"
-            "3. Hacer repasos interactivos (!feynman, !repasartema).\n"
-            "4. Procesar y guardar apuntes (texto, PDF o fotos) que suban al chat.\n"
-            "ATENCIÓN: Ahora mismo estás en modo conversacional rápido y NO tienes acceso al contenido de la BdC. "
-            "Por lo tanto, NUNCA intentes listar o adivinar las materias, temas o conceptos concretos (como matemáticas, física, etc.) "
-            "que contiene la base de conocimiento, porque te los inventarás. Solo explica tus funciones (flashcards, repasos, dudas)."
+            "Eres el asistente virtual de docencia de MoodleMetricas. "
+            "Tienes acceso al historial de chat y al resumen de la sesión anterior, pero debes tratar esta información como CONTEXTO PASIVO.\n\n"
+            "DIRECTRICES DE RESPUESTA:\n"
+            "1. Eres un asistente de docencia, directo y profesional. Tu función es ayudar con la asignatura.\n"
+            "2. NUNCA menciones proactively el historial ni digas cosas como 'recuerdo que hablamos de...', 'como dijimos antes' o '¿quieres retomar el tema?'. "
+            "Usa la memoria solo de forma invisible (por ejemplo, si te preguntan '¿cómo me llamo?', respondes con el nombre porque lo sabes, pero sin hacer alusión a que lo leíste en el historial).\n"
+            "3. Mantén un tono educado y al grano. Si el usuario te saluda, responde de forma natural y breve ('Hola [Nombre], ¿en qué te puedo ayudar hoy?'), sin ofrecer cháchara ni sacar temas pasados.\n"
+            "4. Usa ÚNICAMENTE la Base de Conocimiento y el historial. No te inventes información externa.\n\n"
+            "Si te preguntan cuáles son tus funciones, responde que puedes resolver dudas (BdC), generar flashcards, ejercicios y repasos."
         )
+        messages = [{"role": "system", "content": system_prompt}]
+        if historial:
+            messages.extend(historial)
+        messages.append({"role": "user", "content": mensaje})
         try:
-            return await self._chat([
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": mensaje},
-            ])
+            return await self._chat(messages)
         except RuntimeError as exc:
             return str(exc)
 # --8<-- [end:file_desc]

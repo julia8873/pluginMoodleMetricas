@@ -16,10 +16,11 @@ from .ejerciciostema import EjerciciosTemaMixin
 from .resumen import ResumenMixin
 from .mapa import MapaMixin
 from .ayuda import AyudaMixin
+from .stop import StopMixin
 
 
 class ComandosMixin(
-    MensajesMixin, PreguntaMixin, FicherosMixin, EstadisticasMixin, TrazabilidadMixin, DocumentoMixin, BorrarMixin, MoverMixin, CarpetaMixin, FlashcardMixin, EjercicioMixin, ConceptoMixin, FeynmanMixin, RepasarTemaMixin, EjerciciosTemaMixin, ResumenMixin, MapaMixin, AyudaMixin
+    MensajesMixin, PreguntaMixin, FicherosMixin, EstadisticasMixin, TrazabilidadMixin, DocumentoMixin, BorrarMixin, MoverMixin, CarpetaMixin, FlashcardMixin, EjercicioMixin, ConceptoMixin, FeynmanMixin, RepasarTemaMixin, EjerciciosTemaMixin, ResumenMixin, MapaMixin, AyudaMixin, StopMixin
 ):
     """Punto de composición: agrega todos los mixins de comandos individuales."""
     pass

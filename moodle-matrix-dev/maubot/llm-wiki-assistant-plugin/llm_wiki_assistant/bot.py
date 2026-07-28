@@ -71,6 +71,8 @@ from .mixins.locks_mixin import LocksMixin
 from .mixins.utils_mixin import UtilsMixin
 from .mixins.ingest_mixin import IngestMixin
 from .mixins.comandos import ComandosMixin
+from .sesiones import arrancar_tareas as _arrancar_tareas_sesiones
+from .web_progreso import WebProgresoMixin
 
 
 # --------------------------------------------------------------------
@@ -80,6 +82,10 @@ from .constants import (
     PENDIENTE_TTL_SEGUNDOS,
     CONFIRMACION_BORRADO_TTL_SEGUNDOS,
     SESION_VENTANA_SEGUNDOS,
+    SESION_INACTIVIDAD_SEGUNDOS,
+    SESION_DETECTOR_INTERVALO_SEGUNDOS,
+    RETENTION_DAYS_DEFAULT,
+    HISTORIAL_MAX_TURNOS,
     MAX_CONCEPTOS_REPASO_TEMA,
     MAX_CONCURRENCIA_GITHUB,
     FICHEROS_EXCLUIDOS_CONTEXTO,
@@ -115,6 +121,9 @@ class Config(BaseProxyConfig):
         helper.copy("llm_vision_api_key")  # API key opcional para el backend de visión
         helper.copy("bdc_cache_ttl_minutos") # TTL en minutos para la caché en memoria de la BdC
         helper.copy("ingest_automatico")     # Si True, estructura automáticamente cada fuente subida en okf/
+        helper.copy("progress_api_token")            # Token Bearer para el endpoint /progreso
+        helper.copy("retention_days")                # Días de retención de datos brutos de trazabilidad
+        helper.copy("session_inactivity_seconds")    # Segundos de inactividad para cerrar sesión
 
 
 
@@ -122,7 +131,7 @@ class Config(BaseProxyConfig):
 # Clase principal LlmWikiAssistant
 # --------------------------------------------------------------------
 
-class LlmWikiAssistant(GitMixin, OcrMixin, CacheMixin, LocksMixin, UtilsMixin, IngestMixin, ComandosMixin, Plugin):
+class LlmWikiAssistant(GitMixin, OcrMixin, CacheMixin, LocksMixin, UtilsMixin, IngestMixin, ComandosMixin, WebProgresoMixin, Plugin):
 
 # --8<-- [start:start]
 
@@ -148,6 +157,8 @@ class LlmWikiAssistant(GitMixin, OcrMixin, CacheMixin, LocksMixin, UtilsMixin, I
         self.pendientes_borrado = {}         # Espera confirmación para borrar un archivo específico
         self.pendientes_borrado_carpeta = {} # Espera confirmación para borrar una carpeta entera
         self.pendientes_ocr = {}             # Confirmación para realizar OCR visual tras preview de PDF
+        self.peticiones_llm = {}             # Referencias a tareas asíncronas de consultas LLM (para cancelarlas)
+        self._historial_chat = {}            # (room_id, sender) -> list[{role, content}] — memoria de conversación
 
         # 4. Inicializar control de concurrencia
         # Locks por usuario/sala para evitar race conditions si llegan mensajes simultáneos
@@ -162,6 +173,9 @@ class LlmWikiAssistant(GitMixin, OcrMixin, CacheMixin, LocksMixin, UtilsMixin, I
         
         # Semáforo para limitar las peticiones simultáneas a GitHub/GitLab (prevenir rate-limits)
         self._semaforo_github = asyncio.Semaphore(MAX_CONCURRENCIA_GITHUB)
+
+        # 6. Arrancar tareas periódicas: detector de inactividad de sesiones + job de purga
+        self._tareas_sesiones = _arrancar_tareas_sesiones(self)
 # --8<-- [end:start]
 
 

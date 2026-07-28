@@ -23,4 +23,15 @@ llm_vision_api_key: ""
 bdc_cache_ttl_minutos: 30
 # Si es true, cada fuente subida a raw/ se estructura automaticamente en okf/
 ingest_automatico: true
+# Token Bearer para autenticar el endpoint HTTP /progreso del panel del profesor.
+# PHP lo envia en la cabecera Authorization: Bearer <token>.
+# Genera un secreto seguro: python3 -c "import secrets; print(secrets.token_hex(32))"
+progress_api_token: "GENERA_UN_TOKEN_SECRETO_ALEATORIO_AQUI"
+# Dias de retencion de datos de trazabilidad bruta (interacciones, qa_historial).
+# Los resumenes_sesion NO se purgan: actuan como registro agregado de largo plazo.
+# ATENCION: revisar con el DPD de la UGR antes de activar en produccion con
+# alumnos reales (RGPD art.5.1.e, LOPDGDD art.34 — UGR obligada a designar DPD).
+retention_days: 365
+# Segundos de inactividad para cerrar una sesion automaticamente (por defecto 30 min).
+session_inactivity_seconds: 1800
 # --8<-- [end:file_desc]

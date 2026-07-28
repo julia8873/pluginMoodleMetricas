@@ -38,6 +38,7 @@ Entorno integral formado por el plugin de bloque Moodle **`block_gitmetrics`** y
     - [Las salas de chat (Automatización y Desactivación)](#las-salas-de-chat-automatización-y-desactivación)
     - [Comandos del bot en la sala Matrix](#comandos-del-bot-en-la-sala-matrix)
 11. [Integración con Obsidian](#11-integración-con-obsidian)
+    - [Sesiones, Panel del Profesor y Política de Retención](./docs/moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/sesiones-y-panel-profesor.md) — Decisiones de arquitectura: cierre de sesión, puente Moodle y RGPD/LOPDGDD
 12. [Configuración de Proveedores Git](#12-configuración-de-proveedores-git)
 13. [Gestión de Contenedores Docker](#13-gestión-de-contenedores-docker)
 

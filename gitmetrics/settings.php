@@ -124,6 +124,30 @@ if ($ADMIN->fulltree) {
         'OKF-Vault',
         PARAM_TEXT
     ));
+
+    // -- Sección Panel de Progreso de Alumnos (bot Maubot) -----------------
+    $settings->add(new admin_setting_heading(
+        'block_gitmetrics/heading_progress',
+        get_string('heading_progress', 'block_gitmetrics'),
+        get_string('heading_progress_desc', 'block_gitmetrics')
+    ));
+
+    // URL del endpoint HTTP nativo del bot Maubot
+    $settings->add(new admin_setting_configtext(
+        'block_gitmetrics/bot_progress_url',
+        get_string('bot_progress_url', 'block_gitmetrics'),
+        get_string('bot_progress_url_desc', 'block_gitmetrics'),
+        '',
+        PARAM_URL
+    ));
+
+    // Token de autenticación para el endpoint de progreso del bot
+    $settings->add(new admin_setting_configpasswordunmask(
+        'block_gitmetrics/bot_progress_token',
+        get_string('bot_progress_token', 'block_gitmetrics'),
+        get_string('bot_progress_token_desc', 'block_gitmetrics'),
+        ''
+    ));
 }
 // --8<-- [end:settings_definition]
 

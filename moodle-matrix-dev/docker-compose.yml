@@ -70,12 +70,17 @@ services:
       - "29316:29316"
     depends_on:
       - synapse
+    dns:
+      - 150.214.27.15
+      - 8.8.8.8
+    extra_hosts:
+      - "iaceprud.ugr.es:172.18.246.73"
 
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
     restart: unless-stopped
-    profiles: ["ollama"]
+    profiles: [ "ollama" ]
     volumes:
       - ./ollama-data:/root/.ollama
     ports:
@@ -88,4 +93,11 @@ volumes:
     driver: local
   moodledata_data:
     driver: local
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.250.0.0/24
 # --8<-- [end:file_desc]

@@ -9,7 +9,7 @@ defined('MOODLE_INTERNAL') || die();
 
 // --8<-- [start:version_definition]
 $plugin->component = 'block_gitmetrics';
-$plugin->version   = 2026072603;
+$plugin->version   = 2026072700;
 $plugin->requires  = 2022041900;  // Moodle 4.0+
 $plugin->maturity  = MATURITY_STABLE;
 // --8<-- [end:version_definition]

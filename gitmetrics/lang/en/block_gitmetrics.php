@@ -117,3 +117,18 @@ $string['obsidian_vault_path_desc']    = 'Absolute path on the user\'s file syst
 $string['obsidian_vault_name']         = 'Obsidian vault name';
 $string['obsidian_vault_name_desc']    = 'Exact name of the vault as Obsidian registered it when it was created (the vault folder name). This is used to build the obsidian:// protocol links.';
 $string['task_sync_obsidian']          = 'Scheduled Obsidian vault synchronization';
+
+// Student progress panel (Maubot bridge)
+$string['heading_progress']         = 'Student Progress Panel (Maubot Bot)';
+$string['heading_progress_desc']    = 'Connection settings for the HTTP endpoint exposed by the Maubot bot to show student study session progress.';
+$string['bot_progress_url']         = 'Bot progress endpoint URL';
+$string['bot_progress_url_desc']    = 'Full URL of the native Maubot HTTP endpoint for student progress. Pattern: http://maubot:29316/_matrix/maubot/plugin/<instance_id>/progreso — find the exact URL in self.webapp_url logged by the bot on startup. Leave empty to disable the progress panel.';
+$string['bot_progress_token']       = 'Bot progress authentication token';
+$string['bot_progress_token_desc']  = 'Bearer token to authenticate requests to the /progreso endpoint. Must match the progress_api_token value in base-config.yaml of the bot plugin.';
+$string['progress_panel_title']     = 'Student Progress';
+$string['progress_no_data']         = 'No progress data available. Configure the bot endpoint in the plugin settings.';
+$string['progress_student']         = 'Student (anonymized)';
+$string['progress_sessions']        = 'Sessions';
+$string['progress_last_session']    = 'Last session';
+$string['progress_concepts']        = 'Concepts mastered';
+$string['progress_summary']         = 'Latest summary';

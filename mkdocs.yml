@@ -39,6 +39,7 @@ nav:
         - bot.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/bot.md
         - check_empty.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/check_empty.md
         - check_missing_links.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/check_missing_links.md
+        - constants.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/constants.md
         - db.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/db.md
         - ejecutar_ingesta_lotes.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/ejecutar_ingesta_lotes.md
         - estudio.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/estudio.md
@@ -49,6 +50,10 @@ nav:
         - okf_ingest.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/okf_ingest.md
         - organizacion.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/organizacion.md
         - pdf_ingest.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/pdf_ingest.md
+        - sesiones.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/sesiones.md
+        - web_progreso.py: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/web_progreso.md
+      - Decisiones de Arquitectura:
+        - Sesiones y Panel del Profesor: moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/sesiones-y-panel-profesor.md
   - Plugin Gitmetrics:
     - General: gitmetrics/index.md
     - Estructura: gitmetrics/estructura.md
@@ -72,6 +77,7 @@ nav:
       - markdown_parser: gitmetrics/classes/markdown_parser.md
       - matrix_helper: gitmetrics/classes/matrix_helper.md
       - metrics_cache: gitmetrics/classes/metrics_cache.md
+      - student_progress: gitmetrics/classes/student_progress.md
 
 # Aquí puedes incluir plugins para generar documentación desde el código
 plugins:

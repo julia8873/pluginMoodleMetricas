@@ -98,6 +98,7 @@ if (empty($repourl) || strpos($repourl, '<tu_usuario>') !== false) {
         'format'  => [],
     ];
 } else {
+    echo "Calculando métricas y descargando ficheros del repositorio (esto puede tardar unos minutos si el repositorio es grande)...\n";
     $calculator = new \block_gitmetrics\metrics_calculator($token, $provider, $gitlab_url);
     $metrics    = $calculator->calculate($repourl, 'main');
 }

@@ -76,19 +76,26 @@ class ComandosBaseMixin(_HostProtocol):
     ) -> None:
         """Plantea una pregunta de estudio al usuario."""
         owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
-        contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
-        if not contenido_docs and tema:
-            await evt.reply(f"No he encontrado ningún fichero en la BdC que coincida con «{tema}».")
-            return
-        if not contenido_docs:
-            await evt.reply("No he podido leer la documentación del repositorio.")
-            return
-
+        clave = (evt.room_id, evt.sender)
+        self.peticiones_llm[clave] = asyncio.current_task()
         try:
+            contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
+            if not contenido_docs and tema:
+                await evt.reply(f"No he encontrado ningún fichero en la BdC que coincida con «{tema}».")
+                return
+            if not contenido_docs:
+                await evt.reply("No he podido leer la documentación del repositorio.")
+                return
+
             generada = await generador(contenido_docs, self._crear_llm(), tipo_contenido)
+        except asyncio.CancelledError:
+            self.log.info(f"Consulta LLM cancelada para {clave}")
+            return
         except Exception as exc:
             await evt.reply(f"No he podido generar la pregunta: {exc}")
             return
+        finally:
+            self.peticiones_llm.pop(clave, None)
 
         self.pendientes[(evt.room_id, evt.sender)] = {
             "tipo": tipo,
@@ -107,16 +114,21 @@ class ComandosBaseMixin(_HostProtocol):
     async def _evaluar_pendiente(self, evt: MessageEvent, pendiente: dict) -> None:
         """Evalúa una respuesta pendiente de una pregunta anterior."""
         clave = (evt.room_id, evt.sender)
-        contenido_docs = pendiente.get("contenido_docs")
-        if contenido_docs is None:
-            owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
-            contenido_docs = await self._obtener_documentacion(owner, repo, token, pendiente.get("tema", ""))
-
+        self.peticiones_llm[clave] = asyncio.current_task()
         try:
+            contenido_docs = pendiente.get("contenido_docs")
+            if contenido_docs is None:
+                owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
+                contenido_docs = await self._obtener_documentacion(owner, repo, token, pendiente.get("tema", ""))
+
             resultado = await evaluar_respuesta(
                 pendiente["tipo"], pendiente["concepto"], pendiente["pregunta"],
                 evt.content.body, contenido_docs, self._crear_llm(),
             )
+        except asyncio.CancelledError:
+            self.log.info(f"Corrección LLM cancelada para {clave}")
+            self.pendientes[clave] = pendiente
+            return
         except EstudioError as exc:
             self.pendientes[clave] = pendiente
             await evt.reply(f"No he podido corregir la respuesta: {exc}")
@@ -126,6 +138,8 @@ class ComandosBaseMixin(_HostProtocol):
             self.log.warning(f"[llm_wiki_assistant] Error del LLM corrigiendo la respuesta: {exc}")
             await evt.reply(f"No he podido corregir tu respuesta: {exc}\nTu pregunta sigue pendiente.")
             return
+        finally:
+            self.peticiones_llm.pop(clave, None)
 
         emoji = "✅" if resultado["correcto"] else "❌"
         # T6: Renderizar fórmulas en el feedback
@@ -189,20 +203,27 @@ class ComandosBaseMixin(_HostProtocol):
         concepto, tema, tipo_contenido = _extraer_modificadores(nombre)
 
         owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
-        contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
-        if not contenido_docs and tema:
-            await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
-            return
-        if not contenido_docs:
-            await evt.reply("No he podido leer la documentación del repositorio.")
-            return
-
-        if not concepto:
-            try:
-                concepto = await elegir_concepto(contenido_docs, self._crear_llm(), tipo_contenido)
-            except Exception as exc:
-                await evt.reply(f"No he podido elegir un concepto: {exc}")
+        clave = (evt.room_id, evt.sender)
+        self.peticiones_llm[clave] = asyncio.current_task()
+        try:
+            contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
+            if not contenido_docs and tema:
+                await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
                 return
+            if not contenido_docs:
+                await evt.reply("No he podido leer la documentación del repositorio.")
+                return
+
+            if not concepto:
+                concepto = await elegir_concepto(contenido_docs, self._crear_llm(), tipo_contenido)
+        except asyncio.CancelledError:
+            self.log.info(f"Selección de concepto LLM cancelada para {clave}")
+            return
+        except Exception as exc:
+            await evt.reply(f"No he podido elegir un concepto: {exc}")
+            return
+        finally:
+            self.peticiones_llm.pop(clave, None)
 
         pregunta = plantilla_pregunta.format(concepto=concepto)
         self.pendientes[(evt.room_id, evt.sender)] = {

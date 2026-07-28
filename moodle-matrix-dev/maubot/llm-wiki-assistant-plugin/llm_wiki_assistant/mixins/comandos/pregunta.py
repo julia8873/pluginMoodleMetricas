@@ -54,20 +54,27 @@ class PreguntaMixin(ComandosBaseMixin):
 
         await evt.reply("Buscando en la documentación, un momento...")
 
-        contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
-        if not contenido_docs and tema:
-            await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
-            return
-        if not contenido_docs:
-            await evt.reply("No he podido leer la documentación del repositorio.")
-            return
-
-        provider = self._crear_llm()
+        clave = (evt.room_id, evt.sender)
+        self.peticiones_llm[clave] = asyncio.current_task()
         try:
+            contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
+            if not contenido_docs and tema:
+                await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
+                return
+            if not contenido_docs:
+                await evt.reply("No he podido leer la documentación del repositorio.")
+                return
+
+            provider = self._crear_llm()
             respuesta = await provider.preguntar(texto, contenido_docs)
+        except asyncio.CancelledError:
+            self.log.info(f"Consulta LLM cancelada para {clave}")
+            return
         except Exception as exc:
             await evt.reply(f"Error al consultar el modelo: {exc}")
             return
+        finally:
+            self.peticiones_llm.pop(clave, None)
 
         # T6: Usar LaTeX
         await self._responder_con_latex(evt, respuesta)

@@ -121,6 +121,6 @@ class BuscadorTFIDF:
         if not resultados:
             # Fallback: si no hay ninguna coincidencia (por ejemplo palabras muy raras),
             # devolvemos los primeros párrafos genéricos para que al menos tenga algo
-            resultados = [chunk for _, chunk in self.documentos[:top_k]]
+            resultados = [chunk for chunk, _ in self.documentos[:top_k]]
             
         return "\n\n...\n\n".join(resultados)

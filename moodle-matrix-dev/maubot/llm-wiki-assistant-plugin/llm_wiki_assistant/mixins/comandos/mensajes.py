@@ -11,7 +11,7 @@ from mautrix.types import EventType, MessageType
 from llm_wiki_assistant.db import Tracker
 from llm_wiki_assistant.image_ocr import OcrError, es_imagen_de_apuntes, transcribir_imagen
 from llm_wiki_assistant.pdf_ingest import PdfExtractionError, extraer_texto_pdf, parece_texto_de_baja_calidad
-from llm_wiki_assistant.constants import PENDIENTE_TTL_SEGUNDOS
+from llm_wiki_assistant.constants import PENDIENTE_TTL_SEGUNDOS, HISTORIAL_MAX_TURNOS
 from llm_wiki_assistant.helpers import _extraer_modificadores
 
 if TYPE_CHECKING:
@@ -33,6 +33,7 @@ if TYPE_CHECKING:
         _cache_carpetas: dict
         _cache_agents_md: dict
         _semaforo_github: asyncio.Semaphore
+        _historial_chat: dict
         client: Any
         database: Any
 else:
@@ -88,12 +89,37 @@ class MensajesMixin(ComandosBaseMixin):
                 texto, tema, _ = _extraer_modificadores(texto_msg)
                 provider = self._crear_llm()
 
-                # Preguntar al LLM si este mensaje justifica leer la Base de Conocimiento
-                necesita_bdc = await provider.evaluar_necesidad_bdc(texto_msg)
+                try:
+                    # Preguntar al LLM si este mensaje justifica leer la Base de Conocimiento
+                    necesita_bdc = await provider.evaluar_necesidad_bdc(texto_msg)
+                except RuntimeError as exc:
+                    await evt.reply(f"Error de conexión con la IA: {exc}")
+                    return
+
+                if clave not in self._historial_chat:
+                    # Restaurar desde BD si la memoria está vacía (reinicio o nueva sesión)
+                    h_restaurado = await self.tracker.obtener_historial_conversacion(evt.sender, evt.room_id, limit=HISTORIAL_MAX_TURNOS)
+                    ultimo_resumen = await self.tracker.obtener_ultimo_resumen_sesion_alumno(evt.sender)
+                    if ultimo_resumen:
+                        # Inyectar el resumen de la última sesión como contexto extra inicial
+                        h_restaurado.insert(0, {
+                            "role": "system",
+                            "content": f"Contexto pasivo de la última sesión (uso interno, no mencionar al usuario a menos que pregunte):\n{ultimo_resumen}"
+                        })
+                    self._historial_chat[clave] = h_restaurado
+
+                historial = self._historial_chat[clave]
 
                 if not necesita_bdc:
-                    respuesta = await provider.conversar(texto_msg)
+                    respuesta = await provider.conversar(texto_msg, historial=historial)
+                    historial.append({"role": "user", "content": texto_msg})
+                    historial.append({"role": "assistant", "content": respuesta})
+                    if len(historial) > HISTORIAL_MAX_TURNOS:
+                        self._historial_chat[clave] = historial[-HISTORIAL_MAX_TURNOS:]
                     await self._responder_con_latex(evt, respuesta)
+                    
+                    # Guardamos la charla también en BD para no perderla si el bot se reinicia
+                    await self.tracker.log_qa(evt.sender, evt.room_id, "conversacion", texto_msg, respuesta, "informativo")
                     return
                 
                 token = self._obtener_git_token()
@@ -102,19 +128,30 @@ class MensajesMixin(ComandosBaseMixin):
                 
                 await evt.reply("Consultando la Base de Conocimiento, un momento...")
                 
-                contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
-                if not contenido_docs and tema:
-                    await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
-                    return
-                if not contenido_docs:
-                    await evt.reply("No he podido leer la documentación del repositorio.")
-                    return
-                    
+                self.peticiones_llm[clave] = asyncio.current_task()
                 try:
-                    respuesta = await provider.preguntar(texto, contenido_docs)
+                    contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
+                    if not contenido_docs and tema:
+                        await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
+                        return
+                    if not contenido_docs:
+                        await evt.reply("No he podido leer la documentación del repositorio.")
+                        return
+                    
+                    respuesta = await provider.preguntar(texto, contenido_docs, historial=historial)
+                except asyncio.CancelledError:
+                    self.log.info(f"Consulta LLM cancelada para {clave}")
+                    return
                 except Exception as exc:
                     await evt.reply(f"Error al consultar el modelo: {exc}")
                     return
+                finally:
+                    self.peticiones_llm.pop(clave, None)
+                    
+                historial.append({"role": "user", "content": texto})
+                historial.append({"role": "assistant", "content": respuesta})
+                if len(historial) > HISTORIAL_MAX_TURNOS:
+                    self._historial_chat[clave] = historial[-HISTORIAL_MAX_TURNOS:]
                     
                 await self._responder_con_latex(evt, respuesta)
                 await self.tracker.log_interaccion(evt.sender, evt.room_id, "pregunta_implicita", texto)

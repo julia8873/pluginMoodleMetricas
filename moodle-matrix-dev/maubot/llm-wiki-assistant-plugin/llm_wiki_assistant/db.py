@@ -126,6 +126,45 @@ async def upgrade_v6(conn: Connection) -> None:
     pass
 
 
+@upgrade_table.register(description="Sesiones con cierre automático, tabla de estudiantes pseudonimizados y persistencia de resúmenes")
+async def upgrade_v7(conn: Connection) -> None:
+    await conn.execute(
+        """
+        CREATE TABLE estudiantes (
+            student_id      TEXT    PRIMARY KEY,
+            id_pseudo       TEXT    UNIQUE NOT NULL,
+            moodle_user_id  INTEGER,
+            curso_id        INTEGER
+        )
+        """
+    )
+    await conn.execute(
+        """
+        CREATE TABLE sesiones (
+            session_id   TEXT    PRIMARY KEY,
+            student_id   TEXT    NOT NULL REFERENCES estudiantes(student_id),
+            room_id      TEXT    NOT NULL,
+            inicio       BIGINT  NOT NULL,
+            fin          BIGINT,
+            num_eventos  INTEGER NOT NULL DEFAULT 0
+        )
+        """
+    )
+    await conn.execute(
+        """
+        CREATE TABLE resumenes_sesion (
+            session_id       TEXT    PRIMARY KEY REFERENCES sesiones(session_id),
+            resumen_texto    TEXT    NOT NULL,
+            temas_detectados TEXT,
+            dudas_detectadas TEXT,
+            generado_en      BIGINT  NOT NULL
+        )
+        """
+    )
+    await conn.execute("ALTER TABLE interacciones ADD COLUMN session_id TEXT")
+    await conn.execute("ALTER TABLE qa_historial  ADD COLUMN session_id TEXT")
+
+
 # --------------------------------------------------------------------
 # Tracker: envoltorio sobre la base de datos del plugin
 # --------------------------------------------------------------------
@@ -144,23 +183,25 @@ class Tracker:
     # Registro de eventos de estudio
     # --------------------------------------------------------------------
 
-    async def log_interaccion(self, student_id: str, room_id: str, tipo: str, contenido: str = "") -> None:
+    async def log_interaccion(self, student_id: str, room_id: str, tipo: str, contenido: str = "", session_id: Optional[str] = None) -> None:
         """
         Registra una interacción de estudio o comando con el bot.
         Se guardan hasta 4000 caracteres para permitir consultar el historial detallado.
+        Acepta session_id opcional para vincular la interacción a la sesión activa.
         """
         await self.db.execute(
-            "INSERT INTO interacciones (student_id, room_id, tipo, contenido, timestamp) "
-            "VALUES ($1, $2, $3, $4, $5)",
-            student_id, room_id, tipo, (contenido or "")[:4000], int(time.time()),
+            "INSERT INTO interacciones (student_id, room_id, tipo, contenido, timestamp, session_id) "
+            "VALUES ($1, $2, $3, $4, $5, $6)",
+            student_id, room_id, tipo, (contenido or "")[:4000], int(time.time()), session_id,
         )
 
-    async def log_qa(self, student_id: str, room_id: str, tipo: str, pregunta: str, respuesta: str, evaluacion: str = "") -> None:
-        """Registra una pregunta, la respuesta del usuario/bot y su evaluación completa para trazabilidad."""
+    async def log_qa(self, student_id: str, room_id: str, tipo: str, pregunta: str, respuesta: str, evaluacion: str = "", session_id: Optional[str] = None) -> None:
+        """Registra una pregunta, la respuesta del usuario/bot y su evaluación completa para trazabilidad.
+        Acepta session_id opcional para vincular la entrada al ciclo de sesión activo."""
         await self.db.execute(
-            "INSERT INTO qa_historial (student_id, room_id, tipo, pregunta, respuesta, evaluacion, timestamp) "
-            "VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            student_id, room_id, tipo, (pregunta or "")[:4000], (respuesta or "")[:4000], (evaluacion or "")[:4000], int(time.time()),
+            "INSERT INTO qa_historial (student_id, room_id, tipo, pregunta, respuesta, evaluacion, timestamp, session_id) "
+            "VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            student_id, room_id, tipo, (pregunta or "")[:4000], (respuesta or "")[:4000], (evaluacion or "")[:4000], int(time.time()), session_id,
         )
 
     async def log_fuente_raw(self, student_id: str, room_id: str, nombre_archivo: str, ruta_repo: str) -> None:
@@ -221,6 +262,234 @@ class Tracker:
             """,
             student_id, concepto, intentos, aciertos, dominado, int(time.time()),
         )
+
+    # --------------------------------------------------------------------
+    # Gestión de sesiones (upgrade_v7)
+    # --------------------------------------------------------------------
+
+    async def ensure_estudiante(self, student_id: str) -> str:
+        """
+        Registra el estudiante en 'estudiantes' la primera vez que se le ve
+        (lazy insert con ON CONFLICT DO NOTHING).  Genera un UUID interno
+        (id_pseudo) que se expone al panel de Moodle sin revelar el Matrix ID.
+        Devuelve el id_pseudo del estudiante.
+        """
+        import uuid
+        fila = await self.db.fetchrow(
+            "SELECT id_pseudo FROM estudiantes WHERE student_id = $1", student_id
+        )
+        if fila:
+            return fila["id_pseudo"]
+        id_pseudo = str(uuid.uuid4())
+        await self.db.execute(
+            "INSERT INTO estudiantes (student_id, id_pseudo) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+            student_id, id_pseudo,
+        )
+        fila = await self.db.fetchrow(
+            "SELECT id_pseudo FROM estudiantes WHERE student_id = $1", student_id
+        )
+        return fila["id_pseudo"] if fila else id_pseudo
+
+    async def crear_o_continuar_sesion(self, student_id: str, room_id: str) -> str:
+        """
+        Devuelve el session_id activo para (student_id, room_id).
+        Si no hay sesión abierta (fin IS NULL), crea una nueva con UUID fresco.
+        El estudiante se registra en 'estudiantes' si aún no existe (lazy insert).
+        """
+        import uuid
+        await self.ensure_estudiante(student_id)
+        fila = await self.db.fetchrow(
+            "SELECT session_id FROM sesiones WHERE student_id = $1 AND room_id = $2 AND fin IS NULL",
+            student_id, room_id,
+        )
+        if fila:
+            return fila["session_id"]
+        session_id = str(uuid.uuid4())
+        await self.db.execute(
+            "INSERT INTO sesiones (session_id, student_id, room_id, inicio) VALUES ($1, $2, $3, $4)",
+            session_id, student_id, room_id, int(time.time()),
+        )
+        return session_id
+
+    async def incrementar_eventos_sesion(self, session_id: str) -> None:
+        """Incrementa el contador de eventos de una sesión activa."""
+        await self.db.execute(
+            "UPDATE sesiones SET num_eventos = num_eventos + 1 WHERE session_id = $1",
+            session_id,
+        )
+
+    async def cerrar_sesion(self, session_id: str) -> None:
+        """Marca la sesión como cerrada fijando 'fin' al timestamp actual."""
+        await self.db.execute(
+            "UPDATE sesiones SET fin = $1 WHERE session_id = $2",
+            int(time.time()), session_id,
+        )
+
+    async def guardar_resumen_sesion(
+        self,
+        session_id: str,
+        resumen_texto: str,
+        temas_detectados: str = "",
+        dudas_detectadas: str = "",
+    ) -> None:
+        """Persiste el resumen generado por generar_resumen_sesion() asociado a la sesión."""
+        await self.db.execute(
+            """
+            INSERT INTO resumenes_sesion (session_id, resumen_texto, temas_detectados, dudas_detectadas, generado_en)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (session_id) DO UPDATE SET
+                resumen_texto    = $2,
+                temas_detectados = $3,
+                dudas_detectadas = $4,
+                generado_en      = $5
+            """,
+            session_id, resumen_texto, temas_detectados or "", dudas_detectadas or "", int(time.time()),
+        )
+
+    async def obtener_sesiones_abiertas_inactivas(self, umbral_segundos: int) -> list:
+        """
+        Devuelve sesiones abiertas (fin IS NULL) sin actividad reciente.
+        'Sin actividad' = ninguna interacción vinculada en los últimos umbral_segundos,
+        o sesión recién creada sin ninguna interacción y más antigua que el umbral.
+        Usado por el detector periódico de inactividad de sesiones.py.
+        """
+        limite = int(time.time()) - umbral_segundos
+        filas = await self.db.fetch(
+            """
+            SELECT s.session_id, s.student_id, s.room_id, s.inicio
+            FROM sesiones s
+            WHERE s.fin IS NULL
+              AND (
+                (
+                  SELECT MAX(i.timestamp) FROM interacciones i
+                  WHERE i.session_id = s.session_id
+                ) < $1
+                OR (
+                  NOT EXISTS (
+                    SELECT 1 FROM interacciones i WHERE i.session_id = s.session_id
+                  )
+                  AND s.inicio < $1
+                )
+              )
+            """,
+            limite,
+        )
+        return [dict(f) for f in filas]
+
+    async def obtener_interacciones_sesion(self, session_id: str) -> list:
+        """Devuelve todas las interacciones de una sesión concreta, en orden cronológico."""
+        filas = await self.db.fetch(
+            "SELECT tipo, contenido, timestamp FROM interacciones "
+            "WHERE session_id = $1 ORDER BY timestamp ASC",
+            session_id,
+        )
+        return [dict(f) for f in filas]
+
+    async def obtener_progreso_para_moodle(self, curso_id: Optional[int] = None) -> list:
+        """
+        Devuelve, por alumno (usando id_pseudo sin exponer el Matrix ID):
+        nº de sesiones, fecha de la última, resumen más reciente y conceptos dominados.
+        Filtrable por curso_id.  Esta es la función que consume el puente hacia Moodle.
+        """
+        if curso_id is not None:
+            filas = await self.db.fetch(
+                """
+                SELECT
+                    e.id_pseudo,
+                    e.curso_id,
+                    COUNT(DISTINCT s.session_id)  AS num_sesiones,
+                    MAX(s.inicio)                 AS ultima_sesion,
+                    (SELECT rs.resumen_texto FROM resumenes_sesion rs
+                     JOIN sesiones s2 ON s2.session_id = rs.session_id
+                     WHERE s2.student_id = e.student_id
+                     ORDER BY rs.generado_en DESC LIMIT 1) AS ultimo_resumen,
+                    (SELECT COUNT(*) FROM conceptos c
+                     WHERE c.student_id = e.student_id AND c.dominado = 1) AS conceptos_dominados
+                FROM estudiantes e
+                LEFT JOIN sesiones s ON s.student_id = e.student_id
+                WHERE e.curso_id = $1
+                GROUP BY e.id_pseudo, e.curso_id, e.student_id
+                ORDER BY ultima_sesion DESC NULLS LAST
+                """,
+                curso_id,
+            )
+        else:
+            filas = await self.db.fetch(
+                """
+                SELECT
+                    e.id_pseudo,
+                    e.curso_id,
+                    COUNT(DISTINCT s.session_id)  AS num_sesiones,
+                    MAX(s.inicio)                 AS ultima_sesion,
+                    (SELECT rs.resumen_texto FROM resumenes_sesion rs
+                     JOIN sesiones s2 ON s2.session_id = rs.session_id
+                     WHERE s2.student_id = e.student_id
+                     ORDER BY rs.generado_en DESC LIMIT 1) AS ultimo_resumen,
+                    (SELECT COUNT(*) FROM conceptos c
+                     WHERE c.student_id = e.student_id AND c.dominado = 1) AS conceptos_dominados
+                FROM estudiantes e
+                LEFT JOIN sesiones s ON s.student_id = e.student_id
+                GROUP BY e.id_pseudo, e.curso_id, e.student_id
+                ORDER BY ultima_sesion DESC NULLS LAST
+                """
+            )
+        return [dict(f) for f in filas]
+
+    async def obtener_ultimo_resumen_sesion_alumno(self, student_id: str) -> Optional[str]:
+        """Devuelve el texto del último resumen de sesión generado para el alumno."""
+        fila = await self.db.fetchrow(
+            """
+            SELECT rs.resumen_texto 
+            FROM resumenes_sesion rs
+            JOIN sesiones s ON s.session_id = rs.session_id
+            WHERE s.student_id = $1
+            ORDER BY rs.generado_en DESC 
+            LIMIT 1
+            """,
+            student_id
+        )
+        return fila["resumen_texto"] if fila else None
+
+    async def obtener_historial_conversacion(self, student_id: str, room_id: str, limit: int = 10) -> list:
+        """
+        Recupera los últimos intercambios de pregunta/respuesta del historial
+        para inicializar la memoria de conversación si el bot se reinicia.
+        """
+        filas = await self.db.fetch(
+            """
+            SELECT pregunta, respuesta 
+            FROM qa_historial 
+            WHERE student_id = $1 AND room_id = $2
+            ORDER BY timestamp DESC 
+            LIMIT $3
+            """,
+            student_id, room_id, limit
+        )
+        historial = []
+        # Venían en orden descendente, las invertimos para el LLM
+        for f in reversed(filas):
+            if f["pregunta"]:
+                historial.append({"role": "user", "content": f["pregunta"]})
+            if f["respuesta"]:
+                historial.append({"role": "assistant", "content": f["respuesta"]})
+        return historial
+
+    # --------------------------------------------------------------------
+    # Purga de datos (retención RGPD/LOPDGDD)
+    # --------------------------------------------------------------------
+
+    async def purgar_datos_antiguos(self, retention_days: int) -> dict:
+        """
+        Borra filas de interacciones y qa_historial más antiguas que retention_days días.
+        Los resumenes_sesion se conservan como registro agregado (no se purgan).
+        Devuelve un dict con el número de filas borradas de cada tabla.
+        NOTA: revisar con el DPD de la UGR antes de activar en producción (RGPD art.5,
+        LOPDGDD art.34 — la UGR está obligada a designar DPD como universidad pública).
+        """
+        limite = int(time.time()) - retention_days * 86400
+        await self.db.execute("DELETE FROM interacciones WHERE timestamp < $1", limite)
+        await self.db.execute("DELETE FROM qa_historial  WHERE timestamp < $1", limite)
+        return {"retention_days": retention_days, "cutoff_timestamp": limite}
 
     # --------------------------------------------------------------------
     # Búsquedas sobre fuentes_raw

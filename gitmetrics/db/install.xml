@@ -36,5 +36,23 @@
       </INDEXES>
     </TABLE>
 
+    <!-- Caché de progreso de alumnos consultado al bot Maubot via HTTP -->
+    <TABLE NAME="block_gitmetrics_progress_cache" COMMENT="Caché de progreso de alumnos por instancia de bloque y curso">
+      <FIELDS>
+        <FIELD NAME="id"              TYPE="int"  LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="blockinstanceid" TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="course_id"       TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="progress_json"   TYPE="text"              NOTNULL="true"/>
+        <FIELD NAME="timecreated"     TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="timemodified"    TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="blockinstance_course" UNIQUE="false" FIELDS="blockinstanceid, course_id"/>
+      </INDEXES>
+    </TABLE>
+
   </TABLES>
 </XMLDB>
