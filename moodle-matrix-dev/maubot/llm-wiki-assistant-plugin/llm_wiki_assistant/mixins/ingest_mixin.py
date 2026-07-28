@@ -40,11 +40,10 @@ else:
 class IngestMixin(_HostProtocol):
 # --8<-- [start:ejecutar_ingest_automatico]
     async def _ejecutar_ingest_automatico(
-        self, evt: MessageEvent, owner: str, repo: str, token: str, branch: str,
-        ruta_fuente_repo: str, nombre_archivo: str,
+        self, evt: MessageEvent, ruta_fuente_repo: str, nombre_archivo: str,
     ) -> None:
         try:
-            agents_md = await self._obtener_agents_md(owner, repo, token)
+            agents_md = await self._obtener_agents_md(evt.sender)
             if not agents_md:
                 await evt.reply(
                     f"«{nombre_archivo}» está guardado en `{ruta_fuente_repo}`, pero no he "
@@ -55,14 +54,13 @@ class IngestMixin(_HostProtocol):
 
             await evt.reply(f"Estructurando «{nombre_archivo}» en la BdC (okf/), un momento...")
 
-            headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
             async with aiohttp.ClientSession() as session:
-                info_fuente = await self._obtener_sha_y_contenido_github(session, owner, repo, headers, ruta_fuente_repo)
+                info_fuente = await self._obtener_sha_y_contenido_github(session, evt.sender, ruta_fuente_repo)
             if info_fuente is None:
                 raise RuntimeError(f"No he podido releer «{ruta_fuente_repo}» recién subido.")
             contenido_fuente = base64.b64decode(info_fuente["content"]).decode("utf-8")
             if len(contenido_fuente.splitlines()) > 350:
-                await self._ejecutar_ingest_por_lotes(evt, owner, repo, token, branch, ruta_fuente_repo, nombre_archivo, contenido_fuente, agents_md)
+                await self._ejecutar_ingest_por_lotes(evt, ruta_fuente_repo, nombre_archivo, contenido_fuente, agents_md)
                 return
 
             timestamp_iso = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -90,8 +88,7 @@ class IngestMixin(_HostProtocol):
         creados, actualizados = [], []
         for fichero in resultado["ficheros"]:
             try:
-                fue_actualizacion = await self._subir_o_actualizar_archivo_github(
-                    owner, repo, token, fichero["path"], fichero["contenido"], branch,
+                fue_actualizacion = await self._subir_o_actualizar_archivo_github(evt.sender, fichero["path"], fichero["contenido"],
                     mensaje_commit=f"INGEST automático de '{ruta_fuente_repo}' (por {evt.sender})",
                 )
             except Exception as exc:
@@ -102,8 +99,7 @@ class IngestMixin(_HostProtocol):
 
         if resultado["log_entry"]:
             try:
-                await self._append_log_okf(
-                    owner, repo, token, branch, resultado["log_entry"],
+                await self._append_log_okf(evt.sender, resultado["log_entry"],
                     mensaje_commit=f"Log de INGEST automático de '{ruta_fuente_repo}'",
                 )
             except Exception as exc:
@@ -126,8 +122,7 @@ class IngestMixin(_HostProtocol):
 
 # --8<-- [start:ejecutar_ingest_por_lotes]
     async def _ejecutar_ingest_por_lotes(
-        self, evt: MessageEvent, owner: str, repo: str, token: str, branch: str,
-        ruta_fuente_repo: str, nombre_archivo: str, contenido_fuente: str, agents_md: str
+        self, evt: MessageEvent, ruta_fuente_repo: str, nombre_archivo: str, contenido_fuente: str, agents_md: str
     ) -> None:
         """Ejecuta el proceso de ingesta de archivos en lotes."""
         lotes = dividir_en_lotes(contenido_fuente, max_lineas=120, solapamiento=20)
@@ -153,8 +148,7 @@ class IngestMixin(_HostProtocol):
 
             for fichero in resultado["ficheros"]:
                 try:
-                    fue_actualizacion = await self._subir_o_actualizar_archivo_github(
-                        owner, repo, token, fichero["path"], fichero["contenido"], branch,
+                    fue_actualizacion = await self._subir_o_actualizar_archivo_github(evt.sender, fichero["path"], fichero["contenido"],
                         mensaje_commit=f"INGEST lote {i}/{total_lotes} de '{ruta_fuente_repo}' (por {evt.sender})",
                     )
                     (actualizados_totales if fue_actualizacion else creados_totales).append(fichero["path"])
@@ -163,8 +157,7 @@ class IngestMixin(_HostProtocol):
 
             if resultado.get("log_entry"):
                 try:
-                    await self._append_log_okf(
-                        owner, repo, token, branch, resultado["log_entry"],
+                    await self._append_log_okf(evt.sender, resultado["log_entry"],
                         mensaje_commit=f"Log INGEST lote {i}/{total_lotes} de '{ruta_fuente_repo}'",
                     )
                 except Exception as exc:
@@ -187,10 +180,6 @@ class IngestMixin(_HostProtocol):
     @command.argument("texto", pass_raw=True, required=False)
     async def ingest_lotes_handler(self, evt: MessageEvent, texto: str = "") -> None:
         """Comando para iniciar manualmente la ingesta por lotes."""
-        token = self._obtener_git_token()
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-        branch = self.config["default_branch"] or "main"
 
         _, tema, _ = _extraer_modificadores(texto)
         if not tema:
@@ -201,20 +190,19 @@ class IngestMixin(_HostProtocol):
             tema = f"raw/{tema}" if not tema.endswith(".md") else f"raw/{tema}"
 
         await evt.reply(f"Leyendo `{tema}` del repositorio para ingesta por lotes...")
-        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
         async with aiohttp.ClientSession() as session:
-            info_fuente = await self._obtener_sha_y_contenido_github(session, owner, repo, headers, tema)
+            info_fuente = await self._obtener_sha_y_contenido_github(session, evt.sender, tema)
         if not info_fuente:
             await evt.reply(f"No he encontrado o no he podido leer `{tema}` en el repositorio.")
             return
 
         contenido_fuente = base64.b64decode(info_fuente["content"]).decode("utf-8")
-        agents_md = await self._obtener_agents_md(owner, repo, token)
+        agents_md = await self._obtener_agents_md(evt.sender)
         if not agents_md:
             await evt.reply("No he encontrado AGENTS.md en el repositorio para guiar la ingesta.")
             return
 
         nombre_archivo = tema.split("/")[-1]
-        await self._ejecutar_ingest_por_lotes(evt, owner, repo, token, branch, tema, nombre_archivo, contenido_fuente, agents_md)
+        await self._ejecutar_ingest_por_lotes(evt, tema, nombre_archivo, contenido_fuente, agents_md)
 # --8<-- [end:ingest_lotes_handler]
 

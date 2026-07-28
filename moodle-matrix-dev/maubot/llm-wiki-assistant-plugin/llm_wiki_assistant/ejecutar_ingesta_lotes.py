@@ -16,7 +16,7 @@ import aiohttp
 from datetime import datetime
 
 from .okf_ingest import construir_prompt_ingest_lote, dividir_en_lotes, parsear_respuesta_ingest
-from .git_client import get_git_client
+from .git_client import get_git_client, resolver_config_alumno
 from .llm_provider import LLMProvider
 
 
@@ -51,7 +51,8 @@ async def main():
         with open(config_path, "r", encoding="utf-8") as f:
             config = yaml.load(f)
 
-    provider = config.get("default_provider", "gitlab")
+    config = await resolver_config_alumno(config)
+    provider = config.get("provider", "gitlab")
     owner = config.get("default_owner", "<tu_usuario>")
     repo = config.get("default_repo", "BdC")
     branch = config.get("default_branch", "main")

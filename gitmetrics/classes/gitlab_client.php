@@ -111,6 +111,84 @@ class gitlab_client implements git_provider_interface {
     // --8<-- [end:get_file_content]
 
     // -------------------------------------------------------------------------
+    // Operaciones de escritura — No implementadas para GitLab
+    // -------------------------------------------------------------------------
+    // --8<-- [start:write_stubs]
+
+    /**
+     * No implementado para GitLab.
+     *
+     * GitLab no ofrece un endpoint equivalente a la API de "Generate from template"
+     * de GitHub. El flujo de aprovisionamiento del Paso 2 usa exclusivamente GitHub
+     * como proveedor de escritura (template_provider = 'github'). Si en el futuro
+     * se requiere soporte GitLab, este metodo debe implementarse usando la API de
+     * importacion de proyectos o el endpoint de fork + copia de ficheros.
+     *
+     * @throws \Exception siempre — fallo explicito en lugar de retorno silencioso vacio
+     */
+    public function create_repo_from_template(
+        string $template_owner,
+        string $template_repo,
+        string $new_namespace,
+        string $new_name
+    ): string {
+        throw new \Exception(
+            'No implementado para GitLab: create_repo_from_template. ' .
+            'El aprovisionamiento de repos de alumno solo esta soportado con GitHub (template_provider = github). ' .
+            'Cambia el proveedor en Administracion del sitio -> Plugins -> Bloques -> GitMetrics.'
+        );
+    }
+
+    /**
+     * No implementado para GitLab.
+     *
+     * GitLab si soporta fork via API (POST /projects/{id}/fork), pero el flujo
+     * de aprovisionamiento actual no lo requiere porque usa create_repo_from_template
+     * con GitHub. Se deja el stub explicito para que cualquier llamada accidental
+     * falle de forma visible y orientada al diagnostico, no en silencio.
+     *
+     * @throws \Exception siempre
+     */
+    public function fork_repo(
+        string $source_owner,
+        string $source_repo,
+        string $target_namespace,
+        string $new_name
+    ): string {
+        throw new \Exception(
+            'No implementado para GitLab: fork_repo. ' .
+            'El aprovisionamiento de repos de alumno solo esta soportado con GitHub. ' .
+            'Si necesitas soporte GitLab en el futuro, implementa este metodo usando ' .
+            'POST /api/v4/projects/{id}/fork y un PATCH posterior para renombrar.'
+        );
+    }
+
+    /**
+     * No implementado para GitLab.
+     *
+     * GitLab soporta la gestion de miembros via POST /projects/{id}/members,
+     * pero el flujo actual solo añade colaboradores en repos GitHub. Se deja
+     * el stub explicito por la misma razon que los anteriores.
+     *
+     * @throws \Exception siempre
+     */
+    public function add_collaborator(
+        string $owner,
+        string $repo,
+        string $username,
+        string $role = 'maintainer'
+    ): bool {
+        throw new \Exception(
+            'No implementado para GitLab: add_collaborator. ' .
+            'El aprovisionamiento de repos de alumno solo esta soportado con GitHub. ' .
+            'Si necesitas soporte GitLab en el futuro, implementa este metodo usando ' .
+            'POST /api/v4/projects/{id}/members con el access_level correspondiente al rol.'
+        );
+    }
+
+    // --8<-- [end:write_stubs]
+
+    // -------------------------------------------------------------------------
     // Metodos privados de transporte HTTP
     // -------------------------------------------------------------------------
 

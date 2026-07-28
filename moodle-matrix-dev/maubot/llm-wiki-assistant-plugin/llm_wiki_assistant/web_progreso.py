@@ -48,6 +48,7 @@ class WebProgresoMixin:
             {
               "id_pseudo":           "uuid",
               "curso_id":            42,
+              "fork_url":            "https://github.com/alumno/fork.git",
               "num_sesiones":        7,
               "ultima_sesion":       1753574400,
               "ultimo_resumen":      "El alumno repasó...",
@@ -99,6 +100,7 @@ class WebProgresoMixin:
             resultado.append({
                 "id_pseudo":           fila.get("id_pseudo"),
                 "curso_id":            fila.get("curso_id"),
+                "fork_url":            fila.get("fork_url"),
                 "num_sesiones":        int(fila.get("num_sesiones") or 0),
                 "ultima_sesion":       fila.get("ultima_sesion"),   # timestamp BIGINT o None
                 "ultimo_resumen":      fila.get("ultimo_resumen"),  # texto o None

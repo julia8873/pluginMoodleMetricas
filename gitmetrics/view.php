@@ -19,6 +19,16 @@ $PAGE->set_title(get_string('pluginname', 'block_gitmetrics'));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_pagelayout('report');
 
+// -- Manejo de acciones (ej. reintentar aprovisionamiento) ----------------
+$action = optional_param('action', '', PARAM_ALPHA);
+if ($action === 'retry_fork' && has_capability('moodle/course:update', context_course::instance($courseid))) {
+    require_sesskey();
+    $userid = required_param('userid', PARAM_INT);
+    require_once(__DIR__ . '/classes/observer.php');
+    \block_gitmetrics\observer::provision_student_fork($courseid, $userid);
+    redirect(new moodle_url('/blocks/gitmetrics/view.php', ['courseid' => $courseid, 'blockid' => $blockid]));
+}
+
 // -- Leer configuracion de la instancia del bloque -------------------------
 $repourl  = optional_param('repo_url', '', PARAM_RAW);
 $branch   = optional_param('branch', 'main', PARAM_TEXT);
@@ -65,11 +75,20 @@ if (empty($repourl)) {
     }
 }
 
+// -- Fallback: Buscar en la base de datos de aprovisionamiento de repositorios de curso --
+if (empty($repourl)) {
+    $course_repo = $DB->get_record('block_gitmetrics_course_repo', ['course_id' => $courseid]);
+    if ($course_repo && !empty($course_repo->repo_url)) {
+        $repourl = $course_repo->repo_url;
+        $provider = $course_repo->provider;
+        $branch = 'main'; // default
+    }
+}
+
 // -- Repositorio por defecto si no se ha configurado ninguno --------------
 if (empty($repourl)) {
-    $repourl  = 'https://github.com/<tu_usuario>/<tu_repo>';
-    $branch   = 'main';
-    $provider = 'github';
+    // Si no se encuentra un repositorio, no forzamos uno ficticio, simplemente lo dejamos vacío.
+    $repourl = '';
 }
 
 // -- Determinar proveedor -------------------------------------------------
@@ -95,20 +114,38 @@ if (str_contains($repourl, 'github.com')) {
 // --8<-- [start:view_logic]
 echo $OUTPUT->header();
 
-$cache   = new \block_gitmetrics\metrics_cache($DB);
-$metrics = $cache->get($repourl, $blockid);
+if (empty($repourl)) {
+    echo $OUTPUT->notification('No hay un repositorio configurado para este curso. Por favor, añade el bloque de GitMetrics o asegúrate de que el curso está aprovisionado correctamente.', 'info');
+} else {
+    $cache   = new \block_gitmetrics\metrics_cache($DB);
+    $metrics = $cache->get($repourl, $blockid);
 
-if ($metrics === null) {
-    $calculator = new \block_gitmetrics\metrics_calculator($token, $provider, $gitlab_url);
-    $metrics    = $calculator->calculate($repourl, $branch);
-    $cache->set($repourl, $blockid, $metrics);
+    if ($metrics === null) {
+        try {
+            $calculator = new \block_gitmetrics\metrics_calculator($token, $provider, $gitlab_url);
+            $metrics    = $calculator->calculate($repourl, $branch);
+            $cache->set($repourl, $blockid, $metrics);
+        } catch (\Exception $e) {
+            echo $OUTPUT->notification('Error al cargar métricas: ' . $e->getMessage(), 'error');
+            $metrics = null;
+        }
+    }
+
+    if ($metrics !== null) {
+        $renderer = $PAGE->get_renderer('block_gitmetrics');
+        echo '<div class="container-fluid" style="max-width: 1300px; margin: 0 auto; padding: 20px 0;">';
+        echo $renderer->render_fullpage_metrics($metrics);
+
+        // Mostrar panel de gestión si es profesor
+        $context = context_course::instance($courseid);
+        if (has_capability('moodle/course:update', $context)) {
+            $progress_api = new \block_gitmetrics\student_progress($DB);
+            $management_data = $progress_api->get_management_data($courseid, $blockid);
+            echo $renderer->render_management_panel($management_data);
+        }
+        echo '</div>';
+    }
 }
-
-$renderer = $PAGE->get_renderer('block_gitmetrics');
-
-echo '<div class="container-fluid" style="max-width: 1300px; margin: 0 auto; padding: 20px 0;">';
-echo $renderer->render_fullpage_metrics($metrics);
-echo '</div>';
 
 echo $OUTPUT->footer();
 // --8<-- [end:view_logic]

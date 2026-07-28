@@ -32,13 +32,14 @@ Entorno integral formado por el plugin de bloque Moodle **`block_gitmetrics`** y
 7. [Seguridad: Gestión de Credenciales](#7-seguridad-gestión-de-credenciales)
 8. [Cambiar o Reconectar el Repositorio Git](#8-cambiar-o-reconectar-el-repositorio-git)
 9. [Guía de Uso: Secciones de Métricas](#9-guía-de-uso-secciones-de-métricas)
+    - [Aprovisionamiento Dinámico de Repositorios Estudiantiles](gitmetrics/provisioning-repos.md) — Flujo end-to-end de arquitectura: plantillas BdC, forks de alumnos, permisos y panel Moodle.
 10. [Integración con Matrix y el LLM Wiki Assistant](#10-integración-con-matrix-y-el-bot-git)
     - [Crear el usuario administrador de Matrix](#crear-el-usuario-administrador-de-matrix)
     - [Conectar Moodle con Matrix](#conectar-moodle-con-matrix)
     - [Las salas de chat (Automatización y Desactivación)](#las-salas-de-chat-automatización-y-desactivación)
     - [Comandos del bot en la sala Matrix](#comandos-del-bot-en-la-sala-matrix)
 11. [Integración con Obsidian](#11-integración-con-obsidian)
-    - [Sesiones, Panel del Profesor y Política de Retención](./docs/moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/sesiones-y-panel-profesor.md) — Decisiones de arquitectura: cierre de sesión, puente Moodle y RGPD/LOPDGDD
+    - [Sesiones, Panel del Profesor y Política de Retención](moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/sesiones-y-panel-profesor.md) — Decisiones de arquitectura: cierre de sesión, puente Moodle y RGPD/LOPDGDD
 12. [Configuración de Proveedores Git](#12-configuración-de-proveedores-git)
 13. [Gestión de Contenedores Docker](#13-gestión-de-contenedores-docker)
 

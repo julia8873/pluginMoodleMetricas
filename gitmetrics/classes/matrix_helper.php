@@ -183,9 +183,116 @@ class matrix_helper {
         curl_exec($ch);
         curl_close($ch);
 
+        // Escribir state event es.ugr.gitmetrics.course_link
+        $stateurl = "{$synapseurl}/_matrix/client/v3/rooms/" . urlencode($roomid) . "/state/es.ugr.gitmetrics.course_link/";
+        $ch = curl_init($stateurl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer " . $token,
+            "Content-Type: application/json"
+        ]);
+        $res = curl_exec($ch);
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $write_state = true;
+        if ($httpcode == 200 && $res) {
+            $data = json_decode($res, true);
+            if (isset($data['course_id'])) {
+                if ($data['course_id'] != $courseid) {
+                    error_log("matrix_helper::ensure_room_and_bot - Error de idempotencia: sala {$roomid} ya tiene course_id {$data['course_id']}, se esperaba {$courseid}");
+                }
+                $write_state = false;
+            }
+        }
+
+        if ($write_state) {
+            $ch = curl_init($stateurl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "Authorization: Bearer " . $token,
+                "Content-Type: application/json"
+            ]);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['course_id' => $courseid]));
+            curl_exec($ch);
+            curl_close($ch);
+        }
+
         return true;
     }
     // --8<-- [end:ensure_room_and_bot]
+
+    /**
+     * Envia el state event `es.ugr.gitmetrics.student_fork` a la sala del curso en Matrix
+     * con la URL del repositorio personal del estudiante (su state_key es el @usuario:dominio).
+     */
+    public static function send_student_fork_state(int $courseid, int $userid, string $fork_url): bool {
+        global $DB, $CFG;
+
+        if ($courseid <= 1) {
+            return false;
+        }
+
+        require_once($CFG->dirroot . '/communication/classes/api.php');
+        $context = \context_course::instance($courseid);
+        $communication = \core_communication\api::load_by_instance($context, 'core_course', 'coursecommunication', $courseid);
+        if (!$communication) {
+            return false;
+        }
+
+        $processor = $communication->get_processor();
+        if (!$processor) {
+            return false;
+        }
+
+        if (class_exists('\communication_matrix\matrix_room')) {
+            $existingroom = \communication_matrix\matrix_room::load_by_processor_id($processor->get_id());
+            if ($existingroom && !empty($existingroom->get_room_id())) {
+                $roomid = $existingroom->get_room_id();
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+
+        $user = $DB->get_record('user', ['id' => $userid]);
+        if (!$user) {
+            return false;
+        }
+
+        $token = get_config('communication_matrix', 'matrixaccesstoken');
+        $synapseurl = get_config('communication_matrix', 'matrixhomeserverurl') ?: 'http://matrix-synapse:8008';
+        if (empty($token) || empty($synapseurl)) {
+            return false;
+        }
+
+        $domain = get_config('communication_matrix', 'matrixdomain');
+        if (empty($domain)) {
+            $domain = 'localhost'; // El server_name configurado en homeserver.yaml de Synapse
+        }
+        $matrix_user_id = '@' . strtolower($user->username) . ':' . $domain;
+
+        $state_key = "moodle_" . $userid;
+        $stateurl = "{$synapseurl}/_matrix/client/v3/rooms/" . urlencode($roomid) . "/state/es.ugr.gitmetrics.student_fork/" . urlencode($state_key);
+        $ch = curl_init($stateurl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer " . $token,
+            "Content-Type: application/json"
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+            'fork_url' => $fork_url,
+            'matrix_user_id' => $matrix_user_id
+        ]));
+        $res = curl_exec($ch);
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return ($httpcode == 200);
+    }
 
     /**
      * Asegura que el cliente (@llmwikiassistant:localhost) y la instancia del plugin

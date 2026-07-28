@@ -47,20 +47,17 @@ class BorrarMixin(ComandosBaseMixin):
             await evt.reply("Indica el nombre del documento a borrar: `!borrar <nombre>`.")
             return
 
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-        token = self._obtener_git_token()
-        headers = {
+                headers = {
             "Authorization": f"token {token}",
             "Accept": "application/vnd.github+json",
         }
 
-        ruta = await self._resolver_ruta_unica(evt, nombre, owner, repo, headers)
+        ruta = await self._resolver_ruta_unica(evt, nombre)
         if ruta is None:
             return
 
         async with aiohttp.ClientSession() as session:
-            info = await self._obtener_sha_y_contenido_github(session, owner, repo, headers, ruta)
+            info = await self._obtener_sha_y_contenido_github(session, evt.sender, ruta)
         if info is None:
             await evt.reply(f"He encontrado `{ruta}` pero ya no existe en GitHub.")
             return
@@ -89,15 +86,11 @@ class BorrarMixin(ComandosBaseMixin):
             await evt.reply("Borrado cancelado.")
             return
 
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-        token = self._obtener_git_token()
-        branch = self.config["default_branch"] or "main"
+                branch = self.config["default_branch"] or "main"
         ruta = estado["ruta"]
 
         try:
-            await self._borrar_archivo_github(
-                owner, repo, token, ruta, branch, estado["sha"],
+            await self._borrar_archivo_github(evt.sender, ruta, estado["sha"],
                 mensaje_commit=f"Borrar '{ruta}' (por {evt.sender})",
             )
         except Exception as exc:

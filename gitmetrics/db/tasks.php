@@ -18,5 +18,14 @@ $tasks = [
         'dayofweek' => '*',
         'month'     => '*'
     ],
+    [
+        'classname' => 'block_gitmetrics\task\retry_provisioning',
+        'blocking'  => 0,
+        'minute'    => '*/15',
+        'hour'      => '*',
+        'day'       => '*',
+        'dayofweek' => '*',
+        'month'     => '*'
+    ],
 ];
 

@@ -75,11 +75,10 @@ class ComandosBaseMixin(_HostProtocol):
         self, evt: MessageEvent, tipo: str, generador, tema: str = "", tipo_contenido: str = ""
     ) -> None:
         """Plantea una pregunta de estudio al usuario."""
-        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
-        clave = (evt.room_id, evt.sender)
+                clave = (evt.room_id, evt.sender)
         self.peticiones_llm[clave] = asyncio.current_task()
         try:
-            contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
+            contenido_docs = await self._obtener_documentacion(evt.sender, tema)
             if not contenido_docs and tema:
                 await evt.reply(f"No he encontrado ningún fichero en la BdC que coincida con «{tema}».")
                 return
@@ -118,8 +117,7 @@ class ComandosBaseMixin(_HostProtocol):
         try:
             contenido_docs = pendiente.get("contenido_docs")
             if contenido_docs is None:
-                owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
-                contenido_docs = await self._obtener_documentacion(owner, repo, token, pendiente.get("tema", ""))
+                                contenido_docs = await self._obtener_documentacion(evt.sender, pendiente.get("tema", ""))
 
             resultado = await evaluar_respuesta(
                 pendiente["tipo"], pendiente["concepto"], pendiente["pregunta"],
@@ -202,11 +200,10 @@ class ComandosBaseMixin(_HostProtocol):
         """Plantea una pregunta específica sobre un concepto."""
         concepto, tema, tipo_contenido = _extraer_modificadores(nombre)
 
-        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
-        clave = (evt.room_id, evt.sender)
+                clave = (evt.room_id, evt.sender)
         self.peticiones_llm[clave] = asyncio.current_task()
         try:
-            contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
+            contenido_docs = await self._obtener_documentacion(evt.sender, tema)
             if not contenido_docs and tema:
                 await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
                 return

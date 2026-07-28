@@ -57,3 +57,15 @@ Función de utilidad (ideal para la CLI) que itera por todos los cursos de Moodl
 --8<-- "gitmetrics/classes/matrix_helper.php:process_all_existing_courses"
 ```
 
+## Decisión de arquitectura: Mapeo sala Matrix ↔ curso_id
+
+Para que el panel de métricas de Moodle pueda filtrar la actividad de los alumnos por curso, es necesario que la base de datos del bot (PostgreSQL) persista el `curso_id` asociado a cada estudiante (`estudiantes.curso_id`). Sin embargo, el bot de Matrix no conoce nativamente a qué curso pertenece una sala.
+
+Se descartaron las siguientes opciones:
+1. **Moodle escribiendo directamente en la BD del bot:** Descartado por violar el desacoplamiento. El plugin de Moodle no debe tener credenciales ni conexión directa a la base de datos interna de Maubot.
+2. **Parseo del nombre o topic de la sala (`Chat del curso X`):** Descartado por ser frágil. Si un profesor renombra la sala, el enlace se rompe.
+
+**Solución adoptada (State Event de Matrix):**
+Se utiliza la infraestructura nativa de Matrix. Cuando Moodle crea o asegura la existencia de una sala (`ensure_room_and_bot`), inyecta un evento de estado (state event) personalizado llamado `es.ugr.gitmetrics.course_link` con el contenido `{"course_id": <id>}`. 
+Por el otro lado, el bot (en `bot.py`), al procesar cualquier mensaje, lee de forma silenciosa este state event para la sala en la que se encuentra, cachea la resolución `room_id → course_id` en memoria para no saturar la API de Synapse, y propaga el `curso_id` al método `ensure_estudiante` de su base de datos.
+Esta solución mantiene el desacoplamiento puro (Moodle y Maubot solo se comunican a través del protocolo estándar de Matrix) y garantiza una trazabilidad robusta independiente del nombre visible de la sala.

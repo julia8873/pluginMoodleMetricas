@@ -64,7 +64,7 @@ fi
 
 # Asegurar permisos de synapse-data para evitar que el contenedor falle al arrancar
 mkdir -p "$DOCKER_DIR/synapse-data"
-chmod 777 "$DOCKER_DIR/synapse-data"
+chmod 777 "$DOCKER_DIR/synapse-data" 2>/dev/null || true
 
 cd "$DOCKER_DIR"
 if [ "$START_OLLAMA" = true ]; then
@@ -104,9 +104,10 @@ echo ""
 echo "[3/9] Copiando el plugin 'gitmetrics' en Moodle..."
 docker cp "$PLUGIN_DIR/." moodle-app:/bitnami/moodle/blocks/gitmetrics/
 
-# 4. Ajustar permisos del plugin y carpeta de datos
+# 4. Ajustar permisos del plugin y carpeta de datos e instalar git
 echo ""
-echo "[4/9] Ajustando permisos en el contenedor..."
+echo "[4/9] Ajustando permisos en el contenedor e instalando git..."
+docker exec --user root moodle-app bash -c "apt-get update && apt-get install -y git" 2>/dev/null || true
 docker exec --user root moodle-app chown -R daemon:daemon /bitnami/moodle/blocks/gitmetrics /bitnami/moodledata /obsidian-vault 2>/dev/null || true
 docker exec --user root moodle-app chmod -R 755 /bitnami/moodle/blocks/gitmetrics
 

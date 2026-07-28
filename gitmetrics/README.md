@@ -64,6 +64,13 @@ El plugin también inyecta la pestaña **"Métricas de Base de Conocimiento Git"
 
 ---
 
+<a id="arquitectura"></a>
+## Arquitectura y Flujos
+
+Para comprender el diseño técnico y las decisiones detrás del flujo de creación de repositorios, consulta la documentación detallada:
+
+- [Aprovisionamiento de Repos de Alumno — Decisiones de Arquitectura y Flujo End-to-End](provisioning-repos.md)
+
 ---
 
 <a id="obsidian"></a>

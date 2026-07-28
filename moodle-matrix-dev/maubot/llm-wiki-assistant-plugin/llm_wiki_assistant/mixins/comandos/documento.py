@@ -47,10 +47,7 @@ class DocumentoMixin(ComandosBaseMixin):
             await evt.reply("Indica el nombre del documento: `!documento <nombre>`.")
             return
 
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-        token = self._obtener_git_token()
-        headers = {
+                headers = {
             "Authorization": f"token {token}",
             "Accept": "application/vnd.github+json",
         }
@@ -63,7 +60,7 @@ class DocumentoMixin(ComandosBaseMixin):
             return
 
         async with aiohttp.ClientSession() as session:
-            rutas_repo = await self._listar_rutas(session, owner, repo, headers, "")
+            rutas_repo = await self._listar_rutas(session, evt.sender, "")
 
         rutas_db = {c["ruta_repo"] for c in coincidencias_db}
         rutas_solo_repo = [r for r in rutas_repo if nombre.lower() in r.lower() and r not in rutas_db]

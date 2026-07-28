@@ -56,16 +56,13 @@ class MoverMixin(ComandosBaseMixin):
             await evt.reply(f"«{destino_raw}» no es una carpeta válida.")
             return
 
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-        token = self._obtener_git_token()
-        branch = self.config["default_branch"] or "main"
+                branch = self.config["default_branch"] or "main"
         headers = {
             "Authorization": f"token {token}",
             "Accept": "application/vnd.github+json",
         }
 
-        ruta_antigua = await self._resolver_ruta_unica(evt, nombre, owner, repo, headers)
+        ruta_antigua = await self._resolver_ruta_unica(evt, nombre)
         if ruta_antigua is None:
             return
 
@@ -77,7 +74,7 @@ class MoverMixin(ComandosBaseMixin):
             return
 
         try:
-            await self._mover_archivo_github(owner, repo, token, ruta_antigua, ruta_nueva, branch, evt.sender)
+            await self._mover_archivo_github(evt.sender, ruta_antigua, ruta_nueva)
         except Exception as exc:
             self.log.warning(f"[llm_wiki_assistant] Error moviendo '{ruta_antigua}' -> '{ruta_nueva}': {exc}")
             await evt.reply(f"No he podido mover «{ruta_antigua}»: {exc}")

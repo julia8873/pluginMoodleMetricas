@@ -27,7 +27,7 @@ from mautrix.crypto.attachments import decrypt_attachment
 # pyrefly: ignore [missing-import]
 from mautrix.errors import DecryptionError
 # pyrefly: ignore [missing-import]
-from mautrix.types import EventType, MessageType
+from mautrix.types import EventType, MessageType, StateEvent
 # pyrefly: ignore [missing-import]
 from mautrix.util.async_db import UpgradeTable
 # pyrefly: ignore [missing-import]
@@ -145,7 +145,7 @@ class LlmWikiAssistant(GitMixin, OcrMixin, CacheMixin, LocksMixin, UtilsMixin, I
         self.config.load_and_update()
         
         # 2. Inicializar clientes externos y base de datos
-        self.git = get_git_client(self.config)
+
         self.tracker = Tracker(self.database)
         
         # 3. Inicializar diccionarios de estado en memoria para flujos asíncronos
@@ -176,7 +176,91 @@ class LlmWikiAssistant(GitMixin, OcrMixin, CacheMixin, LocksMixin, UtilsMixin, I
 
         # 6. Arrancar tareas periódicas: detector de inactividad de sesiones + job de purga
         self._tareas_sesiones = _arrancar_tareas_sesiones(self)
+        
+        # 7. Caché para mapeo de room_id a curso_id (State event es.ugr.gitmetrics.course_link)
+        self._cache_course_id = {}
+        # 8. Caché de fork_url de estudiantes (State event es.ugr.gitmetrics.student_fork)
+        self._cache_fork_url = {}
+        # 9. Caché de clientes Git por estudiante
+        self._cache_git_clients = {}
+        self._cache_git_configs = {}
+
+    async def _config_para(self, student_id: str) -> dict:
+        """Obtiene la config resuelta para un alumno con caché (TTL 30m)."""
+        from .git_client import resolver_config_alumno
+        ahora = time.time()
+        ttl = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
+        if student_id in self._cache_git_configs:
+            ts, cfg = self._cache_git_configs[student_id]
+            if ahora - ts < ttl:
+                return cfg
+        cfg = await resolver_config_alumno(self.config, student_id, self.tracker)
+        self._cache_git_configs[student_id] = (ahora, cfg)
+        return cfg
+
+    async def _git_para(self, student_id: str):
+        """Devuelve el cliente Git instanciado dinámicamente para el alumno."""
+        from .git_client import get_git_client
+        ahora = time.time()
+        ttl = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
+        if student_id in self._cache_git_clients:
+            ts, client = self._cache_git_clients[student_id]
+            if ahora - ts < ttl:
+                return client
+        cfg = await self._config_para(student_id)
+        client = get_git_client(cfg)
+        self._cache_git_clients[student_id] = (ahora, client)
+        return client
 # --8<-- [end:start]
+
+    @event.on(EventType.ROOM_MESSAGE)
+    async def track_student_course(self, evt: MessageEvent) -> None:
+        """Resuelve el curso de la sala y registra/actualiza al estudiante."""
+        if evt.sender == self.client.mxid:
+            return
+
+        room_id = evt.room_id
+        if room_id not in self._cache_course_id:
+            try:
+                state = await self.client.get_state_event(room_id, "es.ugr.gitmetrics.course_link")
+                if state and "course_id" in state:
+                    self._cache_course_id[room_id] = int(state["course_id"])
+                else:
+                    self.log.warning(f"Sala {room_id} no tiene state event es.ugr.gitmetrics.course_link")
+                    self._cache_course_id[room_id] = None
+            except Exception as e:
+                self.log.warning(f"Error o falta de state event course_link en {room_id}: {e}")
+                self._cache_course_id[room_id] = None
+
+        curso_id = self._cache_course_id[room_id]
+        await self.tracker.ensure_estudiante(evt.sender, curso_id)
+
+        if evt.sender not in self._cache_fork_url:
+            try:
+                states = await self.client.get_state(room_id)
+                found = False
+                for evt_state in states:
+                    if evt_state.type == "es.ugr.gitmetrics.student_fork":
+                        if evt_state.content and evt_state.content.get("matrix_user_id") == evt.sender:
+                            fork_url = evt_state.content.get("fork_url")
+                            self._cache_fork_url[evt.sender] = fork_url
+                            await self.tracker.actualizar_repo_alumno(evt.sender, fork_url)
+                            found = True
+                            break
+                
+                if not found:
+                    self._cache_fork_url[evt.sender] = False
+            except Exception:
+                self._cache_fork_url[evt.sender] = False
+
+    @event.on(EventType.find("es.ugr.gitmetrics.student_fork", t_class=EventType.Class.STATE))
+    async def handle_student_fork_event(self, evt: StateEvent) -> None:
+        """Actualiza el repositorio del alumno al vuelo cuando Moodle aprovisiona el fork."""
+        if evt.content and "fork_url" in evt.content and "matrix_user_id" in evt.content:
+            fork_url = evt.content["fork_url"]
+            mxid = evt.content["matrix_user_id"]
+            self._cache_fork_url[mxid] = fork_url
+            await self.tracker.actualizar_repo_alumno(mxid, fork_url)
 
 
 # --8<-- [start:get_config_class]

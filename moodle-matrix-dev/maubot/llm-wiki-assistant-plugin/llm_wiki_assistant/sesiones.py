@@ -79,16 +79,6 @@ async def _procesar_sesiones_inactivas(bot) -> None:
 
     log.info("[sesiones] %d sesión(es) inactiva(s) a cerrar", len(sesiones))
 
-    # Obtener contexto documental una sola vez para todas las sesiones del ciclo
-    try:
-        owner = bot.config["default_owner"]
-        repo  = bot.config["default_repo"]
-        token = bot._obtener_git_token()
-        contexto = await bot._obtener_documentacion(owner, repo, token)
-    except Exception:
-        log.exception("[sesiones] No se pudo obtener el contexto documental; se omite generación de resúmenes")
-        contexto = ""
-
     llm = bot._crear_llm()
 
     for sesion in sesiones:
@@ -97,6 +87,14 @@ async def _procesar_sesiones_inactivas(bot) -> None:
         room_id     = sesion["room_id"]
         try:
             interacciones = await bot.tracker.obtener_interacciones_sesion(session_id)
+            
+            # Obtener contexto documental para el fork específico del alumno
+            try:
+                contexto = await bot._obtener_documentacion(student_id) if interacciones else ""
+            except Exception:
+                log.exception(f"[sesiones] No se pudo obtener el contexto documental para {student_id}")
+                contexto = ""
+
             if interacciones and contexto:
                 resumen = await generar_resumen_sesion(interacciones, contexto, llm)
                 await bot.tracker.guardar_resumen_sesion(session_id, resumen)

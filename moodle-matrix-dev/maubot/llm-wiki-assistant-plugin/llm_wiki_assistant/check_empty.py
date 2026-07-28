@@ -1,6 +1,6 @@
 # --8<-- [start:file_desc]
 import asyncio, aiohttp, os
-from llm_wiki_assistant.git_client import get_git_client
+from llm_wiki_assistant.git_client import get_git_client, resolver_config_alumno
 from ruamel.yaml import YAML
 
 async def main():
@@ -15,11 +15,12 @@ async def main():
             config = yaml.load(row[0])
         conn.close()
 
+    config = await resolver_config_alumno(config)
     git = get_git_client(config)
     sem = asyncio.Semaphore(5)
     owner = config["default_owner"]
     repo = config["default_repo"]
-    token = config["gitlab_token"]
+    token = config.get("gitlab_token") or config.get("github_token")
     branch = config.get("default_branch", "main")
 
     import logging

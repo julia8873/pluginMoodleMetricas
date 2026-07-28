@@ -126,10 +126,8 @@ class OcrMixin(_HostProtocol):
                 if not ficheros:
                     return
 
-                owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
-
                 if len(ficheros) == 1:
-                    carpetas = await self._listar_carpetas(owner, repo, token)
+                    carpetas = await self._listar_carpetas(evt.sender)
                     self.pendientes_destino[clave] = {
                         "modo": "elegir_carpeta_lote", "ficheros": ficheros, "carpetas": carpetas,
                         "timestamp": int(time.time()),
@@ -194,8 +192,7 @@ class OcrMixin(_HostProtocol):
                 await evt.reply("No te he entendido. Responde 'todos' o 'uno por uno'.")
                 return
 
-            owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
-            carpetas = await self._listar_carpetas(owner, repo, token)
+            carpetas = await self._listar_carpetas(evt.sender)
             estado["carpetas"] = carpetas
             estado["timestamp"] = int(time.time())
 

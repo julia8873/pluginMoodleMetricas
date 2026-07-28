@@ -64,3 +64,11 @@ Authorization: Bearer <token>
 ```php
 --8<-- "gitmetrics/classes/student_progress.php:cache"
 ```
+
+### Datos para el panel de gestión del profesor
+
+Agrupa los datos del repositorio base del curso, los profesores colaboradores, el estado de los forks de cada estudiante (`block_gitmetrics_student_fork`) y el progreso extraído del bot para presentarlos de forma centralizada al docente.
+
+```php
+--8<-- "gitmetrics/classes/student_progress.php:get_management_data"
+```

@@ -7,8 +7,17 @@ defined('MOODLE_INTERNAL') || die();
 --8<-- [start:class_desc]
 Interfaz comun para clientes de proveedores Git (GitHub, GitLab...).
 
-Cualquier proveedor debe implementar estos dos metodos para ser
-compatible con metrics_calculator.
+Metodos de solo lectura (implementados por todos los proveedores):
+  - get_tree           -> arbol recursivo de nodos del repositorio
+  - get_file_content   -> contenido raw de un fichero
+
+Metodos de escritura (aprovisionamiento de repos de alumno):
+  - create_repo_from_template -> crea un repo a partir de una plantilla
+  - fork_repo                 -> hace fork de un repo existente
+  - add_collaborator          -> añade un colaborador con un rol dado
+
+Los proveedores que no soporten un metodo de escritura deben lanzar
+\Exception('No implementado para <proveedor>') — jamas dejar el cuerpo vacio.
 --8<-- [end:class_desc]
 */
 interface git_provider_interface {
@@ -43,4 +52,75 @@ interface git_provider_interface {
     // --8<-- [start:get_file_content]
     public function get_file_content(string $owner, string $repo, string $path, string $branch): string;
     // --8<-- [end:get_file_content]
+
+    // -------------------------------------------------------------------------
+    // Operaciones de escritura (aprovisionamiento de repos de alumno)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Crea un nuevo repositorio en $new_namespace a partir de una plantilla.
+     *
+     * En GitHub se usa el endpoint POST /repos/{template_owner}/{template_repo}/generate.
+     * En GitLab no existe un equivalente directo; el implementador debe lanzar
+     * una excepcion explicita si el proveedor no lo soporta.
+     *
+     * @param  string $template_owner  Propietario del repo plantilla
+     * @param  string $template_repo   Nombre del repo plantilla
+     * @param  string $new_namespace   Cuenta u organizacion donde crear el repo nuevo
+     * @param  string $new_name        Nombre del repo nuevo
+     * @return string URL HTML del repo creado
+     * @throws \Exception Si la API devuelve error o el proveedor no lo soporta
+     */
+    // --8<-- [start:create_repo_from_template]
+    public function create_repo_from_template(
+        string $template_owner,
+        string $template_repo,
+        string $new_namespace,
+        string $new_name
+    ): string;
+    // --8<-- [end:create_repo_from_template]
+
+    /**
+     * Hace fork de un repositorio existente en $target_namespace con un nombre dado.
+     *
+     * Alternativa a create_repo_from_template cuando el repo origen NO esta marcado
+     * como plantilla en GitHub, o para proveedores que soporten fork pero no la API de templates.
+     *
+     * @param  string $source_owner     Propietario del repo origen
+     * @param  string $source_repo      Nombre del repo origen
+     * @param  string $target_namespace Cuenta u organizacion donde crear el fork
+     * @param  string $new_name         Nombre del fork
+     * @return string URL HTML del fork creado
+     * @throws \Exception Si la API devuelve error o el proveedor no lo soporta
+     */
+    // --8<-- [start:fork_repo]
+    public function fork_repo(
+        string $source_owner,
+        string $source_repo,
+        string $target_namespace,
+        string $new_name
+    ): string;
+    // --8<-- [end:fork_repo]
+
+    /**
+     * Añade un colaborador a un repositorio con el rol indicado.
+     *
+     * En GitHub el rol se mapea a un 'permission' (pull/push/maintain/admin).
+     * En GitLab se mapea a un access_level numerico (10/20/30/40/50).
+     *
+     * @param  string $owner    Propietario del repo
+     * @param  string $repo     Nombre del repo
+     * @param  string $username Login del usuario a añadir
+     * @param  string $role     Rol semantico: 'guest'|'reporter'|'developer'|'maintainer'|'owner'
+     * @return bool   true si el colaborador fue añadido o ya existia
+     * @throws \Exception Si la API devuelve un error no recuperable
+     */
+    // --8<-- [start:add_collaborator]
+    public function add_collaborator(
+        string $owner,
+        string $repo,
+        string $username,
+        string $role = 'maintainer'
+    ): bool;
+    // --8<-- [end:add_collaborator]
 }

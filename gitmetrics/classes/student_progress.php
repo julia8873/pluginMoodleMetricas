@@ -162,4 +162,68 @@ class student_progress {
         $ttl = (int)get_config('block_gitmetrics', 'cache_ttl');
         return $ttl > 0 ? $ttl : 3600;
     }
+
+    // --8<-- [start:get_management_data]
+    /**
+     * Devuelve los datos combinados para el panel de gestión del profesor.
+     */
+    public function get_management_data(int $course_id, int $block_id): array {
+        global $DB;
+        
+        $data = [
+            'course_repo' => null,
+            'teachers'    => [],
+            'students'    => []
+        ];
+
+        // 1. Repo del curso
+        $course_repo = $DB->get_record('block_gitmetrics_course_repo', ['course_id' => $course_id]);
+        if ($course_repo) {
+            $data['course_repo'] = $course_repo;
+        }
+
+        // 2. Colaboradores (Profesores)
+        $context = \context_course::instance($course_id);
+        $teachers = get_enrolled_users($context, 'moodle/course:update');
+        foreach ($teachers as $t) {
+            $data['teachers'][] = fullname($t);
+        }
+
+        // 3. Forks y alumnos
+        $sql = "SELECT f.*, u.firstname, u.lastname, u.email 
+                  FROM {block_gitmetrics_student_fork} f
+                  JOIN {user} u ON u.id = f.userid
+                 WHERE f.course_id = :course_id
+              ORDER BY u.lastname, u.firstname";
+        $forks = $DB->get_records_sql($sql, ['course_id' => $course_id]);
+        
+        // 4. Progreso de las sesiones
+        $bot_progress = $this->get_progress($course_id, $block_id) ?: [];
+        $progress_by_pseudo = [];
+        foreach ($bot_progress as $row) {
+            $progress_by_pseudo[$row['id_pseudo']] = $row;
+        }
+
+        // 5. Combinar
+        foreach ($forks as $fork) {
+            $student_data = [
+                'fullname' => $fork->firstname . ' ' . $fork->lastname,
+                'email'    => $fork->email,
+                'userid'   => $fork->userid,
+                'status'   => $fork->status,
+                'fork_url' => $fork->fork_url,
+                'error'    => $fork->error_msg,
+                'progress' => null
+            ];
+            
+            if (isset($progress_by_pseudo[$fork->id_pseudo])) {
+                $student_data['progress'] = $progress_by_pseudo[$fork->id_pseudo];
+            }
+            
+            $data['students'][] = $student_data;
+        }
+
+        return $data;
+    }
+    // --8<-- [end:get_management_data]
 }

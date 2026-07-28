@@ -52,10 +52,7 @@ class CarpetaMixin(ComandosBaseMixin):
             await evt.reply("Borrado de carpeta cancelado.")
             return
 
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-        token = self._obtener_git_token()
-        branch = self.config["default_branch"] or "main"
+                branch = self.config["default_branch"] or "main"
         carpeta = estado["carpeta"]
         ficheros = estado["ficheros"]
 
@@ -64,8 +61,7 @@ class CarpetaMixin(ComandosBaseMixin):
         errores = []
         for f in ficheros:
             try:
-                await self._borrar_archivo_github(
-                    owner, repo, token, f["path"], branch, f["sha"],
+                await self._borrar_archivo_github(evt.sender, f["path"], f["sha"],
                     mensaje_commit=f"Borrar carpeta '{carpeta}': '{f['path']}' (por {evt.sender})",
                 )
                 await self.tracker.eliminar_fuentes_por_ruta(f["path"])
@@ -99,10 +95,7 @@ class CarpetaMixin(ComandosBaseMixin):
             await evt.reply("Nombre de carpeta inválido. Prueba p.ej. `Calculo/Tema3`.")
             return
 
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-        token = self._obtener_git_token()
-        branch = self.config["default_branch"] or "main"
+                branch = self.config["default_branch"] or "main"
 
         marca_tiempo = int(time.time())
         ruta_placeholder = f"{carpeta}/.gitkeep"
@@ -126,11 +119,7 @@ class CarpetaMixin(ComandosBaseMixin):
     @carpeta_handler.subcommand("listar", help="Lista las carpetas existentes en la BdC")
     async def carpeta_listar_handler(self, evt: MessageEvent) -> None:
         """Manejador del comando para listar carpetas."""
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-        token = self._obtener_git_token()
-
-        carpetas = await self._listar_carpetas(owner, repo, token)
+                carpetas = await self._listar_carpetas(evt.sender)
         if not carpetas:
             await evt.reply("Todavía no hay carpetas creadas. Usa `!carpeta crear <nombre>`.")
             return
@@ -148,10 +137,7 @@ class CarpetaMixin(ComandosBaseMixin):
             await evt.reply("Nombre de carpeta inválido. Prueba p.ej. `Calculo/Tema3`.")
             return
 
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-        token = self._obtener_git_token()
-        branch = self.config["default_branch"] or "main"
+                branch = self.config["default_branch"] or "main"
         headers = {
             "Authorization": f"token {token}",
             "Accept": "application/vnd.github+json",
@@ -159,7 +145,7 @@ class CarpetaMixin(ComandosBaseMixin):
 
         await evt.reply(f"Revisando el contenido de la carpeta «{carpeta}» en la BdC...")
         async with aiohttp.ClientSession() as session:
-            ficheros = await self._recorrer_carpeta_con_sha(session, owner, repo, headers, carpeta)
+            ficheros = await self._recorrer_carpeta_con_sha(session, evt.sender, carpeta)
 
         if not ficheros:
             await evt.reply(f"La carpeta «{carpeta}» no existe o ya está vacía en la BdC.")
@@ -171,8 +157,7 @@ class CarpetaMixin(ComandosBaseMixin):
             await evt.reply(f"Borrando carpeta vacía «{carpeta}»...")
             for f in ficheros:
                 try:
-                    await self._borrar_archivo_github(
-                        owner, repo, token, f["path"], branch, f["sha"],
+                    await self._borrar_archivo_github(evt.sender, f["path"], f["sha"],
                         mensaje_commit=f"Borrar carpeta vacía '{carpeta}' (por {evt.sender})",
                     )
                     await self.tracker.eliminar_fuentes_por_ruta(f["path"])

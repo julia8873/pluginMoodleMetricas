@@ -7,6 +7,8 @@ El administrador del sitio puede configurar:
   - Tokens de autenticacion para cada proveedor
   - URL del servidor GitLab
   - TTL de la cache de metricas
+  - Plantilla de repo de alumno (template_owner, template_repo, template_provider)
+  - Espacio de nombres destino para repos de alumno (target_namespace)
 --8<-- [end:file_desc]
 */
 defined('MOODLE_INTERNAL') || die();
@@ -148,6 +150,52 @@ if ($ADMIN->fulltree) {
         get_string('bot_progress_token_desc', 'block_gitmetrics'),
         ''
     ));
+
+    // -- Sección Plantilla y aprovisionamiento de repos de alumno ----------
+    // --8<-- [start:template_settings]
+    $settings->add(new admin_setting_heading(
+        'block_gitmetrics/heading_template',
+        get_string('heading_template', 'block_gitmetrics'),
+        get_string('heading_template_desc', 'block_gitmetrics')
+    ));
+
+    // Propietario (usuario u organización) del repo plantilla en GitHub
+    $settings->add(new admin_setting_configtext(
+        'block_gitmetrics/template_owner',
+        get_string('template_owner', 'block_gitmetrics'),
+        get_string('template_owner_desc', 'block_gitmetrics'),
+        'julia8873',
+        PARAM_TEXT
+    ));
+
+    // Nombre del repo que se usará como plantilla para los repos de alumno
+    $settings->add(new admin_setting_configtext(
+        'block_gitmetrics/template_repo',
+        get_string('template_repo', 'block_gitmetrics'),
+        get_string('template_repo_desc', 'block_gitmetrics'),
+        'BdC-template',
+        PARAM_TEXT
+    ));
+
+    // Proveedor donde vive la plantilla (y donde se crearán los repos de alumno)
+    $settings->add(new admin_setting_configselect(
+        'block_gitmetrics/template_provider',
+        get_string('template_provider', 'block_gitmetrics'),
+        get_string('template_provider_desc', 'block_gitmetrics'),
+        'github',
+        ['github' => 'GitHub', 'gitlab' => 'GitLab']
+    ));
+
+    // Namespace destino donde se crearán los repos de alumno
+    // (cuenta personal o nombre de organización de GitHub/GitLab)
+    $settings->add(new admin_setting_configtext(
+        'block_gitmetrics/target_namespace',
+        get_string('target_namespace', 'block_gitmetrics'),
+        get_string('target_namespace_desc', 'block_gitmetrics'),
+        '',
+        PARAM_TEXT
+    ));
+    // --8<-- [end:template_settings]
 }
 // --8<-- [end:settings_definition]
 

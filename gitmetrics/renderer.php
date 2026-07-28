@@ -129,6 +129,82 @@ class block_gitmetrics_renderer extends plugin_renderer_base {
     }
     // --8<-- [end:render_fullpage_metrics]
 
+    // --8<-- [start:render_management_panel]
+    public function render_management_panel(array $data): string {
+        $html = '<div class="gm-topic-toggle gm-management" open style="margin-top: 25px; border-color: #3b82f6;">'
+              . '<div class="gm-topic-header" style="background: #eff6ff; color: #1e3a8a;">Panel de Gestión: Forks y Progreso de Sesiones</div>'
+              . '<div class="gm-topic-body" style="background: #fff;">';
+
+        // Repo del curso y colaboradores
+        $repo = $data['course_repo'];
+        $html .= '<div style="margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">';
+        $html .= '<h4 style="margin-top:0; font-size: 13px; color: #334155;">Repositorio Base del Curso</h4>';
+        
+        if ($repo) {
+            $status_class = $repo->status === 'creado' ? 'gm-badge-ok' : ($repo->status === 'error' ? 'gm-badge-missing' : '');
+            $html .= '<p style="margin-bottom: 5px;"><strong>URL:</strong> <a href="'.s($repo->repo_url).'" target="_blank">'.s($repo->repo_url).'</a></p>';
+            $html .= '<p style="margin-bottom: 5px;"><strong>Estado:</strong> <span class="gm-badge '.$status_class.'">'.s($repo->status).'</span></p>';
+            if ($repo->error_msg) {
+                $html .= '<p style="color: #ef4444; font-size: 11px;">Error: '.s($repo->error_msg).'</p>';
+            }
+        } else {
+            $html .= '<p>Aún no aprovisionado.</p>';
+        }
+
+        $html .= '<p style="margin-bottom: 0;"><strong>Profesores colaboradores:</strong> ' . implode(', ', array_map('s', $data['teachers'])) . '</p>';
+        $html .= '</div>';
+
+        // Tabla de estudiantes
+        $html .= '<h4 style="font-size: 13px; color: #334155;">Estado de los Estudiantes</h4>';
+        if (empty($data['students'])) {
+            $html .= '<p>No hay alumnos matriculados en este curso.</p>';
+        } else {
+            $html .= '<table class="gm-table" style="margin-top: 10px;">';
+            $html .= '<thead><tr><th>Alumno</th><th>Estado Fork</th><th>Fork URL</th><th>Sesiones</th><th>Última Sesión</th><th>Conceptos Dominados</th><th>Acciones</th></tr></thead><tbody>';
+            
+            foreach ($data['students'] as $s) {
+                $status_class = $s['status'] === 'creado' ? 'gm-badge-ok' : ($s['status'] === 'error' ? 'gm-badge-missing' : '');
+                
+                $fork_link = $s['fork_url'] ? '<a href="'.s($s['fork_url']).'" target="_blank" class="gm-ext-link">↗ Abrir</a>' : '-';
+                
+                $num_sesiones = $s['progress'] ? $s['progress']['num_sesiones'] : 0;
+                $ultima_sesion = $s['progress'] && $s['progress']['ultima_sesion'] ? userdate($s['progress']['ultima_sesion']) : '-';
+                $conceptos = $s['progress'] && $s['progress']['conceptos_dominados'] ? s(implode(', ', $s['progress']['conceptos_dominados'])) : '-';
+
+                $actions = '';
+                if ($s['status'] === 'error' || $s['status'] === 'pendiente') {
+                    $retry_url = new moodle_url('/blocks/gitmetrics/view.php', [
+                        'courseid' => $this->ctx_courseid,
+                        'blockid'  => $this->ctx_blockid,
+                        'action'   => 'retry_fork',
+                        'userid'   => $s['userid'],
+                        'sesskey'  => sesskey()
+                    ]);
+                    $actions = '<a href="'.$retry_url->out().'" style="display:inline-block; padding:3px 8px; font-size:10px; font-weight:bold; background:#cbd5e1; color:#334155; border-radius:4px; text-decoration:none;">Reintentar</a>';
+                }
+
+                $html .= '<tr>';
+                $html .= '<td><strong>' . s($s['fullname']) . '</strong><br><span style="font-size:10px; color:#64748b;">'.s($s['email']).'</span></td>';
+                $html .= '<td><span class="gm-badge '.$status_class.'">'.s($s['status']).'</span></td>';
+                $html .= '<td>' . $fork_link . '</td>';
+                $html .= '<td style="text-align:center;">' . $num_sesiones . '</td>';
+                $html .= '<td>' . $ultima_sesion . '</td>';
+                $html .= '<td>' . $conceptos . '</td>';
+                $html .= '<td>' . $actions . '</td>';
+                $html .= '</tr>';
+                
+                if ($s['error']) {
+                    $html .= '<tr><td colspan="7" style="color: #ef4444; font-size: 10px; padding-top: 0; padding-bottom: 10px;">Error: '.s($s['error']).'</td></tr>';
+                }
+            }
+            $html .= '</tbody></table>';
+        }
+
+        $html .= '</div></div>';
+        return $html;
+    }
+    // --8<-- [end:render_management_panel]
+
     public function render_no_repo(): string {
         $html  = $this->styles();
         $html .= '<div class="gm-wrap gm-empty">';

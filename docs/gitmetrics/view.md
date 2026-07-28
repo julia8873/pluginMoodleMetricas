@@ -22,7 +22,8 @@ graph TD
     G -->|"Caché inválida o vacía"| H["7. Instanciar metrics_calculator"]
     G -->|"Caché válida"| I["8. Renderizar Vista Completa"]
     H --> I
-    I --> J["9. Imprimir Footer y terminar"]
+    I --> I2["8b. Cargar Panel de Gestión (si es profesor)"]
+    I2 --> J["9. Imprimir Footer y terminar"]
 ```
 
 ### Detalle de los Pasos del Flujo
@@ -35,14 +36,15 @@ graph TD
 6. **[PASO 6] Consulta a Caché:** Interroga al motor de caché (`metrics_cache`) proporcionándole la URL y el blockid.
 7. **[PASO 7] Análisis en vivo:** En caso de miss en la caché, invoca al analizador (`metrics_calculator`) para descargar recursivamente la Base de Conocimiento y recalcular todas las variables.
 8. **[PASO 8] Interfaz Expandida:** Utiliza la función `render_fullpage_metrics` del objeto `renderer` para dibujar las métricas a lo ancho de toda la pantalla usando componentes `<details>`.
-9. **[PASO 9] Finalización:** El núcleo cierra la etiqueta de cuerpo del documento HTML devolviendo el resultado al navegador.
+9. **[PASO 8b] Panel de Gestión:** Si el usuario tiene permisos de edición (es profesor), se consulta `student_progress` para obtener el estado de los repositorios de alumnos y se pinta el panel de gestión usando `render_management_panel`.
+10. **[PASO 9] Finalización:** El núcleo cierra la etiqueta de cuerpo del documento HTML devolviendo el resultado al navegador.
 
 ## Funciones Principales
 
-### `Lógica de Renderizado y Caché`
-Script procedural ejecutado bajo el contexto de Moodle que coordina el pintado del *header*, delegación del renderizado, y pintado del *footer*.
+### `Lógica de Renderizado, Acciones y Caché`
+Script procedural ejecutado bajo el contexto de Moodle que coordina el manejo de acciones (ej. *reintentar aprovisionamiento*), la obtención de métricas, delegación del renderizado de métricas y del panel de gestión (si aplica), y el pintado del *footer*.
 
 ```php
---8<-- "gitmetrics/view.php:Lógica de Renderizado y Caché"
+--8<-- "gitmetrics/view.php:view_logic"
 ```
 

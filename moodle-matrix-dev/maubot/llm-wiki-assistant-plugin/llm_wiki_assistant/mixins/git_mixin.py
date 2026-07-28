@@ -35,36 +35,44 @@ else:
     _HostProtocol = object
 
 class GitMixin(_HostProtocol):
-# --8<-- [start:obtener_git_token]
-    def _obtener_git_token(self) -> str:
+    def _obtener_git_token(self, cfg: Optional[dict] = None) -> str:
         """Obtiene el token adecuado según el proveedor (GitLab o GitHub)."""
-        prov = str(self.config.get("provider", "")).strip().lower()
-        url = str(self.config.get("repo_url", "")).strip().lower()
+        cfg = cfg or self.config
+        prov = str(cfg.get("provider", "")).strip().lower()
+        url = str(cfg.get("repo_url", "")).strip().lower()
         if prov == "gitlab" or "gitlab" in url:
-            return self.config.get("gitlab_token", "") or self.config.get("github_token", "") or ""
+            return cfg.get("gitlab_token", "") or cfg.get("github_token", "") or ""
         elif prov == "github" or "github.com" in url:
-            return self.config.get("github_token", "") or self.config.get("gitlab_token", "") or ""
-        return self.config.get("gitlab_token", "") or self.config.get("github_token", "") or ""
+            return cfg.get("github_token", "") or cfg.get("gitlab_token", "") or ""
+        return cfg.get("gitlab_token", "") or cfg.get("github_token", "") or ""
+
+    async def _get_git_context(self, sender: str) -> tuple:
+        """Devuelve (git_client, owner, repo, branch, token, raw_folder, bdc_cache_ttl_minutos)."""
+        cfg = await self._config_para(sender)
+        git = await self._git_para(sender)
+        token = self._obtener_git_token(cfg)
+        owner = cfg.get("default_owner", "")
+        repo = cfg.get("default_repo", "")
+        branch = cfg.get("default_branch", "main")
+        raw_folder = cfg.get("raw_folder", "raw")
+        ttl = cfg.get("bdc_cache_ttl_minutos", 30)
+        return git, owner, repo, branch, token, raw_folder, ttl
 # --8<-- [end:obtener_git_token]
 
-# --8<-- [start:obtener_documentacion]
-    async def _obtener_documentacion(self, owner: str, repo: str, token: str, filtro: str = "") -> str:
+    async def _obtener_documentacion(self, sender: str, filtro: str = "") -> str:
         """Obtiene la documentación o apuntes del repositorio Git."""
-        ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
+        git, owner, repo, _, token, _, ttl = await self._get_git_context(sender)
+        ttl_segundos = ttl * 60
         async with aiohttp.ClientSession() as session:
-            return await self.git.obtener_documentacion(
+            return await git.obtener_documentacion(
                 session, owner, repo, token, filtro, self._cache_docs, ttl_segundos, self._semaforo_github, self.log
             )
-# --8<-- [end:obtener_documentacion]
 
-# --8<-- [start:recorrer_carpeta]
-    async def _recorrer_carpeta(self, session, owner: str, repo: str, headers: dict, path: str, filtro: str = "") -> list:
+    async def _recorrer_carpeta(self, session, sender: str, path: str, filtro: str = "") -> list:
         """Recorre una carpeta del repositorio y lista sus archivos."""
-        # Mantener compatibilidad interna si se invoca directo
-        token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
-        res = await self.git.obtener_documentacion(session, owner, repo, token, filtro, self._cache_docs, 0, self._semaforo_github, self.log)
+        git, owner, repo, _, token, _, _ = await self._get_git_context(sender)
+        res = await git.obtener_documentacion(session, owner, repo, token, filtro, self._cache_docs, 0, self._semaforo_github, self.log)
         return [res] if res else []
-# --8<-- [end:recorrer_carpeta]
 
 # --8<-- [start:descargar_contenido_fichero]
     async def _descargar_contenido_fichero(self, session, path: str, download_url: str, headers: dict) -> str:
@@ -73,58 +81,49 @@ class GitMixin(_HostProtocol):
         return ""
 # --8<-- [end:descargar_contenido_fichero]
 
-# --8<-- [start:listar_rutas]
-    async def _listar_rutas(self, session, owner: str, repo: str, headers: dict, path: str) -> list:
+    async def _listar_rutas(self, session, sender: str, path: str) -> list:
         """Lista las rutas disponibles en el repositorio."""
-        ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
-        token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
-        return await self.git.listar_rutas(session, owner, repo, token, path, self._cache_rutas, ttl_segundos, self._semaforo_github)
-# --8<-- [end:listar_rutas]
+        git, owner, repo, _, token, _, ttl = await self._get_git_context(sender)
+        ttl_segundos = ttl * 60
+        return await git.listar_rutas(session, owner, repo, token, path, self._cache_rutas, ttl_segundos, self._semaforo_github)
 
-# --8<-- [start:listar_carpetas]
-    async def _listar_carpetas(self, owner: str, repo: str, token: str) -> list:
+    async def _listar_carpetas(self, sender: str) -> list:
         """Lista las carpetas disponibles en una ruta específica."""
-        ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
-        return await self.git.listar_carpetas(owner, repo, token, self._cache_carpetas, ttl_segundos, self._semaforo_github)
-# --8<-- [end:listar_carpetas]
+        git, owner, repo, _, token, _, ttl = await self._get_git_context(sender)
+        ttl_segundos = ttl * 60
+        return await git.listar_carpetas(owner, repo, token, self._cache_carpetas, ttl_segundos, self._semaforo_github)
 
-# --8<-- [start:recorrer_carpeta_con_sha]
-    async def _recorrer_carpeta_con_sha(self, session, owner: str, repo: str, headers: dict, path: str) -> list:
+    async def _recorrer_carpeta_con_sha(self, session, sender: str, path: str) -> list:
         """Recorre una carpeta del repositorio incluyendo el hash SHA de los archivos."""
-        token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
-        return await self.git.recorrer_carpeta_con_sha(session, owner, repo, token, path, self._semaforo_github)
-# --8<-- [end:recorrer_carpeta_con_sha]
+        git, owner, repo, _, token, _, _ = await self._get_git_context(sender)
+        return await git.recorrer_carpeta_con_sha(session, owner, repo, token, path, self._semaforo_github)
 
-# --8<-- [start:obtener_sha_y_contenido_github]
     async def _obtener_sha_y_contenido_github(
-        self, session, owner: str, repo: str, headers: dict, path: str
+        self, session, sender: str, path: str
     ) -> Optional[dict]:
         """Obtiene el SHA y el contenido de un archivo en GitHub."""
-        token = headers.get("PRIVATE-TOKEN") or (headers.get("Authorization", "").replace("token ", "")) or self._obtener_git_token()
-        return await self.git.obtener_info_y_contenido(session, owner, repo, token, path, self._semaforo_github)
-# --8<-- [end:obtener_sha_y_contenido_github]
+        git, owner, repo, _, token, _, _ = await self._get_git_context(sender)
+        return await git.obtener_info_y_contenido(session, owner, repo, token, path, self._semaforo_github)
 
-# --8<-- [start:subir_o_actualizar_archivo_github]
     async def _subir_o_actualizar_archivo_github(
-        self, owner: str, repo: str, token: str, path: str, contenido: str, branch: str, mensaje_commit: str
+        self, sender: str, path: str, contenido: str, mensaje_commit: str
     ) -> bool:
         """Sube un archivo nuevo o actualiza uno existente en GitHub."""
-        return await self.git.subir_o_actualizar_archivo(owner, repo, token, path, contenido, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
-# --8<-- [end:subir_o_actualizar_archivo_github]
+        git, owner, repo, branch, token, _, _ = await self._get_git_context(sender)
+        return await git.subir_o_actualizar_archivo(owner, repo, token, path, contenido, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
 
-# --8<-- [start:append_log_okf]
     async def _append_log_okf(
-        self, owner: str, repo: str, token: str, branch: str, entrada: str, mensaje_commit: str
+        self, sender: str, entrada: str, mensaje_commit: str
     ) -> None:
         """Añade un registro al log de operaciones del formato OKF."""
-        await self.git.append_log_okf(owner, repo, token, branch, entrada, mensaje_commit, self._semaforo_github)
+        git, owner, repo, branch, token, _, _ = await self._get_git_context(sender)
+        await git.append_log_okf(owner, repo, token, branch, entrada, mensaje_commit, self._semaforo_github)
         self._invalidar_cache()
-# --8<-- [end:append_log_okf]
 
-# --8<-- [start:obtener_agents_md]
-    async def _obtener_agents_md(self, owner: str, repo: str, token: str) -> Optional[str]:
+    async def _obtener_agents_md(self, sender: str) -> Optional[str]:
         """Obtiene el contenido del archivo de reglas AGENTS.md."""
-        ttl_segundos = (self.config["bdc_cache_ttl_minutos"] or 30) * 60
+        git, owner, repo, _, token, _, ttl = await self._get_git_context(sender)
+        ttl_segundos = ttl * 60
         ahora = time.time()
         clave_cache = (owner, repo)
 
@@ -134,46 +133,41 @@ class GitMixin(_HostProtocol):
                 return contenido_cached
 
         async with aiohttp.ClientSession() as session:
-            info = await self.git.obtener_info_y_contenido(session, owner, repo, token, AGENTS_MD_PATH, self._semaforo_github)
+            info = await git.obtener_info_y_contenido(session, owner, repo, token, AGENTS_MD_PATH, self._semaforo_github)
         if info is None:
             return None
 
         contenido = base64.b64decode(info["content"]).decode("utf-8") if info.get("content") else ""
         self._cache_agents_md[clave_cache] = (ahora, contenido)
         return contenido
-# --8<-- [end:obtener_agents_md]
 
-# --8<-- [start:borrar_archivo_github]
     async def _borrar_archivo_github(
-        self, owner: str, repo: str, token: str, path: str, branch: str, sha: str = "", mensaje_commit: str = ""
+        self, sender: str, path: str, sha: str = "", mensaje_commit: str = ""
     ) -> None:
         """Elimina un archivo del repositorio de GitHub."""
-        await self.git.borrar_archivo(owner, repo, token, path, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
-# --8<-- [end:borrar_archivo_github]
+        git, owner, repo, branch, token, _, _ = await self._get_git_context(sender)
+        await git.borrar_archivo(owner, repo, token, path, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
 
-# --8<-- [start:mover_archivo_github]
     async def _mover_archivo_github(
-        self, owner: str, repo: str, token: str, ruta_antigua: str, ruta_nueva: str, branch: str, sender: str
+        self, sender: str, ruta_antigua: str, ruta_nueva: str
     ) -> None:
         """Mueve un archivo a una nueva ruta dentro del repositorio de GitHub."""
-        await self.git.mover_archivo(owner, repo, token, ruta_antigua, ruta_nueva, branch, sender, self._semaforo_github, self._invalidar_cache)
-# --8<-- [end:mover_archivo_github]
+        git, owner, repo, branch, token, _, _ = await self._get_git_context(sender)
+        await git.mover_archivo(owner, repo, token, ruta_antigua, ruta_nueva, branch, sender, self._semaforo_github, self._invalidar_cache)
 
-# --8<-- [start:subir_archivo_github]
     async def _subir_archivo_github(
-        self, owner: str, repo: str, token: str, path: str, contenido: str, branch: str, mensaje_commit: str
+        self, sender: str, path: str, contenido: str, mensaje_commit: str
     ) -> None:
         """Sube un archivo al repositorio de GitHub."""
-        await self.git.subir_archivo(owner, repo, token, path, contenido, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
-# --8<-- [end:subir_archivo_github]
+        git, owner, repo, branch, token, _, _ = await self._get_git_context(sender)
+        await git.subir_archivo(owner, repo, token, path, contenido, branch, mensaje_commit, self._semaforo_github, self._invalidar_cache)
 
-# --8<-- [start:resolver_ruta_unica]
     async def _resolver_ruta_unica(
-        self, evt: MessageEvent, nombre: str, owner: str, repo: str, headers: dict
+        self, evt: MessageEvent, nombre: str
     ) -> Optional[str]:
         """Resuelve la ruta única para guardar un archivo en el repositorio."""
         async with aiohttp.ClientSession() as session:
-            rutas = await self._listar_rutas(session, owner, repo, headers, "")
+            rutas = await self._listar_rutas(session, evt.sender, "")
 
         coincidencias = [r for r in rutas if nombre.lower() in r.lower()]
 
@@ -187,16 +181,10 @@ class GitMixin(_HostProtocol):
             return None
 
         return coincidencias[0]
-# --8<-- [end:resolver_ruta_unica]
 
-# --8<-- [start:guardar_ficheros_en_carpeta]
     async def _guardar_ficheros_en_carpeta(self, evt: MessageEvent, ficheros: list, carpeta: Optional[str]) -> None:
         """Guarda múltiples archivos en una carpeta de destino."""
-        token = self._obtener_git_token()
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-        branch = self.config["default_branch"] or "main"
-        raw_folder = self.config["raw_folder"] or "raw"
+        _, _, _, _, _, raw_folder, _ = await self._get_git_context(evt.sender)
         carpeta_destino = carpeta or raw_folder
 
         for fichero in ficheros:
@@ -211,7 +199,7 @@ class GitMixin(_HostProtocol):
 
             try:
                 await self._subir_archivo_github(
-                    owner, repo, token, ruta_repo, contenido_md, branch,
+                    evt.sender, ruta_repo, contenido_md,
                     mensaje_commit=f"Añadir fuente '{fichero['nombre_archivo']}' (aportada por {evt.sender})",
                 )
             except Exception as exc:
@@ -228,7 +216,6 @@ class GitMixin(_HostProtocol):
 
             if self.config["ingest_automatico"]:
                 await self._ejecutar_ingest_automatico(
-                    evt, owner, repo, token, branch, ruta_repo, fichero["nombre_archivo"],
+                    evt, evt.sender, ruta_repo, fichero["nombre_archivo"],
                 )
-# --8<-- [end:guardar_ficheros_en_carpeta]
 

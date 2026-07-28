@@ -9,7 +9,7 @@ defined('MOODLE_INTERNAL') || die();
 
 // --8<-- [start:version_definition]
 $plugin->component = 'block_gitmetrics';
-$plugin->version   = 2026072700;
+$plugin->version   = 2026072805;  // Paso 10: Retry Task para aprovisionamiento de repos (y tabla de intentos)
 $plugin->requires  = 2022041900;  // Moodle 4.0+
 $plugin->maturity  = MATURITY_STABLE;
 // --8<-- [end:version_definition]

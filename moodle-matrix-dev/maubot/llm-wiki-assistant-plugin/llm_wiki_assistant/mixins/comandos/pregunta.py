@@ -44,10 +44,7 @@ class PreguntaMixin(ComandosBaseMixin):
     async def pregunta_handler(self, evt: MessageEvent, texto: str) -> None:
         """Manejador del comando !pregunta para resolver dudas sobre los apuntes."""
         token = self._obtener_git_token()
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-
-        texto, tema, _ = _extraer_modificadores(texto)
+                texto, tema, _ = _extraer_modificadores(texto)
         if not texto:
             await evt.reply("Falta la pregunta. Formato: `!pregunta [tema:<carpeta/fichero>] <texto>`.")
             return
@@ -57,7 +54,7 @@ class PreguntaMixin(ComandosBaseMixin):
         clave = (evt.room_id, evt.sender)
         self.peticiones_llm[clave] = asyncio.current_task()
         try:
-            contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
+            contenido_docs = await self._obtener_documentacion(evt.sender, tema)
             if not contenido_docs and tema:
                 await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
                 return

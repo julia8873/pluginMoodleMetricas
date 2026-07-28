@@ -117,3 +117,16 @@ $string['obsidian_vault_path_desc']    = 'Ruta absoluta en el sistema de archivo
 $string['obsidian_vault_name']         = 'Nombre del vault de Obsidian';
 $string['obsidian_vault_name_desc']    = 'Nombre exacto del vault tal y como Obsidian lo registró al crearlo (nombre de la carpeta del vault). Este nombre se usa para construir los enlaces obsidian://.';
 $string['task_sync_obsidian']          = 'Sincronización programada del vault de Obsidian';
+
+// -- Ajustes - Plantilla y aprovisionamiento de repos de alumno -----------
+$string['heading_template']            = 'Plantilla y aprovisionamiento de repos de alumno';
+$string['heading_template_desc']       = 'Parámetros que controlan de qué repositorio se hace fork al crear el repo personal de un alumno y dónde se aloja. Cambia estos valores en producción para apuntar a la cuenta/organización de la universidad.';
+$string['template_owner']             = 'Propietario del repo plantilla';
+$string['template_owner_desc']        = 'Usuario u organización de GitHub/GitLab donde vive el repo plantilla. Ejemplo: julia8873 (dev) ó ugr-cursos (producción). Leído siempre con get_config(); nunca escribas este valor directamente en el código.';
+$string['template_repo']              = 'Nombre del repo plantilla';
+$string['template_repo_desc']         = 'Nombre del repositorio que se usará como plantilla al crear el repo personal de cada alumno. Debe existir en la cuenta de template_owner y estar marcado como "Template repository" en GitHub. Por defecto: BdC-template.';
+$string['template_provider']          = 'Proveedor del repo plantilla';
+$string['template_provider_desc']     = 'Proveedor Git donde vive la plantilla y donde se crearán los repos de alumno. Actualmente solo GitHub soporta la API de creación por plantilla (generate from template). GitLab se reserva para futuros casos de uso.';
+$string['target_namespace']           = 'Espacio de nombres destino (owner/org)';
+$string['target_namespace_desc']      = 'Cuenta personal o nombre de organización de GitHub/GitLab donde se crearán los repos de alumno (p. ej. julia8873 para desarrollo local, ugr-cursos para producción). Si se deja vacío, se usará la misma cuenta que posee el token. Para múltiples profesores se recomienda usar una organización.';
+

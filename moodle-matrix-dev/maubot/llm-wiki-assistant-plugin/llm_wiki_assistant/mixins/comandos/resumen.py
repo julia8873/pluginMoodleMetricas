@@ -50,8 +50,7 @@ class ResumenMixin(ComandosBaseMixin):
             await evt.reply(f"No tienes actividad registrada en las últimas {horas} horas.")
             return
 
-        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
-        contenido_docs = await self._obtener_documentacion(owner, repo, token)
+                contenido_docs = await self._obtener_documentacion(evt.sender,)
 
         try:
             resumen = await generar_resumen_sesion(interacciones, contenido_docs, self._crear_llm())

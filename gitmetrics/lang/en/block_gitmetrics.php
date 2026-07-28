@@ -132,3 +132,16 @@ $string['progress_sessions']        = 'Sessions';
 $string['progress_last_session']    = 'Last session';
 $string['progress_concepts']        = 'Concepts mastered';
 $string['progress_summary']         = 'Latest summary';
+
+// -- Settings - Template & student repo provisioning ----------------------
+$string['heading_template']            = 'Template & student repo provisioning';
+$string['heading_template_desc']       = 'Parameters that control which repository is forked when creating a student personal repo, and where it is hosted. Update these values in production to point to the university account/organisation.';
+$string['template_owner']             = 'Template repo owner';
+$string['template_owner_desc']        = 'GitHub/GitLab user or organisation that owns the template repository. Example: julia8873 (dev) or ugr-cursos (production). Always read via get_config(); never hard-code this value.';
+$string['template_repo']              = 'Template repo name';
+$string['template_repo_desc']         = 'Name of the repository to use as template when creating each student personal repo. Must exist under the template_owner account and be marked as a "Template repository" in GitHub. Default: BdC-template.';
+$string['template_provider']          = 'Template repo provider';
+$string['template_provider_desc']     = 'Git provider hosting the template and where student repos will be created. Currently only GitHub supports the template-based repo creation API (generate from template). GitLab is reserved for future use cases.';
+$string['target_namespace']           = 'Target namespace (owner/org)';
+$string['target_namespace_desc']      = 'GitHub/GitLab personal account or organisation name where student repos will be created (e.g. julia8873 for local dev, ugr-cursos for production). Leave empty to use the same account that owns the token. For multiple teachers, using an organisation is recommended.';
+

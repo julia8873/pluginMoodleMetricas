@@ -754,6 +754,42 @@ class GitLabClient(GitProvider):
         return ficheros
 
 
+async def resolver_config_alumno(config: dict, student_id: Optional[str] = None, tracker: Any = None) -> dict:
+    """
+    Devuelve un diccionario de configuración sobreescrito con los datos del
+    fork del alumno (proveedor, owner, repo), partiendo de la config base.
+    Si no hay student_id, tracker o no tiene fork, devuelve la base intacta.
+    """
+    nuevo_config = config.copy()
+    if not student_id or not tracker:
+        return nuevo_config
+
+    try:
+        fila = await tracker.db.fetchrow(
+            "SELECT repo_url FROM estudiantes WHERE student_id = $1", student_id
+        )
+        if fila and fila["repo_url"]:
+            repo_url = str(fila["repo_url"]).strip()
+            nuevo_config["repo_url"] = repo_url
+            if "github.com/" in repo_url:
+                parts = repo_url.split("github.com/")[-1].replace(".git", "").split("/")
+                if len(parts) >= 2:
+                    nuevo_config["default_owner"] = parts[0]
+                    nuevo_config["default_repo"] = parts[1]
+                    nuevo_config["provider"] = "github"
+            elif "gitlab" in repo_url:
+                # Assuming similar format or handled via GitLab api / path
+                # https://gitlab.com/owner/repo.git
+                parts = repo_url.split("gitlab.com/")[-1].replace(".git", "").split("/")
+                if len(parts) >= 2:
+                    nuevo_config["default_owner"] = parts[0]
+                    nuevo_config["default_repo"] = "/".join(parts[1:])
+                    nuevo_config["provider"] = "gitlab"
+    except Exception:
+        pass
+
+    return nuevo_config
+
 def get_git_client(config: dict) -> GitProvider:
     provider = str(config.get("provider", "")).strip().lower()
     repo_url = str(config.get("repo_url", "")).strip().lower()

@@ -1,46 +1,82 @@
-Crear archivo en: `docs/gitmetrics/classes/git_provider_interface.md`
-
 # Interfaz `git_provider_interface`
 
-Ubicación: `classes/git_provider_interface.php`
+Ubicación: `gitmetrics/classes/git_provider_interface.php`
 
 ```php
 --8<-- "gitmetrics/classes/git_provider_interface.php:class_desc"
 ```
 
-## Diagrama de Flujo Principal
+## Diagrama de Flujo
 
 ```mermaid
 graph TD
-    A["1. Cliente que implementa interfaz"] --> B{"¿Acción requerida?"}
-    B -->|"Obtener estructura"| C["2. Ejecutar get_tree"]
-    B -->|"Descargar texto"| D["3. Ejecutar get_file_content"]
-    C --> E["4. Retornar array unificado de nodos"]
-    D --> F["5. Retornar string en texto plano"]
+    A["Cliente instanciado\n(github_client / gitlab_client)"] --> B{"¿Tipo de operación?"}
+    B -->|"Lectura"| C["get_tree\nget_file_content"]
+    B -->|"Escritura\n(aprovisionamiento)"| D["create_repo_from_template\nfork_repo\nadd_collaborator"]
+    C --> E["Retorno tipado\n(array / string)"]
+    D --> F{"¿Proveedor soporta\nla operación?"}
+    F -->|"Sí (GitHub)"| G["Retorno tipado\n(string / bool)"]
+    F -->|"No (GitLab)"| H["throw Exception\nexplícita"]
 ```
 
-### Detalle de los Pasos del Flujo
-
-1. **[PASO 1] Cliente instanciado:** Una clase que implemente esta interfaz (`github_client` o `gitlab_client`) es utilizada en el sistema (por ejemplo, en `metrics_calculator`).
-2. **[PASO 2] Ejecutar get_tree:** Se impone a la clase la obligación de poseer el método para extraer el árbol completo de un repositorio.
-3. **[PASO 3] Ejecutar get_file_content:** Se impone la obligación de poseer un método que descargue el código raw de un fichero del repositorio.
-4. **[PASO 4] Retorno de array:** Se garantiza contractualmente que el método de árbol retornará una lista estandarizada (`array`) independiente del proveedor subyacente.
-5. **[PASO 5] Retorno de string:** Se garantiza que la descarga del archivo retornará un tipo de dato cadena (`string`).
-
-## Funciones Principales
+## Métodos de lectura
 
 ### `get_tree`
-Firma obligatoria para obtener el árbol recursivo del repositorio. Define qué argumentos se deben pasar (*owner*, *repo*, *branch*) y qué se debe retornar.
+
+Firma obligatoria para obtener el árbol recursivo del repositorio.
 
 ```php
 --8<-- "gitmetrics/classes/git_provider_interface.php:get_tree"
 ```
 
-
 ### `get_file_content`
-Firma obligatoria para descargar el contenido raw (texto plano) de un fichero. Define los parámetros necesarios (añadiendo el *path* relativo) y su retorno.
+
+Firma obligatoria para descargar el contenido raw de un fichero.
 
 ```php
 --8<-- "gitmetrics/classes/git_provider_interface.php:get_file_content"
 ```
 
+## Métodos de escritura (aprovisionamiento, Paso 2)
+
+Estos tres métodos amplían la interfaz para el flujo de creación de repos de alumno.
+Los proveedores que no los soporten **deben** lanzar `\Exception` explícita — nunca dejar el cuerpo vacío.
+
+### `create_repo_from_template`
+
+Crea un repo nuevo en `$new_namespace` a partir de una plantilla. En GitHub usa
+`POST /repos/{template_owner}/{template_repo}/generate`.
+
+```php
+--8<-- "gitmetrics/classes/git_provider_interface.php:create_repo_from_template"
+```
+
+### `fork_repo`
+
+Hace fork de un repo existente y lo renombra. Alternativa a `create_repo_from_template`
+cuando el repo origen no está marcado como *Template repository*.
+
+```php
+--8<-- "gitmetrics/classes/git_provider_interface.php:fork_repo"
+```
+
+### `add_collaborator`
+
+Añade un usuario como colaborador con el rol indicado. El rol semántico
+(`guest` / `developer` / `maintainer` / `owner`) se traduce internamente
+a los permisos de cada proveedor.
+
+```php
+--8<-- "gitmetrics/classes/git_provider_interface.php:add_collaborator"
+```
+
+## Convención de implementación
+
+| Proveedor | Lectura | Escritura |
+|---|---|---|
+| `github_client` | ✅ Implementado | ✅ Implementado (ver [github_client.md](github_client.md)) |
+| `gitlab_client` | ✅ Implementado | ⚠️ `throw \Exception` explícita (ver [gitlab_client.md](gitlab_client.md)) |
+
+> [!NOTE]
+> La decisión de no implementar los métodos de escritura en GitLab es de **alcance**, no un olvido.
+> Ver la sección "Por qué GitLab queda con excepción explícita" en [github_client.md](github_client.md).

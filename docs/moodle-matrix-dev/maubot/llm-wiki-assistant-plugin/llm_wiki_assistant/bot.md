@@ -49,6 +49,10 @@ A continuación se documentan todos los métodos expuestos por el bot, organizad
     --8<-- "moodle-matrix-dev/maubot/llm-wiki-assistant-plugin/llm_wiki_assistant/bot.py:get_db_upgrade_table"
     ```
 
+    **`track_student_course`**
+    Manejador de evento de alta prioridad que se dispara para cada mensaje de sala. Lee el state event de Matrix `es.ugr.gitmetrics.course_link` inyectado por Moodle, cachea la relación `room_id → course_id` y delega a la BD para actualizar o registrar al estudiante, permitiendo filtrar sus analíticas por curso.  
+    Para conocer el detalle técnico de este enlace Moodle-Maubot, lee la [Decisión de arquitectura: Mapeo sala Matrix ↔ curso_id](../../../../gitmetrics/classes/matrix_helper.md).
+
 ??? note "2. GitMixin (`mixins/git_mixin.py`)"
     Agrupa las operaciones de lectura, escritura y recorrido en repositorios Git.
     

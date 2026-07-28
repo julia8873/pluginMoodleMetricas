@@ -52,8 +52,7 @@ class EjerciciosTemaMixin(ComandosBaseMixin):
 
         await evt.reply(f"Buscando ejercicios en la BdC que apliquen «{tecnica}», un momento...")
 
-        owner, repo, token = self.config["default_owner"], self.config["default_repo"], self._obtener_git_token()
-        contenido_docs = await self._obtener_documentacion(owner, repo, token)
+                contenido_docs = await self._obtener_documentacion(evt.sender,)
         if not contenido_docs:
             await evt.reply("No he podido leer la documentación del repositorio.")
             return

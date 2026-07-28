@@ -40,10 +40,7 @@ class FicherosMixin(ComandosBaseMixin):
     async def ficheros_handler(self, evt: MessageEvent) -> None:
         """Manejador del comando !ficheros para listar los archivos del repositorio."""
         token = self._obtener_git_token()
-        owner = self.config["default_owner"]
-        repo = self.config["default_repo"]
-
-        await evt.reply(f"Buscando archivos en {owner}/{repo}...")
+                await evt.reply(f"Buscando archivos en {owner}/{repo}...")
 
         headers = {
             "Authorization": f"token {token}",
@@ -51,7 +48,7 @@ class FicherosMixin(ComandosBaseMixin):
         }
 
         async with aiohttp.ClientSession() as session:
-            rutas = await self._listar_rutas(session, owner, repo, headers, "")
+            rutas = await self._listar_rutas(session, evt.sender, "")
 
         if not rutas:
             await evt.reply("No se ha encontrado ningún archivo .md/.txt en la BdC.")

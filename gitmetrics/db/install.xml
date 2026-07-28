@@ -2,12 +2,23 @@
 
 <!--
     Definición de tablas de la BD para block_gitmetrics.
-    Tabla principal: block_gitmetrics_cache
-    Almacena los resultados del análisis de métricas para evitar
-    llamadas repetidas a la API de GitHub (respetando el TTL configurado).
+
+    Tabla 1: block_gitmetrics_cache
+      Caché de métricas calculadas por instancia de bloque.
+
+    Tabla 2: block_gitmetrics_progress_cache
+      Caché de progreso de alumnos consultado al bot Maubot (v2026072700).
+
+    Tabla 3: block_gitmetrics_course_repo  (v2026072800)
+      Repositorio de curso creado a partir de la plantilla BdC.
+      status: pendiente | creado | error
+
+    Tabla 4: block_gitmetrics_student_fork  (v2026072800)
+      Fork personal del repo de curso por alumno (uno por course_id+userid).
+      status: pendiente | creado | error
 -->
 
-<XMLDB PATH="blocks/gitmetrics/db" VERSION="20260713" COMMENT="XMLDB para block_gitmetrics">
+<XMLDB PATH="blocks/gitmetrics/db" VERSION="20260728" COMMENT="XMLDB para block_gitmetrics">
   <TABLES>
 
     <TABLE NAME="block_gitmetrics_cache" COMMENT="Caché de métricas calculadas por instancia de bloque y repositorio">
@@ -51,6 +62,64 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="blockinstance_course" UNIQUE="false" FIELDS="blockinstanceid, course_id"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Repositorio de curso creado a partir de la plantilla BdC (v2026072800) -->
+    <TABLE NAME="block_gitmetrics_course_repo" COMMENT="Repositorio de curso creado a partir de la plantilla BdC">
+      <FIELDS>
+        <FIELD NAME="id"          TYPE="int"  LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <!-- ID del curso Moodle (mdl_course.id) -->
+        <FIELD NAME="course_id"   TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+        <!-- URL HTML del repo creado (https://github.com/...) -->
+        <FIELD NAME="repo_url"    TYPE="char" LENGTH="500" NOTNULL="true"/>
+        <!-- Proveedor Git donde vive el repo (github | gitlab) -->
+        <FIELD NAME="provider"    TYPE="char" LENGTH="20"  NOTNULL="true"/>
+        <!-- Estado del aprovisionamiento: pendiente | creado | error -->
+        <FIELD NAME="status"      TYPE="char" LENGTH="20"  NOTNULL="true" DEFAULT="pendiente"/>
+        <!-- Mensaje de error en caso de fallo (null si no hay error) -->
+        <FIELD NAME="error_msg"   TYPE="text"              NOTNULL="false"/>
+        <!-- Número de intentos de aprovisionamiento -->
+        <FIELD NAME="attempts"    TYPE="int"  LENGTH="10"  NOTNULL="true" DEFAULT="0"/>
+        <!-- Marca de tiempo de creación del registro (Unix timestamp) -->
+        <FIELD NAME="timecreated" TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <!-- Un solo repo de curso por course_id -->
+        <INDEX NAME="course" UNIQUE="true" FIELDS="course_id"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Fork personal del repo de curso por alumno (v2026072800) -->
+    <TABLE NAME="block_gitmetrics_student_fork" COMMENT="Fork personal del repo de curso por alumno">
+      <FIELDS>
+        <FIELD NAME="id"          TYPE="int"  LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <!-- ID del curso Moodle -->
+        <FIELD NAME="course_id"   TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+        <!-- ID del usuario Moodle (mdl_user.id) -->
+        <FIELD NAME="userid"      TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+        <!-- UUID pseudónimo del alumno (mismo id_pseudo que genera db.py del bot) -->
+        <FIELD NAME="id_pseudo"   TYPE="char" LENGTH="36"  NOTNULL="true"/>
+        <!-- URL HTML del fork personal (null mientras status=pendiente) -->
+        <FIELD NAME="fork_url"    TYPE="char" LENGTH="500" NOTNULL="false"/>
+        <!-- Estado del aprovisionamiento: pendiente | creado | error -->
+        <FIELD NAME="status"      TYPE="char" LENGTH="20"  NOTNULL="true" DEFAULT="pendiente"/>
+        <!-- Mensaje de error en caso de fallo (null si no hay error) -->
+        <FIELD NAME="error_msg"   TYPE="text"              NOTNULL="false"/>
+        <!-- Número de intentos de aprovisionamiento -->
+        <FIELD NAME="attempts"    TYPE="int"  LENGTH="10"  NOTNULL="true" DEFAULT="0"/>
+        <!-- Marca de tiempo de creación del registro (Unix timestamp) -->
+        <FIELD NAME="timecreated" TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <!-- Un solo fork por alumno y curso -->
+        <INDEX NAME="course_user" UNIQUE="true" FIELDS="course_id, userid"/>
       </INDEXES>
     </TABLE>
 

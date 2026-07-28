@@ -83,3 +83,11 @@ Presenta el feedback de salud de Markdown, coloreando dinámicamente las tarjeta
 --8<-- "gitmetrics/renderer.php:render_format"
 ```
 
+
+### `render_management_panel`
+Presenta el panel de gestión para los profesores, agrupando el estado del repositorio base y una tabla de estudiantes con el estado de su fork personal (y URL directa si ya está creado), su progreso de sesiones, y botones para reintentar la creación en caso de error.
+
+```php
+--8<-- "gitmetrics/renderer.php:render_management_panel"
+```
+

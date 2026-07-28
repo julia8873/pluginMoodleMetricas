@@ -71,6 +71,7 @@ nav:
       - metrics_calculator: gitmetrics/classes/metrics_calculator.md
       - obsidian_exporter: gitmetrics/classes/obsidian_exporter.md
       - Tarea sync_obsidian: gitmetrics/classes/task/sync_obsidian.md
+      - Tarea retry_provisioning: gitmetrics/classes/task/retry_provisioning.md
       - github_client: gitmetrics/classes/github_client.md
       - gitlab_client: gitmetrics/classes/gitlab_client.md
       - git_provider_interface: gitmetrics/classes/git_provider_interface.md
@@ -78,6 +79,9 @@ nav:
       - matrix_helper: gitmetrics/classes/matrix_helper.md
       - metrics_cache: gitmetrics/classes/metrics_cache.md
       - student_progress: gitmetrics/classes/student_progress.md
+      - observer: gitmetrics/classes/observer.md
+    - Decisiones de Arquitectura:
+      - Aprovisionamiento de Repos de Alumno: gitmetrics/provisioning-repos.md
 
 # Aquí puedes incluir plugins para generar documentación desde el código
 plugins:

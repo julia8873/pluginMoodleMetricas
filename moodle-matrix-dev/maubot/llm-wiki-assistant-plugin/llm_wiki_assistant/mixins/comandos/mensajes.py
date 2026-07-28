@@ -123,14 +123,12 @@ class MensajesMixin(ComandosBaseMixin):
                     return
                 
                 token = self._obtener_git_token()
-                owner = self.config["default_owner"]
-                repo = self.config["default_repo"]
-                
+                                
                 await evt.reply("Consultando la Base de Conocimiento, un momento...")
                 
                 self.peticiones_llm[clave] = asyncio.current_task()
                 try:
-                    contenido_docs = await self._obtener_documentacion(owner, repo, token, tema)
+                    contenido_docs = await self._obtener_documentacion(evt.sender, tema)
                     if not contenido_docs and tema:
                         await evt.reply(f"No he encontrado ningún fichero de la BdC que coincida con «{tema}».")
                         return

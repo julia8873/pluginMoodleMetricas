@@ -165,6 +165,10 @@ async def upgrade_v7(conn: Connection) -> None:
     await conn.execute("ALTER TABLE qa_historial  ADD COLUMN session_id TEXT")
 
 
+@upgrade_table.register(description="Añade repo_url a estudiantes para mapear el fork personal")
+async def upgrade_v8(conn: Connection) -> None:
+    await conn.execute("ALTER TABLE estudiantes ADD COLUMN repo_url TEXT")
+
 # --------------------------------------------------------------------
 # Tracker: envoltorio sobre la base de datos del plugin
 # --------------------------------------------------------------------
@@ -267,28 +271,40 @@ class Tracker:
     # Gestión de sesiones (upgrade_v7)
     # --------------------------------------------------------------------
 
-    async def ensure_estudiante(self, student_id: str) -> str:
+    async def ensure_estudiante(self, student_id: str, curso_id: Optional[int] = None) -> str:
         """
-        Registra el estudiante en 'estudiantes' la primera vez que se le ve
-        (lazy insert con ON CONFLICT DO NOTHING).  Genera un UUID interno
-        (id_pseudo) que se expone al panel de Moodle sin revelar el Matrix ID.
-        Devuelve el id_pseudo del estudiante.
+        Registra el estudiante en 'estudiantes' la primera vez que se le ve.
+        Genera un UUID interno (id_pseudo). Si se pasa curso_id, actualiza
+        el registro con él. Devuelve el id_pseudo del estudiante.
         """
         import uuid
         fila = await self.db.fetchrow(
-            "SELECT id_pseudo FROM estudiantes WHERE student_id = $1", student_id
+            "SELECT id_pseudo, curso_id FROM estudiantes WHERE student_id = $1", student_id
         )
         if fila:
+            if curso_id is not None and fila["curso_id"] != curso_id:
+                await self.db.execute(
+                    "UPDATE estudiantes SET curso_id = $1 WHERE student_id = $2",
+                    curso_id, student_id
+                )
             return fila["id_pseudo"]
+
         id_pseudo = str(uuid.uuid4())
         await self.db.execute(
-            "INSERT INTO estudiantes (student_id, id_pseudo) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-            student_id, id_pseudo,
+            "INSERT INTO estudiantes (student_id, id_pseudo, curso_id) VALUES ($1, $2, $3) ON CONFLICT (student_id) DO UPDATE SET curso_id = $3",
+            student_id, id_pseudo, curso_id
         )
         fila = await self.db.fetchrow(
             "SELECT id_pseudo FROM estudiantes WHERE student_id = $1", student_id
         )
         return fila["id_pseudo"] if fila else id_pseudo
+
+    async def actualizar_repo_alumno(self, student_id: str, repo_url: str) -> None:
+        """Actualiza la URL del fork asignado al alumno."""
+        await self.db.execute(
+            "UPDATE estudiantes SET repo_url = $1 WHERE student_id = $2",
+            repo_url, student_id
+        )
 
     async def crear_o_continuar_sesion(self, student_id: str, room_id: str) -> str:
         """
@@ -397,6 +413,7 @@ class Tracker:
                 SELECT
                     e.id_pseudo,
                     e.curso_id,
+                    e.repo_url AS fork_url,
                     COUNT(DISTINCT s.session_id)  AS num_sesiones,
                     MAX(s.inicio)                 AS ultima_sesion,
                     (SELECT rs.resumen_texto FROM resumenes_sesion rs
@@ -419,6 +436,7 @@ class Tracker:
                 SELECT
                     e.id_pseudo,
                     e.curso_id,
+                    e.repo_url AS fork_url,
                     COUNT(DISTINCT s.session_id)  AS num_sesiones,
                     MAX(s.inicio)                 AS ultima_sesion,
                     (SELECT rs.resumen_texto FROM resumenes_sesion rs
